@@ -1,0 +1,23 @@
+name: Product proposal
+description: Propose a focused improvement to Velostra.
+title: "[Proposal]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or builder problem should Velostra solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed outcome
+      description: Describe the outcome and acceptance criteria, not only the implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Settlement, security, and operational impact

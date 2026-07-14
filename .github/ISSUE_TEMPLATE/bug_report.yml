@@ -1,0 +1,32 @@
+name: Product bug
+description: Report a reproducible Velostra product issue without personal data or secrets.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Velostra. Remove wallet keys, tokens, private prompts, and personal data.
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Web experience
+        - API / gateway
+        - Reconciliation worker
+        - Smart contract
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened?
+      description: Include expected behavior, actual behavior, and minimal reproduction steps.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Environment and verification
+      description: Browser, Node version, chain/local EVM, logs with secrets removed, and tests attempted.

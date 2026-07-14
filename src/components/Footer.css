@@ -106,8 +106,16 @@
 }
 
 .footer__brand:hover .footer__brand-mark {
-  transform: rotate(-3deg) translateY(-1px);
+  transform: translateY(-1px) scale(1.045);
   filter: drop-shadow(0 0 12px rgba(201, 255, 95, 0.24));
+}
+
+.footer__brand:hover .brand-mark__wing--left {
+  transform: translate(-0.45px, -0.25px);
+}
+
+.footer__brand:hover .brand-mark__wing--right {
+  transform: translate(0.45px, -0.25px);
 }
 
 .footer__identity p {

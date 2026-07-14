@@ -44,7 +44,7 @@ export default function RouteManager() {
 
   useLayoutEffect(() => {
     const isAgent = location.pathname.startsWith('/agents/')
-    document.title = isAgent ? 'Agent Execution — Velostra' : (routeTitles[location.pathname] ?? 'Velostra')
+    document.title = isAgent ? 'Agent Execution — Velostra' : (routeTitles[location.pathname] ?? 'Page Not Found — Velostra')
 
     const pathAndHash = location.pathname + location.hash
     const samePage = previousPathAndHash.current === pathAndHash

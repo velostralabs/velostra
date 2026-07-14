@@ -13,6 +13,7 @@ settlement point represents one correlated financial outcome.
 | `velostra-mark-mono-light.svg` | One-color treatment for dark surfaces. |
 | `velostra-mark-mono-dark.svg` | One-color treatment for white or light surfaces. |
 | `velostra-lockup-horizontal.svg` | Crystal V plus editable lowercase wordmark. |
+| `velostra-tab-icon.svg` | Simplified, high-contrast Crystal V optimized for browser tabs and app launchers. |
 | `exports/*.png` | Transparent and ready-to-preview raster exports. |
 | `velostra-logo-kit.zip` | Portable bundle containing the complete public kit. |
 
@@ -23,6 +24,7 @@ settlement point represents one correlated financial outcome.
 - `facet-ridges` preserves definition from hero scale down to the navigation mark.
 - `settlement-glow` marks the final correlated state.
 - Keep the center separation visible; it is part of the identity, not a gap to close.
+- Use the simplified tab icon below 32px; its wider padding and heavier ridges survive browser scaling.
 
 ## Editing notes
 

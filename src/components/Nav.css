@@ -33,6 +33,24 @@
   width: 32px;
   height: 32px;
   filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.32));
+  transition: transform 520ms var(--ease-premium), filter 420ms ease;
+}
+
+.nav__brand:hover .nav__mark {
+  transform: translateY(-1px) scale(1.045);
+  filter: drop-shadow(0 0 13px rgba(201, 255, 95, 0.26));
+}
+
+.nav__brand:hover .brand-mark__wing--left {
+  transform: translate(-0.55px, -0.35px) rotate(-0.45deg);
+}
+
+.nav__brand:hover .brand-mark__wing--right {
+  transform: translate(0.55px, -0.35px) rotate(0.45deg);
+}
+
+.nav__mark .brand-mark__ridge {
+  stroke-width: 0.82;
 }
 
 .nav__word {

@@ -3,21 +3,39 @@
   flex: 0 0 auto;
   overflow: visible;
   color: var(--signal);
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+.brand-mark__wing,
+.brand-mark__facet,
+.brand-mark__ridge,
+.brand-mark__glow {
+  transform-box: fill-box;
+  transition: transform 520ms var(--ease-premium), opacity 420ms ease, filter 420ms ease;
 }
 
 .brand-mark__wing {
-  stroke: rgba(239, 255, 201, 0.72);
+  stroke: rgba(239, 255, 201, 0.78);
   stroke-linejoin: round;
   stroke-width: 0.62;
 }
 
-.brand-mark__facet--light { fill: rgba(245, 255, 206, 0.28); }
+.brand-mark__wing--left {
+  transform-origin: right bottom;
+}
+
+.brand-mark__wing--right {
+  transform-origin: left bottom;
+}
+
+.brand-mark__facet--light { fill: rgba(245, 255, 206, 0.3); }
 .brand-mark__facet--mid { fill: rgba(48, 91, 4, 0.24); }
 .brand-mark__facet--shadow { fill: rgba(4, 10, 2, 0.34); }
 
 .brand-mark__ridge {
   fill: none;
-  stroke: rgba(248, 255, 224, 0.74);
+  stroke: rgba(248, 255, 224, 0.78);
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-width: 0.62;
@@ -25,6 +43,37 @@
 
 .brand-mark__glow {
   fill: var(--signal);
-  opacity: 0.34;
+  opacity: 0.38;
+  transform-origin: center;
   filter: blur(0.8px) drop-shadow(0 0 3px rgba(201, 255, 95, 0.64));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .brand-mark__glow {
+    animation: crystal-mark-glow 4.8s ease-in-out infinite;
+  }
+
+  .brand-mark__facet--light {
+    animation: crystal-mark-shimmer 6.4s ease-in-out infinite;
+  }
+}
+
+@keyframes crystal-mark-glow {
+  0%, 100% { opacity: 0.28; transform: scaleX(0.9); }
+  50% { opacity: 0.52; transform: scaleX(1.08); }
+}
+
+@keyframes crystal-mark-shimmer {
+  0%, 100% { opacity: 0.76; }
+  52% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark__wing,
+  .brand-mark__facet,
+  .brand-mark__ridge,
+  .brand-mark__glow {
+    animation: none !important;
+    transition: none !important;
+  }
 }

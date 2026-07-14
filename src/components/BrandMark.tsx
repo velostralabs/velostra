@@ -34,8 +34,8 @@ export default function BrandMark({ className = '', title }: BrandMarkProps) {
       </defs>
 
       <ellipse className="brand-mark__glow" cx="32" cy="59.4" rx="13" ry="1.35" />
-      <path className="brand-mark__wing" fill={`url(#${leftGradient})`} d="M6.5 6.5 24.4 21.2 30.8 36.2 30.8 58 20.5 47.2 12.7 28.7Z" />
-      <path className="brand-mark__wing" fill={`url(#${rightGradient})`} d="m57.5 6.5-17.9 14.7-6.4 15V58l10.3-10.8 7.8-18.5Z" />
+      <path className="brand-mark__wing brand-mark__wing--left" fill={`url(#${leftGradient})`} d="M6.5 6.5 24.4 21.2 30.8 36.2 30.8 58 20.5 47.2 12.7 28.7Z" />
+      <path className="brand-mark__wing brand-mark__wing--right" fill={`url(#${rightGradient})`} d="m57.5 6.5-17.9 14.7-6.4 15V58l10.3-10.8 7.8-18.5Z" />
       <path className="brand-mark__facet brand-mark__facet--light" d="m6.5 6.5 17.9 14.7-7-2.5Z" />
       <path className="brand-mark__facet brand-mark__facet--mid" d="m24.4 21.2 6.4 15-8.7-6.8Z" />
       <path className="brand-mark__facet brand-mark__facet--shadow" d="m22.1 29.4 8.7 6.8V58L20.5 47.2Z" />

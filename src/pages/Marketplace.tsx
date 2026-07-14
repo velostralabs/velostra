@@ -46,13 +46,15 @@ export default function Marketplace() {
     const timer = window.setTimeout(() => {
       const nextQuery = q.trim()
       if (nextQuery === qParam) return
-      const next = new URLSearchParams(searchParams)
-      if (nextQuery) next.set('q', nextQuery)
-      else next.delete('q')
-      setSearchParams(next, { replace: true })
+      setSearchParams((previous) => {
+        const next = new URLSearchParams(previous)
+        if (nextQuery) next.set('q', nextQuery)
+        else next.delete('q')
+        return next
+      }, { replace: true })
     }, 260)
     return () => window.clearTimeout(timer)
-  }, [q, qParam, searchParams, setSearchParams])
+  }, [q, qParam, setSearchParams])
 
   useEffect(() => {
     const alreadyClean =
@@ -62,14 +64,16 @@ export default function Marketplace() {
       !(searchParams.has('category') && !category) &&
       !(searchParams.has('sort') && sort === 'featured')
     if (alreadyClean) return
-    const next = new URLSearchParams(searchParams)
-    if (qParam) next.set('q', qParam)
-    else next.delete('q')
-    if (category) next.set('category', category)
-    else next.delete('category')
-    if (sort !== 'featured') next.set('sort', sort)
-    else next.delete('sort')
-    setSearchParams(next, { replace: true })
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (qParam) next.set('q', qParam)
+      else next.delete('q')
+      if (category) next.set('category', category)
+      else next.delete('category')
+      if (sort !== 'featured') next.set('sort', sort)
+      else next.delete('sort')
+      return next
+    }, { replace: true })
   }, [category, qParam, rawCategory, rawQ, rawSort, searchParams, setSearchParams, sort])
 
   useEffect(() => {
@@ -97,10 +101,12 @@ export default function Marketplace() {
   }, [qParam, category, sort])
 
   function setFilter(key: 'category' | 'sort', value: string) {
-    const next = new URLSearchParams(searchParams)
-    if (value && !(key === 'sort' && value === 'featured')) next.set(key, value)
-    else next.delete(key)
-    setSearchParams(next)
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      if (value && !(key === 'sort' && value === 'featured')) next.set(key, value)
+      else next.delete(key)
+      return next
+    })
   }
 
   function clearFilters() {

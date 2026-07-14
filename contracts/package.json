@@ -1,0 +1,32 @@
+{
+  "name": "@velostra/contracts",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Velostra correlated escrow settlement contract for EVM execution markets.",
+  "author": {
+    "name": "Velostra",
+    "url": "https://github.com/velostralabs"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/velostralabs/velostra.git",
+    "directory": "contracts"
+  },
+  "homepage": "https://github.com/velostralabs/velostra/tree/main/contracts",
+  "bugs": {
+    "url": "https://github.com/velostralabs/velostra/issues"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "npm run build && node test/VelostraEscrow.e2e.test.js",
+    "deploy:robinhood": "node scripts/deploy.js"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "^5.1.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
+    "ganache": "^7.9.0",
+    "solc": "0.8.24"
+  }
+}

@@ -122,40 +122,44 @@ export default function Marketplace() {
       </div>
 
       <form className="panel marketplace-filters" role="search" onSubmit={(event) => event.preventDefault()}>
-        <div className="marketplace-filters__label">
-          <SlidersHorizontal size={15} />
-          <span className="mono">Market filters</span>
+        <div className="marketplace-filters__header">
+          <div className="marketplace-filters__label">
+            <SlidersHorizontal size={15} />
+            <span className="mono">Market filters</span>
+          </div>
+          {hasFilters && (
+            <button type="button" className="filter-clear" onClick={clearFilters}>
+              <X size={13} /> Reset filters
+            </button>
+          )}
         </div>
-        <div className="field-row marketplace-filters__search">
-          <label htmlFor="agent-search">Search</label>
-          <div className="input-with-icon">
-            <Search size={15} />
-            <input
-              id="agent-search"
-              value={q}
-              onChange={(event) => setQ(event.target.value)}
-              placeholder="Search agents"
-              autoComplete="off"
-            />
+        <div className="marketplace-filters__controls">
+          <div className="field-row marketplace-filters__search">
+            <label htmlFor="agent-search">Search agents</label>
+            <div className="input-with-icon">
+              <Search size={15} />
+              <input
+                id="agent-search"
+                value={q}
+                onChange={(event) => setQ(event.target.value)}
+                placeholder="Name, capability, or category"
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          <div className="field-row">
+            <label htmlFor="agent-category">Category</label>
+            <select id="agent-category" value={category} onChange={(event) => setFilter('category', event.target.value)}>
+              {CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </div>
+          <div className="field-row">
+            <label htmlFor="agent-sort">Sort by</label>
+            <select id="agent-sort" value={sort} onChange={(event) => setFilter('sort', event.target.value)}>
+              {SORTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
           </div>
         </div>
-        <div className="field-row">
-          <label htmlFor="agent-category">Category</label>
-          <select id="agent-category" value={category} onChange={(event) => setFilter('category', event.target.value)}>
-            {CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </div>
-        <div className="field-row">
-          <label htmlFor="agent-sort">Sort</label>
-          <select id="agent-sort" value={sort} onChange={(event) => setFilter('sort', event.target.value)}>
-            {SORTS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-        </div>
-        {hasFilters && (
-          <button type="button" className="filter-clear" onClick={clearFilters}>
-            <X size={13} /> Reset
-          </button>
-        )}
       </form>
 
       <div className="marketplace-results" aria-live="polite" aria-busy={loading}>

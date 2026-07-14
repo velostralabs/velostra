@@ -91,6 +91,7 @@
 .econ__big-number {
   display: flex;
   align-items: start;
+  gap: clamp(11px, 0.8vw, 16px);
   color: var(--signal);
   text-shadow: 0 0 50px rgba(201, 255, 95, 0.12);
 }
@@ -100,13 +101,18 @@
   font-size: clamp(120px, 13vw, 190px);
   font-weight: 500;
   line-height: 0.72;
-  letter-spacing: -0.11em;
+  letter-spacing: -0.085em;
 }
 
 .econ__big-number sup {
-  margin-top: 6px;
+  flex: 0 0 auto;
+  margin-top: 4px;
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-shadow: 0 0 24px rgba(201, 255, 95, 0.24);
 }
 
 .econ__big-copy {

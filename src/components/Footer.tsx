@@ -44,6 +44,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           </div>
           <div className="footer__col">
             <span className="footer__col-title">Protocol</span>
+            <Link to="/index">Execution index</Link>
             <Link to="/docs">Documentation</Link>
             <Link to="/proof">Settlement proof</Link>
             <Link to="/economics">Economics</Link>

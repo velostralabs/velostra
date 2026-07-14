@@ -7,6 +7,7 @@ import WalletButton from './WalletButton'
 import './Nav.css'
 
 const navItems = [
+  { to: '/index', label: 'Index' },
   { to: '/system', label: 'System' },
   { to: '/proof', label: 'Proof' },
   { to: '/economics', label: 'Economics' },
@@ -94,7 +95,7 @@ export default function Nav() {
               </NavLink>
             ))}
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav__mobile-link--active' : undefined}>
-              <span className="mono">07</span>
+              <span className="mono">08</span>
               Execution console
             </NavLink>
           </motion.nav>

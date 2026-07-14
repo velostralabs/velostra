@@ -22,8 +22,8 @@
     </pattern>
     <style>
       .dash{stroke-dasharray:8 12;animation:flow 5s linear infinite}
-      .pulse{animation:pulse 2.6s ease-in-out infinite;transform-origin:center}
-      .float{animation:float 5.4s ease-in-out infinite;transform-origin:center}
+      .pulse{animation:pulse 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+      .float{animation:float 5.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
       .scan{animation:scan 4.4s ease-in-out infinite}
       .fade{animation:fade 3.2s ease-in-out infinite}
       @keyframes flow{to{stroke-dashoffset:-80}}
@@ -54,16 +54,21 @@
     </g>
   </g>
 
-  <g class="float" transform="translate(823 64)">
-    <rect x="0" y="0" width="292" height="312" rx="20" fill="#080c12" stroke="#f1f3ed" stroke-opacity=".13"/>
-    <rect x="18" y="18" width="256" height="276" rx="14" fill="#0f151d" stroke="#8fe9dc" stroke-opacity=".14"/>
-    <path d="M76 86 130 224 185 86" fill="none" stroke="url(#signal)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M34 62h224M34 250h224" stroke="#f1f3ed" stroke-opacity=".08"/>
-    <g class="scan" transform="translate(0 156)"><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".7"/><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".28" stroke-width="10" filter="url(#small)"/></g>
-    <circle class="pulse" cx="146" cy="156" r="94" fill="none" stroke="#c9ff5f" stroke-opacity=".22" stroke-dasharray="3 9"/>
-    <circle class="pulse" cx="146" cy="156" r="116" fill="none" stroke="#8fe9dc" stroke-opacity=".12" stroke-dasharray="2 13" style="animation-delay:-1.3s"/>
-    <text x="24" y="42" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">EXECUTION OBJECT / 014</text>
-    <text x="91" y="280" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="2">SETTLED / INDEXED</text>
+  <!-- Keep layout positioning outside the animated group. CSS transforms replace
+       SVG transform attributes in GitHub's renderer, which previously moved this
+       card back to the origin and covered the headline. -->
+  <g transform="translate(823 64)">
+    <g class="float">
+      <rect x="0" y="0" width="292" height="312" rx="20" fill="#080c12" stroke="#f1f3ed" stroke-opacity=".13"/>
+      <rect x="18" y="18" width="256" height="276" rx="14" fill="#0f151d" stroke="#8fe9dc" stroke-opacity=".14"/>
+      <path d="M76 86 130 224 185 86" fill="none" stroke="url(#signal)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M34 62h224M34 250h224" stroke="#f1f3ed" stroke-opacity=".08"/>
+      <g transform="translate(0 156)"><g class="scan"><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".7"/><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".28" stroke-width="10" filter="url(#small)"/></g></g>
+      <circle class="pulse" cx="146" cy="156" r="94" fill="none" stroke="#c9ff5f" stroke-opacity=".22" stroke-dasharray="3 9"/>
+      <circle class="pulse" cx="146" cy="156" r="116" fill="none" stroke="#8fe9dc" stroke-opacity=".12" stroke-dasharray="2 13" style="animation-delay:-1.3s"/>
+      <text x="24" y="42" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">EXECUTION OBJECT / 014</text>
+      <text x="91" y="280" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="2">SETTLED / INDEXED</text>
+    </g>
   </g>
 
   <path class="dash" d="M770 103C810 103 794 128 833 128M770 314C810 314 798 286 833 286" fill="none" stroke="url(#signal)" stroke-opacity=".5"/>

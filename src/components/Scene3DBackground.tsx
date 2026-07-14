@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type MutableRefObject } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Float, RoundedBox, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import './Scene3DBackground.css'
@@ -208,6 +208,29 @@ function ArtifactScene({ input }: { input: MotionInput }) {
   )
 }
 
+function FrameDriver({ active }: { active: boolean }) {
+  const invalidate = useThree((state) => state.invalidate)
+
+  useEffect(() => {
+    if (!active) return
+    let frame = 0
+    let lastFrame = 0
+
+    const render = (time: number) => {
+      if (time - lastFrame >= 1000 / 30) {
+        lastFrame = time
+        invalidate()
+      }
+      frame = window.requestAnimationFrame(render)
+    }
+
+    frame = window.requestAnimationFrame(render)
+    return () => window.cancelAnimationFrame(frame)
+  }, [active, invalidate])
+
+  return null
+}
+
 export default function Scene3DBackground() {
   const [mounted, setMounted] = useState(false)
   const [active, setActive] = useState(true)
@@ -269,10 +292,11 @@ export default function Scene3DBackground() {
       <Canvas
         camera={{ position: [0, 0, 9.6], fov: 38 }}
         dpr={[1, 1.3]}
-        frameloop={active && !reduced ? 'always' : 'demand'}
+        frameloop="demand"
         performance={{ min: 0.55 }}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
       >
+        <FrameDriver active={active && !reduced} />
         <ArtifactScene input={input} />
       </Canvas>
     </div>

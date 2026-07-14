@@ -48,20 +48,34 @@ function AdaptiveScene() {
   useEffect(() => {
     const query = window.matchMedia('(min-width: 821px) and (prefers-reduced-motion: no-preference)')
     let timer = 0
+    let idleTask = 0
+
+    const cancelScheduledLoad = () => {
+      window.clearTimeout(timer)
+      if (idleTask && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleTask)
+      idleTask = 0
+    }
 
     const sync = () => {
-      window.clearTimeout(timer)
+      cancelScheduledLoad()
       if (!query.matches) {
         setEnableWebGL(false)
         return
       }
-      timer = window.setTimeout(() => setEnableWebGL(true), 320)
+
+      timer = window.setTimeout(() => {
+        if ('requestIdleCallback' in window) {
+          idleTask = window.requestIdleCallback(() => setEnableWebGL(true), { timeout: 900 })
+          return
+        }
+        setEnableWebGL(true)
+      }, 700)
     }
 
     sync()
     query.addEventListener('change', sync)
     return () => {
-      window.clearTimeout(timer)
+      cancelScheduledLoad()
       query.removeEventListener('change', sync)
     }
   }, [])
@@ -109,7 +123,7 @@ export default function Hero() {
   }
 
   return (
-    <section className="hero" onPointerMove={handlePointerMove} onPointerLeave={resetPointer}>
+    <section className="hero" id="top" onPointerMove={handlePointerMove} onPointerLeave={resetPointer}>
       <motion.div className="hero__glow" style={{ x: glowX, y: glowY }} />
 
       <div className="hero__grid">

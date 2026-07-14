@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="400" viewBox="0 0 400 100" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Velostra horizontal logo</title>
+  <desc id="desc">Editable Velostra icon and lowercase wordmark lockup for dark surfaces.</desc>
+  <defs>
+    <linearGradient id="v" x1="14" y1="8" x2="49" y2="57" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F7EE"/><stop offset="0.42" stop-color="#DCEBAA"/><stop offset="1" stop-color="#9EDB42"/>
+    </linearGradient>
+  </defs>
+  <g id="mark" transform="translate(18 18) scale(1)">
+    <path d="M7 10.5 31.6 3l25.5 7.5L49 35.8 32 61 14.9 35.8 7 10.5Z" fill="#C9FF5F" fill-opacity="0.035" stroke="#EBF1E5" stroke-opacity="0.18"/>
+    <path d="M12.6 11.8h13.2L32 31.1l6.2-19.3h13.2L38.1 53.2H25.9L12.6 11.8Z" fill="url(#v)"/>
+    <path d="m25.8 11.8 6.2 19.3 6.2-19.3L32 7.1l-6.2 4.7Z" fill="#070A0E"/>
+    <path d="M14.8 13.4 27.5 51h9L49.2 13.4" stroke="#FFFFFF" stroke-opacity="0.42" stroke-width="0.7" stroke-linecap="round"/>
+    <rect x="29.35" y="28.45" width="5.3" height="5.3" rx="1" transform="rotate(45 32 31.1)" fill="#C9FF5F"/>
+  </g>
+  <g id="editable-wordmark">
+    <text x="100" y="64" fill="#F5F7EE" font-family="Space Grotesk, Arial, sans-serif" font-size="46" font-weight="600" letter-spacing="-2.3">velostra</text>
+  </g>
+  <g id="baseline-guides" display="none">
+    <path d="M100 66h278M100 28v48" stroke="#59D8FF" stroke-width="0.35" stroke-dasharray="2 2"/>
+  </g>
+</svg>

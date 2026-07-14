@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="250" viewBox="0 0 1200 250" role="img" aria-labelledby="title desc">
+  <title id="title">Velostra settlement flow</title>
+  <desc id="desc">Animated request, execution, settlement, and reconciliation pipeline.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#080a0e"/><stop offset="1" stop-color="#10161d"/></linearGradient>
+    <linearGradient id="line"><stop stop-color="#c9ff5f"/><stop offset="1" stop-color="#8fe9dc"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4"/></filter>
+    <style>
+      .rail{stroke-dasharray:7 10;animation:rail 4s linear infinite}
+      .node{animation:node 3s ease-in-out infinite;transform-origin:center}
+      .node:nth-of-type(2){animation-delay:-.6s}.node:nth-of-type(3){animation-delay:-1.2s}.node:nth-of-type(4){animation-delay:-1.8s}
+      @keyframes rail{to{stroke-dashoffset:-68}}
+      @keyframes node{0%,100%{opacity:.62}50%{opacity:1}}
+      @media(prefers-reduced-motion:reduce){*{animation:none!important}}
+    </style>
+  </defs>
+  <rect width="1200" height="250" rx="22" fill="url(#bg)"/>
+  <path d="M52 1h1096a51 51 0 0 1 51 51v146a51 51 0 0 1-51 51H52A51 51 0 0 1 1 198V52A51 51 0 0 1 52 1Z" fill="none" stroke="#f1f3ed" stroke-opacity=".1"/>
+  <text x="54" y="45" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="11" letter-spacing="2.4">ONE CALL / ONE CORRELATION / ONE FINANCIAL OUTCOME</text>
+  <path class="rail" d="M150 126H1050" stroke="url(#line)" stroke-width="2" fill="none" opacity=".5"/>
+  <circle cx="150" cy="126" r="9" fill="#c9ff5f"><animate attributeName="opacity" values=".3;1;.3" dur="2.4s" repeatCount="indefinite"/></circle>
+  <circle r="6" fill="#efffd0" filter="url(#glow)"><animateMotion dur="4.2s" repeatCount="indefinite" path="M150 126H1050"/></circle>
+  <g class="node" transform="translate(150 126)"><circle r="48" fill="#0d1319" stroke="#c9ff5f" stroke-opacity=".42"/><text y="5" text-anchor="middle" fill="#f1f3ed" font-family="Manrope,Arial" font-size="13" font-weight="700">REQUEST</text></g>
+  <g class="node" transform="translate(450 126)"><circle r="48" fill="#0d1319" stroke="#b3f087" stroke-opacity=".38"/><text y="5" text-anchor="middle" fill="#f1f3ed" font-family="Manrope,Arial" font-size="13" font-weight="700">EXECUTE</text></g>
+  <g class="node" transform="translate(750 126)"><circle r="48" fill="#0d1319" stroke="#9eecc4" stroke-opacity=".38"/><text y="5" text-anchor="middle" fill="#f1f3ed" font-family="Manrope,Arial" font-size="13" font-weight="700">SETTLE</text></g>
+  <g class="node" transform="translate(1050 126)"><circle r="48" fill="#0d1319" stroke="#8fe9dc" stroke-opacity=".42"/><text y="5" text-anchor="middle" fill="#f1f3ed" font-family="Manrope,Arial" font-size="13" font-weight="700">INDEX</text></g>
+  <text x="150" y="205" text-anchor="middle" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9">DURABLE INTENT</text>
+  <text x="450" y="205" text-anchor="middle" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9">HMAC OUTPUT</text>
+  <text x="750" y="205" text-anchor="middle" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9">CALL ID EVENT</text>
+  <text x="1050" y="205" text-anchor="middle" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9">SELF-HEAL</text>
+</svg>

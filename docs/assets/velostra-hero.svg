@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
+  <title id="title">Velostra verified AI execution market</title>
+  <desc id="desc">An animated execution artifact connecting request, builder, ledger, and receipt.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#050609"/>
+      <stop offset="0.55" stop-color="#0a0e13"/>
+      <stop offset="1" stop-color="#10161d"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#c9ff5f"/>
+      <stop offset="1" stop-color="#8fe9dc"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop stop-color="#c9ff5f" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#c9ff5f" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="small"><feGaussianBlur stdDeviation="3"/></filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+      <path d="M42 0H0V42" fill="none" stroke="#f1f3ed" stroke-opacity=".035"/>
+    </pattern>
+    <style>
+      .dash{stroke-dasharray:8 12;animation:flow 5s linear infinite}
+      .pulse{animation:pulse 2.6s ease-in-out infinite;transform-origin:center}
+      .float{animation:float 5.4s ease-in-out infinite;transform-origin:center}
+      .scan{animation:scan 4.4s ease-in-out infinite}
+      .fade{animation:fade 3.2s ease-in-out infinite}
+      @keyframes flow{to{stroke-dashoffset:-80}}
+      @keyframes pulse{0%,100%{opacity:.42;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
+      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+      @keyframes scan{0%{transform:translateY(-120px);opacity:0}18%,78%{opacity:.75}100%{transform:translateY(120px);opacity:0}}
+      @keyframes fade{0%,100%{opacity:.35}50%{opacity:1}}
+      @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+    </style>
+  </defs>
+  <rect width="1200" height="440" rx="26" fill="url(#bg)"/>
+  <rect width="1200" height="440" rx="26" fill="url(#grid)"/>
+  <circle cx="878" cy="208" r="210" fill="url(#glow)" filter="url(#soft)"/>
+  <path d="M32 1h1136a31 31 0 0 1 31 31v376a31 31 0 0 1-31 31H32A31 31 0 0 1 1 408V32A31 31 0 0 1 32 1Z" fill="none" stroke="#f1f3ed" stroke-opacity=".12"/>
+
+  <g transform="translate(72 66)">
+    <text fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="12" letter-spacing="3">VERIFIED EXECUTION / RHC 4663</text>
+    <text y="82" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-4">Intelligence,</text>
+    <text y="146" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-4">priced at the</text>
+    <text y="210" fill="url(#signal)" font-family="Space Grotesk,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-4">speed of intent.</text>
+    <text y="258" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="17">AI agent execution with transparent pricing, correlated settlement,</text>
+    <text y="286" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="17">and a reconciliation layer designed to heal confirmed chain state.</text>
+    <g transform="translate(0 320)">
+      <rect width="178" height="42" rx="6" fill="#c9ff5f"/>
+      <text x="20" y="27" fill="#090b09" font-family="Manrope,Arial,sans-serif" font-size="13" font-weight="700">EXPLORE THE SYSTEM</text>
+      <circle class="fade" cx="196" cy="21" r="4" fill="#8fe9dc"/>
+      <text x="212" y="26" fill="#8a938f" font-family="ui-monospace,Consolas,monospace" font-size="11">RECOVERABLE BY DESIGN</text>
+    </g>
+  </g>
+
+  <g class="float" transform="translate(823 64)">
+    <rect x="0" y="0" width="292" height="312" rx="20" fill="#080c12" stroke="#f1f3ed" stroke-opacity=".13"/>
+    <rect x="18" y="18" width="256" height="276" rx="14" fill="#0f151d" stroke="#8fe9dc" stroke-opacity=".14"/>
+    <path d="M76 86 130 224 185 86" fill="none" stroke="url(#signal)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M34 62h224M34 250h224" stroke="#f1f3ed" stroke-opacity=".08"/>
+    <g class="scan" transform="translate(0 156)"><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".7"/><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".28" stroke-width="10" filter="url(#small)"/></g>
+    <circle class="pulse" cx="146" cy="156" r="94" fill="none" stroke="#c9ff5f" stroke-opacity=".22" stroke-dasharray="3 9"/>
+    <circle class="pulse" cx="146" cy="156" r="116" fill="none" stroke="#8fe9dc" stroke-opacity=".12" stroke-dasharray="2 13" style="animation-delay:-1.3s"/>
+    <text x="24" y="42" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">EXECUTION OBJECT / 014</text>
+    <text x="91" y="280" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="2">SETTLED / INDEXED</text>
+  </g>
+
+  <path class="dash" d="M770 103C810 103 794 128 833 128M770 314C810 314 798 286 833 286" fill="none" stroke="url(#signal)" stroke-opacity=".5"/>
+  <circle class="pulse" cx="770" cy="103" r="5" fill="#c9ff5f"/>
+  <circle class="pulse" cx="770" cy="314" r="5" fill="#8fe9dc" style="animation-delay:-1.3s"/>
+</svg>

@@ -1,0 +1,60 @@
+{
+  "name": "@velostra/server",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Velostra gateway, marketplace API, financial ledger, and chain reconciliation worker.",
+  "author": {
+    "name": "Velostra",
+    "url": "https://github.com/velostralabs"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/velostralabs/velostra.git",
+    "directory": "server"
+  },
+  "homepage": "https://github.com/velostralabs/velostra/tree/main/server",
+  "bugs": {
+    "url": "https://github.com/velostralabs/velostra/issues"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "test:auth": "tsx test/auth.e2e.test.ts",
+    "test:platform": "tsx test/platform.e2e.test.mjs",
+    "test:money": "npm --prefix ../contracts run build && tsx test/money-loop.e2e.test.mjs",
+    "reconcile": "tsx src/jobs/reconcile.ts --once",
+    "reconcile:worker": "tsx src/jobs/reconcile.ts --watch"
+  },
+  "dependencies": {
+    "@paralleldrive/cuid2": "^3.3.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.45.2",
+    "express": "^4.21.0",
+    "express-async-errors": "^3.1.1",
+    "ioredis": "^5.11.1",
+    "jose": "^5.9.0",
+    "nanoid": "^5.0.7",
+    "pg": "^8.22.0",
+    "viem": "^2.21.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.16.0",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "ganache": "^7.9.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

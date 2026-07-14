@@ -91,7 +91,7 @@ export default function HowItWorks() {
                 onMouseLeave={() => setInteractionHeld(false)}
                 onFocus={() => { setInteractionHeld(true); setActive(index) }}
                 onBlur={() => setInteractionHeld(false)}
-                onClick={() => setActive(index)}
+                onClick={() => { setInteractionHeld(true); setActive(index) }}
                 role="tab"
                 aria-selected={isActive}
               >

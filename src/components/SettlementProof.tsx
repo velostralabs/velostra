@@ -210,7 +210,7 @@ export default function SettlementProof() {
                 onMouseLeave={() => setInteractionHeld(false)}
                 onFocus={() => { setInteractionHeld(true); setActiveStep(index) }}
                 onBlur={() => setInteractionHeld(false)}
-                onClick={() => setActiveStep(index)}
+                onClick={() => { setInteractionHeld(true); setActiveStep(index) }}
                 animate={{ scale: activeStep === index ? 1.045 : 1 }}
                 transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                 aria-label={`Inspect ${trace[index].title}`}
@@ -262,7 +262,7 @@ export default function SettlementProof() {
                   onMouseLeave={() => setInteractionHeld(false)}
                   onFocus={() => { setInteractionHeld(true); setActiveStep(index) }}
                   onBlur={() => setInteractionHeld(false)}
-                  onClick={() => setActiveStep(index)}
+                  onClick={() => { setInteractionHeld(true); setActiveStep(index) }}
                   aria-pressed={isActive}
                 >
                   <span className="proof__trace-icon"><Icon size={16} strokeWidth={1.6} /></span>

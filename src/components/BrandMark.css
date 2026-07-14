@@ -1,0 +1,28 @@
+.brand-mark {
+  display: block;
+  flex: 0 0 auto;
+  overflow: visible;
+  color: var(--signal);
+}
+
+.brand-mark__facet {
+  fill: rgba(201, 255, 95, 0.035);
+  stroke: rgba(235, 241, 229, 0.16);
+  stroke-width: 1;
+}
+
+.brand-mark__cut {
+  fill: #090c10;
+}
+
+.brand-mark__edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.42);
+  stroke-linecap: round;
+  stroke-width: 0.7;
+}
+
+.brand-mark__node {
+  fill: var(--signal);
+  filter: drop-shadow(0 0 4px rgba(201, 255, 95, 0.72));
+}

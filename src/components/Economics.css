@@ -1,0 +1,569 @@
+.economics {
+  position: relative;
+  z-index: 2;
+  width: min(1420px, 100%);
+  margin: 0 auto;
+  padding: 138px 42px;
+}
+
+.economics::before {
+  content: '';
+  position: absolute;
+  top: 3%;
+  left: -18%;
+  width: 55%;
+  height: 60%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(201, 255, 95, 0.045), transparent 66%);
+  filter: blur(30px);
+}
+
+.economics__head {
+  display: grid;
+  grid-template-columns: 1.2fr 0.65fr;
+  gap: 70px;
+  align-items: end;
+  margin-bottom: 66px;
+}
+
+.economics__head .section-head {
+  margin-bottom: 0;
+}
+
+.economics__head > .section-copy {
+  padding-bottom: 4px;
+}
+
+.econ__showcase {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  min-height: 560px;
+  border: 1px solid rgba(232, 239, 232, 0.11);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #090c11;
+  box-shadow: 0 48px 120px rgba(0, 0, 0, 0.26);
+}
+
+.econ__split-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(34px, 5vw, 68px);
+  overflow: hidden;
+  border-right: 1px solid var(--border-hair);
+  background:
+    radial-gradient(circle at 35% 44%, rgba(201, 255, 95, 0.12), transparent 31%),
+    linear-gradient(145deg, #111820, #080b10 72%);
+}
+
+.econ__split-card::after {
+  content: '90';
+  position: absolute;
+  right: -0.08em;
+  bottom: -0.3em;
+  color: rgba(255, 255, 255, 0.016);
+  font-family: var(--font-display);
+  font-size: 340px;
+  font-weight: 700;
+  letter-spacing: -0.12em;
+  pointer-events: none;
+}
+
+.econ__corner {
+  position: relative;
+  z-index: 2;
+  color: #647069;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.econ__split-main {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  gap: 42px;
+  margin: 54px 0 46px;
+}
+
+.econ__big-number {
+  display: flex;
+  align-items: start;
+  color: var(--signal);
+  text-shadow: 0 0 50px rgba(201, 255, 95, 0.12);
+}
+
+.econ__big-number strong {
+  font-family: var(--font-display);
+  font-size: clamp(120px, 13vw, 190px);
+  font-weight: 500;
+  line-height: 0.72;
+  letter-spacing: -0.11em;
+}
+
+.econ__big-number sup {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 28px;
+}
+
+.econ__big-copy {
+  max-width: 200px;
+  display: grid;
+  gap: 9px;
+  padding-bottom: 3px;
+}
+
+.econ__big-copy span {
+  color: var(--text-0);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.econ__big-copy p {
+  color: #747e78;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.econ__rail {
+  position: relative;
+  z-index: 2;
+  height: 62px;
+  display: flex;
+  overflow: hidden;
+  border: 1px solid rgba(230, 238, 230, 0.12);
+  border-radius: 3px;
+}
+
+.econ__rail > div {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  transform-origin: left;
+}
+
+.econ__rail span {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.econ__rail-builder {
+  width: 90%;
+  color: #0d1209;
+  background: linear-gradient(90deg, #8fe9dc, var(--signal));
+}
+
+.econ__rail-platform {
+  width: 10%;
+  min-width: 56px;
+  color: var(--text-1);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+  background: #1b232c;
+}
+
+.econ__assurances {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-top: 28px;
+  color: #707b75;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.econ__assurances span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.econ__assurances svg {
+  color: var(--signal);
+}
+
+.econ__ledger {
+  position: relative;
+  padding: 25px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+  background-size: 100% 54px;
+}
+
+.econ__ledger-head {
+  min-height: 78px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  padding: 8px 4px 22px;
+}
+
+.econ__ledger-head div {
+  display: grid;
+  gap: 8px;
+}
+
+.econ__ledger-head div span,
+.econ__ledger-columns {
+  color: #59635e;
+  font-size: 7px;
+  letter-spacing: 0.1em;
+}
+
+.econ__ledger-head strong {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+.econ__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #76817b;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.econ__live i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 9px var(--signal-glow);
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
+
+.econ__ledger-columns {
+  display: grid;
+  grid-template-columns: 1fr 70px 80px;
+  gap: 12px;
+  padding: 14px 8px;
+  border-top: 1px solid var(--border-hair);
+  border-bottom: 1px solid var(--border-hair);
+  text-transform: uppercase;
+}
+
+.econ__receipt-row {
+  min-height: 88px;
+  display: grid;
+  grid-template-columns: 1fr 70px 80px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--border-hair);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+.econ__receipt-row div {
+  display: grid;
+  gap: 6px;
+}
+
+.econ__receipt-row div span {
+  color: #56615b;
+  font-size: 7px;
+}
+
+.econ__receipt-row div strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.econ__positive {
+  color: var(--signal);
+}
+
+.econ__ledger-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 24px 8px;
+  color: #78817c;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.econ__ledger-total strong {
+  color: var(--text-0);
+  font-size: 10px;
+}
+
+.econ__tiers {
+  display: grid;
+  grid-template-columns: 1.35fr repeat(4, 1fr);
+  margin-top: 24px;
+  border-top: 1px solid var(--border-hair);
+  border-bottom: 1px solid var(--border-hair);
+}
+
+.econ__tiers-intro,
+.econ__tier {
+  min-height: 230px;
+  padding: 28px 22px;
+  border-right: 1px solid var(--border-hair);
+}
+
+.econ__tiers-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  justify-content: space-between;
+}
+
+.econ__tiers-intro > span,
+.econ__tier-index {
+  color: #58615d;
+  font-size: 7px;
+  letter-spacing: 0.1em;
+}
+
+.econ__tiers-intro h3 {
+  max-width: 260px;
+  font-family: var(--font-display);
+  font-size: 25px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.econ__tiers-intro a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--signal);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.econ__tier {
+  display: grid;
+  grid-template-rows: 1fr auto auto;
+  gap: 10px;
+  transition: background 220ms ease, transform 220ms var(--ease-premium);
+}
+
+.econ__tier:hover {
+  background: linear-gradient(180deg, rgba(201, 255, 95, 0.06), transparent);
+  transform: translateY(-5px);
+}
+
+.econ__tier strong {
+  align-self: end;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.econ__tier p {
+  min-height: 32px;
+  color: #6f7873;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.econ__tier > span:last-child {
+  color: var(--text-1);
+  font-size: 8px;
+}
+
+@media (max-width: 1080px) {
+  .economics__head,
+  .econ__showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .econ__split-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-hair);
+  }
+
+  .econ__tiers {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .econ__tiers-intro {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 680px) {
+  .economics {
+    padding: 88px 15px;
+  }
+
+  .economics__head {
+    gap: 25px;
+    margin-bottom: 42px;
+  }
+
+  .econ__split-card {
+    padding: 32px 20px;
+  }
+
+  .econ__split-main {
+    align-items: start;
+    flex-direction: column;
+    gap: 26px;
+  }
+
+  .econ__big-number strong {
+    font-size: 126px;
+  }
+
+  .econ__assurances {
+    display: grid;
+  }
+
+  .econ__ledger {
+    padding: 16px 10px;
+  }
+
+  .econ__tiers {
+    grid-template-columns: 1fr;
+  }
+
+  .econ__tiers-intro {
+    grid-column: auto;
+  }
+
+  .econ__tiers-intro,
+  .econ__tier {
+    min-height: 180px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-hair);
+  }
+}
+
+/* Live economic surface */
+.econ__showcase {
+  transition: border-color 560ms ease, box-shadow 900ms var(--ease-luxury), transform 900ms var(--ease-luxury);
+}
+
+.econ__showcase:hover {
+  border-color: rgba(201, 255, 95, 0.17);
+  box-shadow: 0 62px 145px rgba(0, 0, 0, 0.34), 0 0 75px rgba(201, 255, 95, 0.022);
+  transform: translateY(-4px);
+}
+
+.econ__split-card::before {
+  content: '';
+  position: absolute;
+  top: 10%;
+  left: 8%;
+  width: 420px;
+  aspect-ratio: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0.62;
+  background: radial-gradient(circle, rgba(201, 255, 95, 0.11), rgba(143, 233, 220, 0.025) 45%, transparent 70%);
+  filter: blur(16px);
+  animation: economics-orbit 8s ease-in-out infinite alternate;
+}
+
+.econ__big-number {
+  animation: economics-number-breathe 4.6s ease-in-out infinite;
+}
+
+.econ__ledger {
+  overflow: hidden;
+}
+
+.econ__ledger::after {
+  content: '';
+  position: absolute;
+  top: -18%;
+  right: 0;
+  left: 0;
+  height: 18%;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(to bottom, transparent, rgba(201, 255, 95, 0.075), transparent);
+  animation: ledger-scan 7.8s linear infinite;
+}
+
+.econ__receipt-row {
+  position: relative;
+  transition: background-color 420ms ease, border-color 420ms ease, color 420ms ease;
+}
+
+.econ__receipt-row::before {
+  content: '';
+  position: absolute;
+  top: 17%;
+  bottom: 17%;
+  left: 0;
+  width: 1px;
+  opacity: 0;
+  background: var(--signal);
+  box-shadow: 0 0 12px var(--signal-glow);
+  transform: scaleY(0.3);
+  transition: opacity 360ms ease, transform 520ms var(--ease-luxury);
+}
+
+.econ__receipt-row:hover {
+  background: linear-gradient(90deg, rgba(201, 255, 95, 0.055), transparent 82%);
+  border-color: rgba(201, 255, 95, 0.16);
+}
+
+.econ__receipt-row:hover::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.econ__tier {
+  position: relative;
+  overflow: hidden;
+}
+
+.econ__tier::after {
+  content: '';
+  position: absolute;
+  right: -45%;
+  bottom: -55%;
+  width: 150px;
+  aspect-ratio: 1;
+  pointer-events: none;
+  border-radius: 50%;
+  opacity: 0;
+  background: radial-gradient(circle, rgba(201, 255, 95, 0.1), transparent 68%);
+  transform: scale(0.7);
+  transition: opacity 520ms ease, transform 700ms var(--ease-luxury);
+}
+
+.econ__tier:hover::after {
+  opacity: 1;
+  transform: scale(1.25);
+}
+
+@keyframes economics-orbit {
+  from { transform: translate3d(-9%, 8%, 0) scale(0.9); }
+  to { transform: translate3d(28%, -7%, 0) scale(1.14); }
+}
+
+@keyframes economics-number-breathe {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(201, 255, 95, 0.03)); transform: translateY(0); }
+  50% { filter: drop-shadow(0 0 28px rgba(201, 255, 95, 0.11)); transform: translateY(-3px); }
+}
+
+@keyframes ledger-scan {
+  0%, 14% { transform: translateY(-25%); opacity: 0; }
+  20% { opacity: 0.65; }
+  54%, 100% { transform: translateY(720%); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .econ__split-card::before,
+  .econ__big-number,
+  .econ__ledger::after { animation: none !important; }
+  .econ__showcase:hover { transform: none; }
+}

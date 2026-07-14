@@ -1,0 +1,41 @@
+.scene3d {
+  position: absolute;
+  inset: -7% -5% -8%;
+  z-index: 1;
+  pointer-events: none;
+  filter: saturate(1.06) contrast(1.03);
+}
+
+.scene3d::after {
+  content: '';
+  position: absolute;
+  inset: 8% 5%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 58% 45%, rgba(201, 255, 95, 0.08), transparent 24%),
+    radial-gradient(circle at 42% 52%, rgba(143, 233, 220, 0.08), transparent 30%);
+  filter: blur(24px);
+  mix-blend-mode: screen;
+}
+
+.scene3d canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.scene3d--fallback {
+  inset: 8%;
+  border: 1px solid var(--border-hair);
+  border-radius: 30px;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(201, 255, 95, 0.14), transparent 28%),
+    linear-gradient(145deg, rgba(143, 233, 220, 0.05), transparent);
+}
+
+@media (max-width: 760px) {
+  .scene3d {
+    inset: -4% -16% -8%;
+    opacity: 0.9;
+  }
+}

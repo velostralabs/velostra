@@ -1,7 +1,8 @@
-# Velostra logo kit
+# Velostra Crystal V logo kit
 
-Editable source assets for polishing the Velostra identity. The geometry matches
-the `BrandMark` component and favicon currently used by the product.
+Editable source assets for the Crystal V identity used by the Velostra product.
+The two faceted wings express velocity and verified execution, while their shared
+settlement point represents one correlated financial outcome.
 
 ## Files
 
@@ -11,20 +12,27 @@ the `BrandMark` component and favicon currently used by the product.
 | `velostra-mark-dark-tile.svg` | App icon and avatar presentation on the canonical dark tile. |
 | `velostra-mark-mono-light.svg` | One-color treatment for dark surfaces. |
 | `velostra-mark-mono-dark.svg` | One-color treatment for white or light surfaces. |
-| `velostra-lockup-horizontal.svg` | Mark plus editable lowercase wordmark. |
+| `velostra-lockup-horizontal.svg` | Crystal V plus editable lowercase wordmark. |
 | `exports/*.png` | Transparent and ready-to-preview raster exports. |
+| `velostra-logo-kit.zip` | Portable bundle containing the complete public kit. |
+
+## Construction
+
+- `crystal-wings` defines the recognizable V silhouette.
+- `crystal-facets` creates precision, transparency, and technical depth.
+- `facet-ridges` preserves definition from hero scale down to the navigation mark.
+- `settlement-glow` marks the final correlated state.
+- Keep the center separation visible; it is part of the identity, not a gap to close.
 
 ## Editing notes
 
 - Open the master SVG in Figma, Illustrator, Affinity Designer, or Inkscape.
-- The major construction pieces are named `facet-shell`, `v-monogram`,
-  `center-cut`, `edge-highlight`, and `settlement-node`.
 - Toggle `safe-area-guides` only while editing; keep it hidden for export.
-- The horizontal wordmark remains editable text and uses **Space Grotesk 600**.
-- Canonical dark surface: `#070A0E`.
-- Signal green: `#C9FF5F`.
-- Gradient: `#F5F7EE` → `#DCEBAA` → `#9EDB42`.
+- The horizontal wordmark remains editable text and uses **Space Grotesk 500**.
+- Canonical dark surface: `#06090B`.
+- Primary green: `#C4FF63`.
+- Secondary green: `#A8F44A`.
+- Highlight: `#F5F6EC`.
 
-For replacements, keep the 64 × 64 mark viewBox so the React component,
-favicon, navigation, proof animation, and loading transition can consume the
-same geometry without per-surface alignment fixes.
+Keep the 64 × 64 viewBox when replacing the React component, favicon, navigation,
+proof animation, loading transition, or app icon so every surface stays aligned.

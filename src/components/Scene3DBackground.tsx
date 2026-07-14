@@ -10,6 +10,61 @@ type MotionInput = MutableRefObject<{
   scroll: number
   reduced: boolean
 }>
+type CrystalFacet = {
+  color: string
+  opacity: number
+  shape: THREE.Shape
+}
+
+const makeShape = (points: Array<[number, number]>) => {
+  const shape = new THREE.Shape()
+  points.forEach(([x, y], index) => index === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y))
+  shape.closePath()
+  return shape
+}
+
+const leftCrystalWing = makeShape([[-1.75, 2.1], [-0.48, 0.92], [-0.1, -0.3], [-0.1, -2.05], [-0.85, -1.15], [-1.45, 0.18]])
+const rightCrystalWing = makeShape([[1.75, 2.1], [0.48, 0.92], [0.1, -0.3], [0.1, -2.05], [0.85, -1.15], [1.45, 0.18]])
+const leftCrystalFacets: CrystalFacet[] = [
+  { shape: makeShape([[-1.75, 2.1], [-0.48, 0.92], [-1.25, 1.16]]), color: '#f0ffad', opacity: 0.46 },
+  { shape: makeShape([[-0.48, 0.92], [-0.1, -0.3], [-0.82, 0.31]]), color: '#d8ff79', opacity: 0.38 },
+  { shape: makeShape([[-0.82, 0.31], [-0.1, -0.3], [-0.1, -2.05], [-0.85, -1.15]]), color: '#173b04', opacity: 0.46 },
+]
+const rightCrystalFacets: CrystalFacet[] = [
+  { shape: makeShape([[1.75, 2.1], [0.48, 0.92], [1.25, 1.16]]), color: '#f5ffc0', opacity: 0.52 },
+  { shape: makeShape([[0.48, 0.92], [0.1, -0.3], [0.82, 0.31]]), color: '#e1ff84', opacity: 0.4 },
+  { shape: makeShape([[0.82, 0.31], [0.1, -0.3], [0.1, -2.05], [0.85, -1.15]]), color: '#214605', opacity: 0.42 },
+]
+
+function CrystalWing({ shape, facets, color }: { shape: THREE.Shape; facets: CrystalFacet[]; color: string }) {
+  return (
+    <group>
+      <mesh>
+        <extrudeGeometry args={[shape, { depth: 0.34, bevelEnabled: true, bevelSegments: 1, steps: 1, bevelSize: 0.035, bevelThickness: 0.045 }]} />
+        <meshPhysicalMaterial color={color} metalness={0.34} roughness={0.16} clearcoat={1} clearcoatRoughness={0.1} />
+      </mesh>
+      {facets.map((facet, index) => (
+        <mesh key={index} position={[0, 0, 0.39]}>
+          <shapeGeometry args={[facet.shape]} />
+          <meshBasicMaterial color={facet.color} transparent opacity={facet.opacity} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function CrystalV() {
+  return (
+    <group scale={0.9}>
+      <CrystalWing shape={leftCrystalWing} facets={leftCrystalFacets} color="#98d92c" />
+      <CrystalWing shape={rightCrystalWing} facets={rightCrystalFacets} color="#bdf34c" />
+      <mesh position={[0, -2.16, 0.08]} scale={[1.5, 0.12, 1]} rotation={[0, 0, Math.PI / 2]}>
+        <circleGeometry args={[0.42, 48]} />
+        <meshBasicMaterial color="#c9ff5f" transparent opacity={0.2} />
+      </mesh>
+    </group>
+  )
+}
 
 function DataModule({
   position,
@@ -115,47 +170,7 @@ function ExecutionArtifact({ input }: { input: MotionInput }) {
       </RoundedBox>
 
       <group ref={core} position={[0, 0.05, 0.77]}>
-        <RoundedBox
-          args={[0.5, 2.75, 0.3]}
-          radius={0.12}
-          smoothness={3}
-          position={[-0.53, 0.18, 0]}
-          rotation={[0, 0, 0.42]}
-        >
-          <meshStandardMaterial
-            color="#c9ff5f"
-            emissive="#8ecb36"
-            emissiveIntensity={1.25}
-            metalness={0.25}
-            roughness={0.17}
-          />
-        </RoundedBox>
-        <RoundedBox
-          args={[0.5, 2.75, 0.3]}
-          radius={0.12}
-          smoothness={3}
-          position={[0.53, 0.18, 0]}
-          rotation={[0, 0, -0.42]}
-        >
-          <meshStandardMaterial
-            color="#8fe9dc"
-            emissive="#3f8f86"
-            emissiveIntensity={1.1}
-            metalness={0.25}
-            roughness={0.17}
-          />
-        </RoundedBox>
-        <mesh position={[0, -1.03, 0.03]} rotation={[0, 0, Math.PI / 4]}>
-          <octahedronGeometry args={[0.39, 0]} />
-          <meshPhysicalMaterial
-            color="#efffd0"
-            emissive="#c9ff5f"
-            emissiveIntensity={0.65}
-            metalness={0.38}
-            roughness={0.08}
-            clearcoat={1}
-          />
-        </mesh>
+        <CrystalV />
       </group>
 
       <mesh ref={scan} position={[0, -1.5, 0.62]}>

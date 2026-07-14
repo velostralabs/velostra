@@ -5,24 +5,26 @@
   color: var(--signal);
 }
 
-.brand-mark__facet {
-  fill: rgba(201, 255, 95, 0.035);
-  stroke: rgba(235, 241, 229, 0.16);
-  stroke-width: 1;
+.brand-mark__wing {
+  stroke: rgba(239, 255, 201, 0.72);
+  stroke-linejoin: round;
+  stroke-width: 0.62;
 }
 
-.brand-mark__cut {
-  fill: #090c10;
-}
+.brand-mark__facet--light { fill: rgba(245, 255, 206, 0.28); }
+.brand-mark__facet--mid { fill: rgba(48, 91, 4, 0.24); }
+.brand-mark__facet--shadow { fill: rgba(4, 10, 2, 0.34); }
 
-.brand-mark__edge {
+.brand-mark__ridge {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.42);
+  stroke: rgba(248, 255, 224, 0.74);
   stroke-linecap: round;
-  stroke-width: 0.7;
+  stroke-linejoin: round;
+  stroke-width: 0.62;
 }
 
-.brand-mark__node {
+.brand-mark__glow {
   fill: var(--signal);
-  filter: drop-shadow(0 0 4px rgba(201, 255, 95, 0.72));
+  opacity: 0.34;
+  filter: blur(0.8px) drop-shadow(0 0 3px rgba(201, 255, 95, 0.64));
 }

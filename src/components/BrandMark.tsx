@@ -7,7 +7,9 @@ type BrandMarkProps = {
 }
 
 export default function BrandMark({ className = '', title }: BrandMarkProps) {
-  const gradientId = `velostra-mark-${useId().replace(/:/g, '')}`
+  const markId = `velostra-crystal-${useId().replace(/:/g, '')}`
+  const leftGradient = `${markId}-left`
+  const rightGradient = `${markId}-right`
 
   return (
     <svg
@@ -19,18 +21,28 @@ export default function BrandMark({ className = '', title }: BrandMarkProps) {
     >
       {title && <title>{title}</title>}
       <defs>
-        <linearGradient id={gradientId} x1="14" y1="8" x2="49" y2="57" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#F5F7EE" />
-          <stop offset="0.42" stopColor="#DCEBAA" />
-          <stop offset="1" stopColor="#9EDB42" />
+        <linearGradient id={leftGradient} x1="7" y1="7" x2="31" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#DFFF78" />
+          <stop offset="0.48" stopColor="#9EE12F" />
+          <stop offset="1" stopColor="#477A09" />
+        </linearGradient>
+        <linearGradient id={rightGradient} x1="57" y1="7" x2="33" y2="58" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#F0FF9C" />
+          <stop offset="0.46" stopColor="#B9F64B" />
+          <stop offset="1" stopColor="#5E950D" />
         </linearGradient>
       </defs>
 
-      <path className="brand-mark__facet" d="M7 10.5 31.6 3l25.5 7.5L49 35.8 32 61 14.9 35.8 7 10.5Z" />
-      <path fill={`url(#${gradientId})`} d="M12.6 11.8h13.2L32 31.1l6.2-19.3h13.2L38.1 53.2H25.9L12.6 11.8Z" />
-      <path className="brand-mark__cut" d="m25.8 11.8 6.2 19.3 6.2-19.3L32 7.1l-6.2 4.7Z" />
-      <path className="brand-mark__edge" d="M14.8 13.4 27.5 51h9L49.2 13.4" />
-      <rect className="brand-mark__node" x="29.35" y="28.45" width="5.3" height="5.3" rx="1" transform="rotate(45 32 31.1)" />
+      <ellipse className="brand-mark__glow" cx="32" cy="59.4" rx="13" ry="1.35" />
+      <path className="brand-mark__wing" fill={`url(#${leftGradient})`} d="M6.5 6.5 24.4 21.2 30.8 36.2 30.8 58 20.5 47.2 12.7 28.7Z" />
+      <path className="brand-mark__wing" fill={`url(#${rightGradient})`} d="m57.5 6.5-17.9 14.7-6.4 15V58l10.3-10.8 7.8-18.5Z" />
+      <path className="brand-mark__facet brand-mark__facet--light" d="m6.5 6.5 17.9 14.7-7-2.5Z" />
+      <path className="brand-mark__facet brand-mark__facet--mid" d="m24.4 21.2 6.4 15-8.7-6.8Z" />
+      <path className="brand-mark__facet brand-mark__facet--shadow" d="m22.1 29.4 8.7 6.8V58L20.5 47.2Z" />
+      <path className="brand-mark__facet brand-mark__facet--light" d="m57.5 6.5-17.9 14.7 7-2.5Z" />
+      <path className="brand-mark__facet brand-mark__facet--mid" d="m39.6 21.2-6.4 15 8.7-6.8Z" />
+      <path className="brand-mark__facet brand-mark__facet--shadow" d="m41.9 29.4-8.7 6.8V58l10.3-10.8Z" />
+      <path className="brand-mark__ridge" d="M6.5 6.5 22.1 29.4 30.8 58M24.4 21.2l-11.7 7.5 7.8 18.5M57.5 6.5 41.9 29.4 33.2 58M39.6 21.2l11.7 7.5-7.8 18.5" />
     </svg>
   )
 }

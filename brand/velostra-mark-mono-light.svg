@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="title">
-  <title id="title">Velostra monochrome light mark</title>
-  <path d="M7 10.5 31.6 3l25.5 7.5L49 35.8 32 61 14.9 35.8 7 10.5Z" fill="#FFFFFF" fill-opacity="0.035" stroke="#FFFFFF" stroke-opacity="0.24"/>
-  <path d="M12.6 11.8h13.2L32 31.1l6.2-19.3h13.2L38.1 53.2H25.9L12.6 11.8Z" fill="#F5F7EE"/>
-  <path d="m25.8 11.8 6.2 19.3 6.2-19.3L32 7.1l-6.2 4.7Z" fill="#070A0E"/>
-  <path d="M14.8 13.4 27.5 51h9L49.2 13.4" stroke="#FFFFFF" stroke-opacity="0.52" stroke-width="0.7" stroke-linecap="round"/>
-  <rect x="29.35" y="28.45" width="5.3" height="5.3" rx="1" transform="rotate(45 32 31.1)" fill="#F5F7EE"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 64 64" fill="none" role="img" aria-labelledby="title"><title id="title">Velostra Crystal V monochrome light mark</title><g fill="#F5F6EC" stroke="#FFFFFF" stroke-width=".62" stroke-linejoin="round"><path d="M6.5 6.5 24.4 21.2 30.8 36.2 30.8 58 20.5 47.2 12.7 28.7Z"/><path d="m57.5 6.5-17.9 14.7-6.4 15V58l10.3-10.8 7.8-18.5Z"/></g><g fill="#070A0E" fill-opacity=".18"><path d="m22.1 29.4 8.7 6.8V58L20.5 47.2Z"/><path d="m41.9 29.4-8.7 6.8V58l10.3-10.8Z"/></g><path d="M6.5 6.5 22.1 29.4 30.8 58M24.4 21.2l-11.7 7.5 7.8 18.5M57.5 6.5 41.9 29.4 33.2 58M39.6 21.2l11.7 7.5-7.8 18.5" fill="none" stroke="#070A0E" stroke-opacity=".38" stroke-width=".62"/></svg>

@@ -119,7 +119,7 @@ builds are excluded.
 
 ## Run locally
 
-Requirements: Node.js 20+, npm, PostgreSQL 14+, and Redis 7 for the shared auth/
+Requirements: Node.js 22+, npm, PostgreSQL 14+, and Redis 7 for the shared auth/
 rate path.
 
 ```bash

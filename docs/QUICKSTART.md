@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Node.js 20+ and npm;
+- Node.js 22+ and npm;
 - PostgreSQL 14+;
 - Redis 7 for the real shared-nonce/rate-limit path;
 - MetaMask or another EIP-6963/injected wallet only for manual wallet testing.

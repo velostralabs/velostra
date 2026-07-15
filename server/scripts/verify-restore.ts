@@ -25,6 +25,28 @@ if (backupCapturedAt && backupCapturedAt.getTime() > startedAt.getTime()) {
 
 const source = new Client({ connectionString: sourceUrl })
 const restored = new Client({ connectionString: restoredUrl })
+const expectedPublicTables = [
+  'admin_audit_logs',
+  'admin_role_assignments',
+  'agent_calls',
+  'agent_tags',
+  'agents',
+  'builder_earnings',
+  'builders',
+  'chain_events',
+  'chain_sync_state',
+  'credit_balances',
+  'earnings_claims',
+  'operational_alerts',
+  'operational_heartbeats',
+  'platform_stats',
+  'release_canary_admissions',
+  'reports',
+  'reviews',
+  'settlement_attempts',
+  'transactions',
+  'users',
+]
 await Promise.all([source.connect(), restored.connect()])
 
 async function rows(client: pg.Client, query: string, params: unknown[] = []) {
@@ -112,8 +134,8 @@ async function snapshot(client: pg.Client) {
 try {
   const [before, after] = await Promise.all([snapshot(source), snapshot(restored)])
   assert.deepEqual(after, before)
-  assert.equal(after.tables.length, 19)
-  assert(after.migrations.length >= 7)
+  assert.deepEqual(after.tables, expectedPublicTables)
+  assert(after.migrations.length >= 8)
   assert(
     after.constraints.some((row) => row.conname === 'credit_reservation_within_balance')
   )

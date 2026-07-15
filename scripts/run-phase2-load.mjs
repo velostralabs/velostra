@@ -42,8 +42,11 @@ const sessionCookie = required('PHASE2_SESSION_COOKIE')
 const agentSlug = required('PHASE2_AGENT_SLUG')
 const requests = positiveInteger('PHASE2_LOAD_REQUESTS', 100, 10_000)
 const concurrency = positiveInteger('PHASE2_LOAD_CONCURRENCY', 10, 50)
+const requestTimeoutMs = positiveInteger('PHASE2_LOAD_REQUEST_TIMEOUT_MS', 45_000, 120_000)
 
-const healthResponse = await fetch(new URL('/health', baseUrl))
+const healthResponse = await fetch(new URL('/health', baseUrl), {
+  signal: AbortSignal.timeout(requestTimeoutMs),
+})
 const health = await healthResponse.json()
 if (!healthResponse.ok || health.environment !== expectedEnvironment) {
   throw new Error(
@@ -66,6 +69,7 @@ async function worker() {
     try {
       const response = await fetch(new URL(`/api/agents/${encodeURIComponent(agentSlug)}/run`, baseUrl), {
         method: 'POST',
+        signal: AbortSignal.timeout(requestTimeoutMs),
         headers: {
           'content-type': 'application/json',
           cookie: sessionCookie,

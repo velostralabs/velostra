@@ -29,7 +29,7 @@ jobs:
       - run: npm run build
 
   server:
-    name: API build and auth crypto
+    name: API security and unit gates
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -44,7 +44,14 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
+      - run: npm run db:check
+      - run: npm run test:config
       - run: npm run test:auth
+      - run: npm run test:ssrf
+      - run: npm run test:http-security
+      - run: npm run test:secrets
+      - run: npm run test:admin-policy
+      - run: npm run test:money-unit
 
   contract:
     name: Contract local-EVM suite
@@ -93,5 +100,21 @@ jobs:
             contracts/package-lock.json
       - run: npm ci --prefix server
       - run: npm ci --prefix contracts
-      - run: npm --prefix server run db:push -- --force
+      - run: npm --prefix server run db:migrate
+      - run: npm --prefix server run test:migrations
       - run: npm --prefix server run test:money
+      - name: Dump migrated source database
+        run: >-
+          docker run --rm --network host -e PGPASSWORD=velostra
+          -v "${{ runner.temp }}:/backup" postgres:16
+          pg_dump -h 127.0.0.1 -U postgres -d velostra_test
+          --format=custom --file=/backup/velostra.dump
+      - name: Restore into a clean database
+        run: |
+          docker run --rm --network host -e PGPASSWORD=velostra postgres:16 createdb -h 127.0.0.1 -U postgres velostra_restore
+          docker run --rm --network host -e PGPASSWORD=velostra -v "${{ runner.temp }}:/backup" postgres:16 pg_restore -h 127.0.0.1 -U postgres -d velostra_restore --no-owner --no-privileges /backup/velostra.dump
+      - name: Verify restored data and invariants
+        env:
+          SOURCE_DATABASE_URL: postgresql://postgres:velostra@127.0.0.1:5432/velostra_test
+          RESTORED_DATABASE_URL: postgresql://postgres:velostra@127.0.0.1:5432/velostra_restore
+        run: npm --prefix server run restore:verify

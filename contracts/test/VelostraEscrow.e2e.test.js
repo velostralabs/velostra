@@ -213,6 +213,10 @@ async function main() {
   assert((await escrow.totalBuilderLiability()) === 1_650_000n, 'builder liability reflects claims and rotated settlement')
 
   console.log('\n--- TEST 9: Migration declaration creates a claims-only predecessor ---')
+  await assertReverts(
+    () => escrow.connect(treasury).migrateAvailableLiquidity(),
+    'liquidity cannot migrate before governance declares a successor'
+  )
   await (await escrow.connect(guardian).pause()).wait()
   await (await escrow.connect(admin).declareSuccessorEscrow(successorAddress)).wait()
   assert((await escrow.successorEscrow()) === ethers.getAddress(successorAddress), 'paused governance declares one successor escrow')
@@ -230,6 +234,19 @@ async function main() {
     () => escrow.connect(replacementSettler).creditBuilderEarnings(builderAddress, 1_000_000n, deprecatedCallId),
     'successor declaration permanently blocks new settlement even after unpause'
   )
+  await assertReverts(
+    () => escrow.connect(replacementSettler).migrateAvailableLiquidity(),
+    'settler cannot migrate unencumbered liquidity'
+  )
+  await (await escrow.connect(treasury).migrateAvailableLiquidity()).wait()
+  assert((await usd.balanceOf(successorAddress)) === 47_000_000n, 'treasury migrates exactly the unencumbered liquidity to the successor')
+  assert((await usd.balanceOf(escrowAddress)) === 1_800_000n, 'predecessor retains exact backing for every outstanding liability')
+  assert((await escrow.availableEscrowLiquidity()) === 0n, 'no migratable liquidity remains after migration')
+  await assertReverts(
+    () => escrow.connect(treasury).migrateAvailableLiquidity(),
+    'empty liquidity migration fails closed'
+  )
+  assert(await escrow.isSolvent(), 'liquidity migration cannot undercollateralize predecessor liabilities')
 
   await (await escrow.connect(builder).claimEarnings(1_650_000n)).wait()
   await (await escrow.connect(treasury).withdrawPlatformRevenue(platformSinkAddress, 150_000n)).wait()

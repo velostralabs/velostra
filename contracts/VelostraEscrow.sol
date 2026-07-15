@@ -64,6 +64,7 @@ contract VelostraEscrow is AccessControlDefaultAdminRules, Pausable, ReentrancyG
     event PlatformRevenueWithdrawn(address indexed to, uint256 amount);
     event PlatformFeeUpdated(uint16 previousFeeBps, uint16 newFeeBps);
     event SuccessorEscrowDeclared(address indexed successor);
+    event AvailableLiquidityMigrated(address indexed successor, uint256 amount);
 
     error AmountTooLow();
     error InvalidAmount();
@@ -79,6 +80,8 @@ contract VelostraEscrow is AccessControlDefaultAdminRules, Pausable, ReentrancyG
     error UnsupportedTokenDecimals(uint8 actual);
     error UnsupportedTokenBehavior();
     error SuccessorAlreadyDeclared();
+    error SuccessorNotDeclared();
+    error NoAvailableLiquidity();
     error ContractDeprecated();
 
     modifier whenActive() {
@@ -222,6 +225,21 @@ contract VelostraEscrow is AccessControlDefaultAdminRules, Pausable, ReentrancyG
         if (successorEscrow != address(0)) revert SuccessorAlreadyDeclared();
         successorEscrow = successor;
         emit SuccessorEscrowDeclared(successor);
+    }
+
+    /// @notice Moves only unencumbered liquidity to the declared successor.
+    ///         Builder and platform liabilities always remain fully backed here.
+    function migrateAvailableLiquidity() external onlyRole(TREASURY_ROLE) nonReentrant {
+        address successor = successorEscrow;
+        if (successor == address(0)) revert SuccessorNotDeclared();
+
+        uint256 balance = settlementToken.balanceOf(address(this));
+        uint256 liabilities = totalLiabilities();
+        uint256 amount = balance > liabilities ? balance - liabilities : 0;
+        if (amount == 0) revert NoAvailableLiquidity();
+
+        settlementToken.safeTransfer(successor, amount);
+        emit AvailableLiquidityMigrated(successor, amount);
     }
 
     function totalLiabilities() public view returns (uint256) {

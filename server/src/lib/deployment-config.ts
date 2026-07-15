@@ -98,12 +98,15 @@ function assertCommon(): void {
   if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(environment)) {
     throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase identifier')
   }
-  if (environment === 'production' && process.env.PHASE2_ALLOW_MAINNET !== 'explicitly-approved') {
-    throw new Error('Phase 2 blocks production environment startup without explicit release approval')
+  const mainnetLike = environment === 'production' || /(^|-)mainnet($|-)/.test(environment)
+  if (mainnetLike && process.env.PHASE2_ALLOW_MAINNET !== 'explicitly-approved') {
+    throw new Error(
+      'Phase 2 blocks production/mainnet environment startup without explicit release approval'
+    )
   }
   const release = required('VELOSTRA_RELEASE')
-  if (release.length < 7 || release.length > 128 || /\s/.test(release)) {
-    throw new Error('Production VELOSTRA_RELEASE must identify an immutable build')
+  if (!/^[0-9a-f]{40}$/i.test(release)) {
+    throw new Error('Production VELOSTRA_RELEASE must be a full 40-character commit SHA')
   }
 }
 

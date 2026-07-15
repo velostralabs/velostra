@@ -6,7 +6,7 @@ const validProductionEnv: Record<string, string> = {
   VELOSTRA_PROCESS_ROLE: 'api',
   VELOSTRA_SECRET_PROVIDER: 'managed-injection',
   VELOSTRA_ENVIRONMENT: 'staging',
-  VELOSTRA_RELEASE: '1aab94d',
+  VELOSTRA_RELEASE: '1aab94d23740c139fd4f28cee370d002bde7e3d4',
   METRICS_AUTH_TOKEN: 'm'.repeat(32),
   OBSERVABILITY_INTERVAL_MS: '15000',
   READINESS_REQUIRE_WORKER: 'true',
@@ -106,6 +106,7 @@ try {
   rejects({ ROBINHOOD_RPC_FALLBACK_URLS: 'https://rpc-ok.internal,http://rpc-unsafe.internal' }, /ROBINHOOD_RPC_FALLBACK_URLS/)
   rejects({ VELOSTRA_ENVIRONMENT: 'Invalid Environment' }, /VELOSTRA_ENVIRONMENT/)
   rejects({ VELOSTRA_RELEASE: 'dev' }, /VELOSTRA_RELEASE/)
+  rejects({ VELOSTRA_RELEASE: '1aab94d' }, /40-character commit SHA/)
   rejects({ METRICS_AUTH_TOKEN: 'weak' }, /METRICS_AUTH_TOKEN/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_URL: 'http://alerts.internal' }, /ALERT_WEBHOOK_URL/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_TOKEN: 'weak' }, /ALERT_WEBHOOK_TOKEN/)
@@ -113,7 +114,9 @@ try {
   rejects({ READINESS_REQUIRE_WORKER: 'false' }, /READINESS_REQUIRE_WORKER/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_REQUIRE_BACKUP_HEARTBEAT: 'false' }, /ALERT_REQUIRE_BACKUP_HEARTBEAT/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_SIGNER_MIN_BALANCE_WEI: '-1' }, /ALERT_SIGNER_MIN_BALANCE_WEI/)
-  rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 2 blocks production/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 2 blocks production\/mainnet/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'mainnet' }, /Phase 2 blocks production\/mainnet/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'robinhood-mainnet' }, /Phase 2 blocks production\/mainnet/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'unknown' }, /VELOSTRA_PROCESS_ROLE/)
 
   configure({

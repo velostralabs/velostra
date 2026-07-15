@@ -93,7 +93,7 @@ agentsRouter.get('/', async (req, res) => {
 
 agentsRouter.get('/:slug', async (req, res) => {
   const [agent] = await db.select().from(agents).where(eq(agents.slug, req.params.slug)).limit(1)
-  if (!agent || agent.status !== 'APPROVED') return res.status(404).json({ error: 'Agent not found' })
+  if (!agent || agent.status !== 'APPROVED') return res.status(404).json({ error: 'Agent not found', code: 'AGENT_NOT_FOUND' })
 
   const [builder] = await db.select().from(builders).where(eq(builders.id, agent.builder_id)).limit(1)
   const tags = await db.select().from(agentTags).where(eq(agentTags.agent_id, agent.id))
@@ -440,10 +440,10 @@ const reviewSchema = z.object({ rating: z.number().min(1).max(5), comment: z.str
 
 agentsRouter.post('/:slug/review', requireAuth, async (req, res) => {
   const parsed = reviewSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: 'rating (1-5) is required' })
+  if (!parsed.success) return res.status(400).json({ error: 'rating (1-5) is required', code: 'INVALID_REVIEW' })
 
   const [agent] = await db.select().from(agents).where(eq(agents.slug, req.params.slug)).limit(1)
-  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+  if (!agent) return res.status(404).json({ error: 'Agent not found', code: 'AGENT_NOT_FOUND' })
 
   const [review] = await db
     .insert(reviews)

@@ -55,10 +55,10 @@ const registerSchema = z.object({
 
 builderRouter.post('/register', requireAuth, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' })
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input', code: 'INVALID_BUILDER_INPUT' })
 
   const [existing] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
-  if (existing) return res.status(409).json({ error: 'Already registered as a builder' })
+  if (existing) return res.status(409).json({ error: 'Already registered as a builder', code: 'BUILDER_ALREADY_REGISTERED' })
 
   const builder = await db.transaction(async (tx) => {
     const [created] = await tx
@@ -133,10 +133,10 @@ const submitSchema = z.object({
 
 builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
   const parsed = submitSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' })
+  if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message ?? 'Invalid input', code: 'INVALID_BUILDER_INPUT' })
 
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
-  if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+  if (!builder) return res.status(403).json({ error: 'Builder profile not found', code: 'BUILDER_NOT_FOUND' })
 
   try {
     await validateAgentEndpoint(parsed.data.endpoint_url)
@@ -151,7 +151,7 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
   try {
     pricePerCall = money(parsed.data.price_per_call)
   } catch (error) {
-    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid price' })
+    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid price', code: 'INVALID_AGENT_PRICE' })
   }
   const slug = `${parsed.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nanoid(6)}`
   const secretKey = generateAgentSecret()
@@ -192,7 +192,7 @@ builderRouter.post('/agents/:id/secret/rotate', requireAuth, requireBuilder, asy
     .from(builders)
     .where(eq(builders.user_id, req.auth!.id))
     .limit(1)
-  if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+  if (!builder) return res.status(403).json({ error: 'Builder profile not found', code: 'BUILDER_NOT_FOUND' })
 
   const secretKey = generateAgentSecret()
   const [agent] = await db
@@ -206,7 +206,7 @@ builderRouter.post('/agents/:id/secret/rotate', requireAuth, requireBuilder, asy
     })
     .where(and(eq(agents.id, req.params.id), eq(agents.builder_id, builder.id)))
     .returning()
-  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+  if (!agent) return res.status(404).json({ error: 'Agent not found', code: 'AGENT_NOT_FOUND' })
 
   res.json({ agent: serializeAgentMoney(agent), secret_key: secretKey })
 })
@@ -221,14 +221,14 @@ builderRouter.post('/agents/:id/secret/revoke', requireAuth, requireBuilder, asy
     .from(builders)
     .where(eq(builders.user_id, req.auth!.id))
     .limit(1)
-  if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+  if (!builder) return res.status(403).json({ error: 'Builder profile not found', code: 'BUILDER_NOT_FOUND' })
 
   const [agent] = await db
     .update(agents)
     .set({ secret_revoked_at: new Date(), updated_at: new Date() })
     .where(and(eq(agents.id, req.params.id), eq(agents.builder_id, builder.id)))
     .returning()
-  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+  if (!agent) return res.status(404).json({ error: 'Agent not found', code: 'AGENT_NOT_FOUND' })
 
   res.json({ agent: serializeAgentMoney(agent), secret_revoked: true })
 })
@@ -239,7 +239,7 @@ builderRouter.post('/agents/:id/secret/revoke', requireAuth, requireBuilder, asy
 
 builderRouter.get('/earnings', requireAuth, requireBuilder, async (req, res) => {
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
-  if (!builder) return res.status(404).json({ error: 'Builder profile not found' })
+  if (!builder) return res.status(404).json({ error: 'Builder profile not found', code: 'BUILDER_NOT_FOUND' })
 
   const [earnings] = await db.select().from(builderEarnings).where(eq(builderEarnings.builder_id, builder.id)).limit(1)
   const claims = await db
@@ -276,17 +276,17 @@ const claimSchema = z.object({
 builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
   const parsed = claimSchema.safeParse(req.body)
   if (!parsed.success) {
-    return res.status(400).json({ error: 'amount and a valid transaction hash are required' })
+    return res.status(400).json({ error: 'amount and a valid transaction hash are required', code: 'INVALID_CLAIM_INPUT' })
   }
 
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
-  if (!builder) return res.status(404).json({ error: 'Builder profile not found' })
+  if (!builder) return res.status(404).json({ error: 'Builder profile not found', code: 'BUILDER_NOT_FOUND' })
 
   let claimAmount: ReturnType<typeof money>
   try {
     claimAmount = money(parsed.data.amount)
   } catch (error) {
-    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid amount' })
+    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid amount', code: 'INVALID_CLAIM_AMOUNT' })
   }
   const hash = parsed.data.tx_hash as `0x${string}`
   const [replayed] = await db
@@ -294,7 +294,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
     .from(earningsClaims)
     .where(eq(earningsClaims.tx_hash, hash))
     .limit(1)
-  if (replayed) return res.status(409).json({ error: 'Transaction hash has already been reconciled' })
+  if (replayed) return res.status(409).json({ error: 'Transaction hash has already been reconciled', code: 'CLAIM_REPLAYED' })
 
   let claimBlockNumber: bigint | undefined
   try {
@@ -307,7 +307,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
   } catch (error) {
     const message =
       error instanceof OnchainVerificationError ? error.message : 'Unable to verify claim onchain'
-    return res.status(400).json({ error: message })
+    return res.status(400).json({ error: message, code: 'CLAIM_VERIFICATION_FAILED' })
   }
 
   try {
@@ -372,12 +372,12 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
     })
   } catch (error) {
     if (error instanceof Error && error.name === 'InsufficientEarningsError') {
-      return res.status(400).json({ error: error.message })
+      return res.status(400).json({ error: error.message, code: 'INSUFFICIENT_EARNINGS' })
     }
     const code =
       typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
     if ((error instanceof Error && error.name === 'ReplayError') || code === '23505') {
-      return res.status(409).json({ error: 'Transaction hash has already been reconciled' })
+      return res.status(409).json({ error: 'Transaction hash has already been reconciled', code: 'CLAIM_REPLAYED' })
     }
     throw error
   }

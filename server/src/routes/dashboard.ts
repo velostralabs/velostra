@@ -18,9 +18,8 @@ export const dashboardRouter = Router()
 
 dashboardRouter.use(requireAuth)
 
-// ─────────────────────────────────────────
-// GET /api/dashboard — summary
-// ─────────────────────────────────────────
+// GET /api/dashboard - summary
+
 
 dashboardRouter.get('/', async (req, res) => {
   const userId = req.auth!.id
@@ -57,9 +56,9 @@ dashboardRouter.get('/', async (req, res) => {
   })
 })
 
-// ─────────────────────────────────────────
-// POST /api/dashboard/topup — record a confirmed onchain deposit
-// ─────────────────────────────────────────
+// POST /api/dashboard/topup - record a confirmed onchain deposit
+
+
 // The user calls `depositCredits(amount)` on VelostraEscrow.sol directly
 // from their wallet. Once that transaction confirms on Robinhood Chain,
 // the client reports the tx_hash + amount here to keep the off-chain
@@ -73,12 +72,12 @@ const topupSchema = z.object({
 
 dashboardRouter.post('/topup', async (req, res) => {
   const parsed = topupSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}` })
+  if (!parsed.success) return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}`, code: 'INVALID_TOPUP_AMOUNT' })
 
   const userId = req.auth!.id
   const amount = money(parsed.data.amount_usd)
   if (compareMoney(amount, MIN_TOPUP_USD) < 0) {
-    return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}` })
+    return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}`, code: 'INVALID_TOPUP_AMOUNT' })
   }
   const hash = parsed.data.tx_hash as `0x${string}`
 
@@ -87,7 +86,7 @@ dashboardRouter.post('/topup', async (req, res) => {
     .from(transactions)
     .where(eq(transactions.tx_hash, hash))
     .limit(1)
-  if (replayed) return res.status(409).json({ error: 'Transaction hash has already been credited' })
+  if (replayed) return res.status(409).json({ error: 'Transaction hash has already been credited', code: 'TOPUP_REPLAYED' })
 
   let depositBlockNumber: bigint | undefined
   try {
@@ -100,7 +99,7 @@ dashboardRouter.post('/topup', async (req, res) => {
   } catch (error) {
     const message =
       error instanceof OnchainVerificationError ? error.message : 'Unable to verify deposit onchain'
-    return res.status(400).json({ error: message })
+    return res.status(400).json({ error: message, code: 'TOPUP_VERIFICATION_FAILED' })
   }
 
   try {
@@ -151,7 +150,7 @@ dashboardRouter.post('/topup', async (req, res) => {
     const code =
       typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''
     if ((error instanceof Error && error.name === 'ReplayError') || code === '23505') {
-      return res.status(409).json({ error: 'Transaction hash has already been credited' })
+      return res.status(409).json({ error: 'Transaction hash has already been credited', code: 'TOPUP_REPLAYED' })
     }
     throw error
   }

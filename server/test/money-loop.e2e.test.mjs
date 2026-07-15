@@ -239,6 +239,8 @@ async function main() {
       JWT_SECRET: 'money-loop-test-secret',
       ADMIN_WALLET: admin.address,
       GATEWAY_HMAC_SECRET: 'unused-in-this-flow',
+      AGENT_SECRET_ENCRYPTION_KEY: '11'.repeat(32),
+      AGENT_SECRET_ENCRYPTION_KEY_ID: 'test',
       REDIS_URL: 'redis://127.0.0.1:6399',
       REDIS_FAILURE_MODE: 'open',
       VELOSTRA_ESCROW_ADDRESS: escrowAddress,

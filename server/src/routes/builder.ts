@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { nanoid } from 'nanoid'
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
 import { builders, builderEarnings, agents, agentTags, earningsClaims } from '../db/schema.js'
 import { requireAuth, requireBuilder } from '../middleware/auth.js'
@@ -9,6 +9,11 @@ import { AGENT_CATEGORIES, MIN_PRICE_PER_CALL, priceTierFor } from '../lib/const
 import { signJWT } from '../lib/auth.js'
 import { authCookieOptions } from '../lib/config.js'
 import { EndpointSecurityError, validateAgentEndpoint } from '../lib/gateway/ssrf.js'
+import {
+  encryptAgentSecret,
+  generateAgentSecret,
+  omitAgentSecret,
+} from '../lib/gateway/secrets.js'
 import {
   getVelostraEscrowAddress,
   OnchainVerificationError,
@@ -61,6 +66,7 @@ builderRouter.post('/register', requireAuth, async (req, res) => {
     display_name: req.auth!.display_name,
     is_builder: true,
     is_admin: req.auth!.is_admin,
+    admin_roles: req.auth!.admin_roles,
   })
 
   res
@@ -83,7 +89,13 @@ builderRouter.get('/me', requireAuth, requireBuilder, async (req, res) => {
     .where(eq(agents.builder_id, builder.id))
     .orderBy(desc(agents.created_at))
 
-  res.json({ builder: { ...builder, earnings: earnings ?? null, agents: builderAgents } })
+  res.json({
+    builder: {
+      ...builder,
+      earnings: earnings ?? null,
+      agents: builderAgents.map(omitAgentSecret),
+    },
+  })
 })
 
 // ─────────────────────────────────────────
@@ -118,7 +130,8 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
   }
 
   const slug = `${parsed.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nanoid(6)}`
-  const secretKey = nanoid(32)
+  const secretKey = generateAgentSecret()
+  const encryptedSecret = encryptAgentSecret(secretKey)
 
   const [agent] = await db
     .insert(agents)
@@ -130,7 +143,7 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
       long_description: parsed.data.long_description,
       category: parsed.data.category,
       endpoint_url: parsed.data.endpoint_url,
-      secret_key: secretKey,
+      secret_key_ciphertext: encryptedSecret,
       price_per_call: parsed.data.price_per_call,
       price_tier: priceTierFor(parsed.data.price_per_call),
       logo_url: parsed.data.logo_url,
@@ -142,7 +155,58 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
     await db.insert(agentTags).values(parsed.data.tags.map((tag) => ({ agent_id: agent.id, tag })))
   }
 
-  res.json({ agent, secret_key: secretKey })
+  res.json({ agent: omitAgentSecret(agent), secret_key: secretKey })
+})
+
+// ─────────────────────────────────────────
+// POST /api/builder/agents/:id/secret/rotate
+// ─────────────────────────────────────────
+
+builderRouter.post('/agents/:id/secret/rotate', requireAuth, requireBuilder, async (req, res) => {
+  const [builder] = await db
+    .select({ id: builders.id })
+    .from(builders)
+    .where(eq(builders.user_id, req.auth!.id))
+    .limit(1)
+  if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+
+  const secretKey = generateAgentSecret()
+  const [agent] = await db
+    .update(agents)
+    .set({
+      secret_key_ciphertext: encryptAgentSecret(secretKey),
+      secret_version: sql`${agents.secret_version} + 1`,
+      secret_rotated_at: new Date(),
+      secret_revoked_at: null,
+      updated_at: new Date(),
+    })
+    .where(and(eq(agents.id, req.params.id), eq(agents.builder_id, builder.id)))
+    .returning()
+  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+
+  res.json({ agent: omitAgentSecret(agent), secret_key: secretKey })
+})
+
+// ─────────────────────────────────────────
+// POST /api/builder/agents/:id/secret/revoke
+// ─────────────────────────────────────────
+
+builderRouter.post('/agents/:id/secret/revoke', requireAuth, requireBuilder, async (req, res) => {
+  const [builder] = await db
+    .select({ id: builders.id })
+    .from(builders)
+    .where(eq(builders.user_id, req.auth!.id))
+    .limit(1)
+  if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+
+  const [agent] = await db
+    .update(agents)
+    .set({ secret_revoked_at: new Date(), updated_at: new Date() })
+    .where(and(eq(agents.id, req.params.id), eq(agents.builder_id, builder.id)))
+    .returning()
+  if (!agent) return res.status(404).json({ error: 'Agent not found' })
+
+  res.json({ agent: omitAgentSecret(agent), secret_revoked: true })
 })
 
 // ─────────────────────────────────────────

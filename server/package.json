@@ -31,8 +31,11 @@
     "test:auth": "tsx test/auth.e2e.test.ts",
     "test:ssrf": "tsx test/ssrf.e2e.test.ts",
     "test:http-security": "tsx test/http-security.e2e.test.ts",
+    "test:secrets": "tsx test/secrets.e2e.test.ts",
+    "test:admin-policy": "tsx test/admin-policy.test.ts",
     "test:platform": "tsx test/platform.e2e.test.mjs",
     "test:money": "npm --prefix ../contracts run build && tsx test/money-loop.e2e.test.mjs",
+    "secrets:reencrypt": "tsx scripts/reencrypt-agent-secrets.ts",
     "reconcile": "tsx src/jobs/reconcile.ts --once",
     "reconcile:worker": "tsx src/jobs/reconcile.ts --watch"
   },

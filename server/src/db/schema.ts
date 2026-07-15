@@ -58,6 +58,13 @@ export const chainEventTypeEnum = pgEnum('chain_event_type', [
   'CLAIMED',
   'PLATFORM_REVENUE_WITHDRAWN',
 ])
+export const adminRoleEnum = pgEnum('admin_role', [
+  'SUPER_ADMIN',
+  'AGENT_REVIEWER',
+  'REPORT_MODERATOR',
+  'FINANCE_VIEWER',
+  'AUDITOR',
+])
 
 const id = () => text('id').primaryKey().$defaultFn(() => createId())
 
@@ -74,6 +81,43 @@ export const users = pgTable('users', {
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 })
+
+export const adminRoleAssignments = pgTable(
+  'admin_role_assignments',
+  {
+    id: id(),
+    user_id: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    role: adminRoleEnum('role').notNull(),
+    granted_by: text('granted_by').references(() => users.id, { onDelete: 'set null' }),
+    granted_at: timestamp('granted_at').notNull().defaultNow(),
+    revoked_at: timestamp('revoked_at'),
+  },
+  (table) => [
+    uniqueIndex('admin_role_user_role_unique').on(table.user_id, table.role),
+    index('admin_role_active_user_idx').on(table.user_id, table.revoked_at),
+  ]
+)
+
+export const adminAuditLogs = pgTable(
+  'admin_audit_logs',
+  {
+    id: id(),
+    actor_user_id: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    action: text('action').notNull(),
+    target_type: text('target_type').notNull(),
+    target_id: text('target_id'),
+    request_id: text('request_id').notNull(),
+    ip_address: text('ip_address'),
+    metadata: jsonb('metadata').notNull().default({}),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('admin_audit_actor_time_idx').on(table.actor_user_id, table.created_at),
+    index('admin_audit_action_time_idx').on(table.action, table.created_at),
+  ]
+)
 
 // ─────────────────────────────────────────
 // CREDIT BALANCE
@@ -175,7 +219,10 @@ export const agents = pgTable('agents', {
   long_description: text('long_description'),
   category: agentCategoryEnum('category').notNull(),
   endpoint_url: text('endpoint_url').notNull(),
-  secret_key: text('secret_key').notNull(), // HMAC secret, chain-agnostic
+  secret_key_ciphertext: text('secret_key').notNull(),
+  secret_version: integer('secret_version').notNull().default(1),
+  secret_rotated_at: timestamp('secret_rotated_at').notNull().defaultNow(),
+  secret_revoked_at: timestamp('secret_revoked_at'),
   price_per_call: numeric('price_per_call', { precision: 20, scale: 6, mode: 'number' }).notNull(),
   price_tier: priceTierEnum('price_tier').notNull().default('BASIC'),
   logo_url: text('logo_url'),

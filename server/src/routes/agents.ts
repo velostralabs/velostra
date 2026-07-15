@@ -17,6 +17,7 @@ import {
 import { requireAuth } from '../middleware/auth.js'
 import { buildGatewayHeaders } from '../lib/gateway/hmac.js'
 import { AgentEndpointError, safeFetchAgent } from '../lib/gateway/ssrf.js'
+import { decryptAgentSecret, omitAgentSecret } from '../lib/gateway/secrets.js'
 import { checkRateLimit, checkAgentRateLimit, checkGlobalRateLimit } from '../lib/gateway/ratelimit.js'
 import { hasFreeTierRemaining, hasSufficientCredits, incrementFreeTier } from '../lib/gateway/quota.js'
 import { BUILDER_SHARE_BPS, PLATFORM_FEE_BPS } from '../lib/constants.js'
@@ -93,7 +94,7 @@ agentsRouter.get('/:slug', async (req, res) => {
 
   res.json({
     agent: {
-      ...agent,
+      ...omitAgentSecret(agent),
       builder: builder
         ? { display_name: builder.display_name, verified: builder.verified, bio: builder.bio }
         : null,
@@ -148,7 +149,17 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
   const callId = createId()
   const onchainCallId = isFreeTier ? null : hashAgentCallId(callId)
   const body = JSON.stringify({ input: parsed.data.input, user_id: userId, call_id: callId })
-  const headers = buildGatewayHeaders(body, agent.id, agent.secret_key)
+  if (agent.secret_revoked_at) {
+    return res.status(409).json({
+      error: 'Agent gateway secret has been revoked by its builder',
+      code: 'AGENT_SECRET_REVOKED',
+    })
+  }
+  const headers = buildGatewayHeaders(
+    body,
+    agent.id,
+    decryptAgentSecret(agent.secret_key_ciphertext)
+  )
   const platformCut = Number(
     ((agent.price_per_call * PLATFORM_FEE_BPS) / 10_000).toFixed(6)
   )

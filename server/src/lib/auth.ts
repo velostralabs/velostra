@@ -4,6 +4,7 @@ import { verifyMessage, isAddress, getAddress } from 'viem'
 import { nanoid } from 'nanoid'
 import { ensureRedisConnected } from './redis.js'
 import { webOrigins } from './config.js'
+import type { AdminRole } from './admin.js'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'dev-secret-change-me')
 const NONCE_TTL_MS = 5 * 60 * 1000
@@ -15,6 +16,7 @@ export interface AuthPayload {
   display_name?: string
   is_builder: boolean
   is_admin: boolean
+  admin_roles?: AdminRole[]
   [key: string]: unknown
 }
 
@@ -202,16 +204,6 @@ export async function verifyAuth(req: Request): Promise<AuthPayload | null> {
   return verifyJWT(token)
 }
 
-export async function requireAdminAuth(req: Request): Promise<AuthPayload | null> {
-  const auth = await verifyAuth(req)
-  return auth?.is_admin ? auth : null
-}
-
-export async function requireBuilderAuth(req: Request): Promise<AuthPayload | null> {
-  const auth = await verifyAuth(req)
-  return auth?.is_builder ? auth : null
-}
-
 export function generateAuthNonce(walletAddress: string): Promise<{ message: string; nonce: string }> {
   return getAuthNonceService().generate(walletAddress)
 }
@@ -246,15 +238,16 @@ export async function completeWalletLogin(
     .where(eq(builders.user_id, user.id))
     .limit(1)
 
-  const isAdmin = process.env.ADMIN_WALLET
-    ? checksummed.toLowerCase() === process.env.ADMIN_WALLET.toLowerCase()
-    : false
+  const { activeAdminRoles, bootstrapAdminRole } = await import('./admin.js')
+  await bootstrapAdminRole(user.id, checksummed)
+  const adminRoles = await activeAdminRoles(user.id)
   const payload: AuthPayload = {
     id: user.id,
     wallet_address: checksummed,
     display_name: user.display_name ?? undefined,
     is_builder: Boolean(builderProfile),
-    is_admin: isAdmin,
+    is_admin: adminRoles.length > 0,
+    admin_roles: adminRoles,
   }
 
   return { token: await signJWT(payload), user: payload }

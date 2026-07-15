@@ -11,6 +11,7 @@ import {
   transactions,
 } from '../../db/schema.js'
 import { addMoney, compareMoney, money } from '../money.js'
+import { enqueueBuilderWebhook } from '../platform/webhooks.js'
 
 export interface FinalizeSettlementInput {
   callId: string
@@ -82,6 +83,7 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
         id: agentCalls.id,
         agent_id: agentCalls.agent_id,
         user_id: agentCalls.user_id,
+        agent_revision_id: agentCalls.agent_revision_id,
         status: agentCalls.status,
         builder_earned: agentCalls.builder_earned,
         platform_earned: agentCalls.platform_earned,
@@ -243,6 +245,24 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
       .update(releaseCanaryAdmissions)
       .set({ status: 'SETTLED', updated_at: new Date() })
       .where(eq(releaseCanaryAdmissions.agent_call_id, input.callId))
+
+    await enqueueBuilderWebhook(tx, {
+      builderId: callAgent.builder_id,
+      eventType: 'call.settled',
+      aggregateType: 'agent_call',
+      aggregateId: call.id,
+      dedupeKey: `call.settled:${call.id}`,
+      payload: {
+        call_id: call.id,
+        agent_id: call.agent_id,
+        revision_id: call.agent_revision_id,
+        transaction_hash: input.txHash,
+        gross_amount: attempt.gross_amount,
+        builder_amount: builderAmount,
+        platform_amount: platformAmount,
+        confirmed_at: confirmedAt.toISOString(),
+      },
+    })
 
     return true
   })

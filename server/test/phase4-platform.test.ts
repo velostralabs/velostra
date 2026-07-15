@@ -5,6 +5,7 @@ import express from 'express'
 import { cursorScope, decodeCursor, encodeCursor } from '../src/lib/platform/cursor.js'
 import { apiV1Headers, legacyApiHeaders } from '../src/lib/platform/http.js'
 import { generateRequestSignature } from '../src/lib/gateway/hmac.js'
+import { signWebhookBody } from '../src/lib/platform/webhooks.js'
 
 process.env.PLATFORM_CURSOR_SECRET = 'phase4-test-cursor-secret-with-more-than-32-characters'
 
@@ -14,6 +15,10 @@ const hmacFixture = JSON.parse(
 assert.equal(
   generateRequestSignature(hmacFixture.body, hmacFixture.timestamp, hmacFixture.secret),
   hmacFixture.gateway_signature
+)
+assert.equal(
+  signWebhookBody(hmacFixture.secret, hmacFixture.timestamp, hmacFixture.event_id, hmacFixture.body),
+  hmacFixture.webhook_signature
 )
 console.log('PASS: backend and both SDKs share one byte-for-byte HMAC fixture')
 const scope = cursorScope({ resource: 'agents', category: 'TRADING', q: null })

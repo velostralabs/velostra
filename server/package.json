@@ -45,6 +45,8 @@
     "secrets:reencrypt": "tsx scripts/reencrypt-agent-secrets.ts",
     "reconcile": "tsx src/jobs/reconcile.ts --once",
     "reconcile:worker": "tsx src/jobs/reconcile.ts --watch",
+    "webhooks": "tsx src/jobs/webhooks.ts",
+    "webhooks:worker": "tsx src/jobs/webhooks.ts --watch",
     "db:migrate:runtime": "node dist/scripts/migrate.js",
     "test:signer": "tsx test/remote-signer.test.ts",
     "test:authority": "tsx test/authority-policy.test.ts",

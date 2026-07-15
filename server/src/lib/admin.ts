@@ -11,6 +11,9 @@ export type AdminPermission =
   | 'stats:read'
   | 'rbac:manage'
   | 'audit:read'
+  | 'webhook:operate'
+  | 'privacy:operate'
+  | 'telemetry:manage'
 
 const permissions: Record<AdminRole, readonly AdminPermission[]> = {
   SUPER_ADMIN: [
@@ -21,6 +24,9 @@ const permissions: Record<AdminRole, readonly AdminPermission[]> = {
     'stats:read',
     'rbac:manage',
     'audit:read',
+    'webhook:operate',
+    'privacy:operate',
+    'telemetry:manage',
   ],
   AGENT_REVIEWER: ['agent:read', 'agent:decide'],
   REPORT_MODERATOR: ['report:read', 'report:resolve'],

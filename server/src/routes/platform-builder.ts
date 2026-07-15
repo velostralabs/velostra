@@ -31,6 +31,7 @@ import { MIN_PRICE_PER_CALL, priceTierFor } from '../lib/constants.js'
 import { money, moneyToNumber } from '../lib/money.js'
 import { cursorScope, decodeCursor, encodeCursor } from '../lib/platform/cursor.js'
 import { sendPage } from '../lib/platform/http.js'
+import { enqueueBuilderWebhook } from '../lib/platform/webhooks.js'
 import {
   AgentEndpointError,
   EndpointSecurityError,
@@ -224,12 +225,29 @@ async function activateRevision(input: {
       .returning()
     if (!updatedAgent) throw new AppError(409, 'AGENT_ACTIVATION_RACE', 'Agent revision activation lost its race')
 
+    const eventType = input.mode === 'publish'
+      ? 'agent.revision.published' as const
+      : 'agent.revision.rolled_back' as const
     await tx.insert(userNotifications).values({
       user_id: builder.user_id,
-      type: input.mode === 'publish' ? 'agent.revision.published' : 'agent.revision.rolled_back',
+      type: eventType,
       title: input.mode === 'publish' ? 'Revision published' : 'Revision rollback requested',
       body: `${agent.name} revision ${revision.revision_number} is awaiting approval.`,
       metadata: { agent_id: agent.id, revision_id: revision.id, revision_number: revision.revision_number },
+    })
+    await enqueueBuilderWebhook(tx, {
+      builderId: builder.id,
+      eventType,
+      aggregateType: 'agent_revision',
+      aggregateId: revision.id,
+      dedupeKey: `${eventType}:${agent.id}:${revision.id}`,
+      payload: {
+        agent_id: agent.id,
+        agent_name: revision.name,
+        revision_id: revision.id,
+        revision_number: revision.revision_number,
+        approval_status: 'PENDING',
+      },
     })
     return { revision, agent: updatedAgent }
   })

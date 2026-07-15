@@ -18,6 +18,7 @@ import {
 } from '../db/schema.js'
 import { requireAuth, requireAdminPermission } from '../middleware/auth.js'
 import { AppError } from '../lib/errors.js'
+import { enqueueBuilderWebhook } from '../lib/platform/webhooks.js'
 
 export const adminRouter = Router()
 const adminOnly = [requireAuth]
@@ -105,20 +106,36 @@ adminRouter.post(
         metadata: { decision: parsed.data.decision, revision_id: updated.active_revision_id },
       }))
       const [owner] = await tx
-        .select({ user_id: builders.user_id })
+        .select({ id: builders.id, user_id: builders.user_id })
         .from(builders)
         .where(eq(builders.id, updated.builder_id))
         .limit(1)
       if (owner) {
+        const eventType = parsed.data.decision === 'APPROVE'
+          ? 'agent.approved' as const
+          : 'agent.rejected' as const
         await tx.insert(userNotifications).values({
           user_id: owner.user_id,
-          type: parsed.data.decision === 'APPROVE' ? 'agent.approved' : 'agent.rejected',
+          type: eventType,
           title: parsed.data.decision === 'APPROVE' ? 'Agent approved' : 'Agent revision rejected',
           body: parsed.data.decision === 'APPROVE'
             ? `${updated.name} is live in the marketplace.`
             : `${updated.name} requires another revision before it can go live.`,
           metadata: {
             agent_id: updated.id,
+            revision_id: updated.active_revision_id,
+            decision: parsed.data.decision,
+          },
+        })
+        await enqueueBuilderWebhook(tx, {
+          builderId: owner.id,
+          eventType,
+          aggregateType: 'agent',
+          aggregateId: updated.id,
+          dedupeKey: `${eventType}:${updated.id}:${updated.active_revision_id ?? 'legacy'}`,
+          payload: {
+            agent_id: updated.id,
+            agent_name: updated.name,
             revision_id: updated.active_revision_id,
             decision: parsed.data.decision,
           },

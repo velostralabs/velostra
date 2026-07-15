@@ -29,6 +29,7 @@ import {
   verifyClaimTransaction,
 } from '../lib/gateway/onchain.js'
 import { compareMoney, money, moneyToNumber } from '../lib/money.js'
+import { enqueueBuilderWebhook } from '../lib/platform/webhooks.js'
 
 export const builderRouter = Router()
 
@@ -403,6 +404,21 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
           updated_at: new Date(),
         })
         .where(eq(builderEarnings.builder_id, builder.id))
+
+      await enqueueBuilderWebhook(tx, {
+        builderId: builder.id,
+        eventType: 'claim.confirmed',
+        aggregateType: 'earnings_claim',
+        aggregateId: created.id,
+        dedupeKey: `claim.confirmed:${created.id}`,
+        payload: {
+          claim_id: created.id,
+          amount: created.amount,
+          transaction_hash: hash,
+          block_number: claimBlockNumber?.toString() ?? null,
+          confirmed_at: created.completed_at?.toISOString() ?? new Date().toISOString(),
+        },
+      })
 
       return created
     })

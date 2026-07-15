@@ -1,199 +1,125 @@
-# Security
+# Security posture
 
 > Last verified against the workspace: 2026-07-15.
->
-> Current posture: development/local-EVM ready, not approved for mainnet funds.
+> Phase 1 implementation is locally verified; external audit is still open.
 
-## Trust boundaries
+## Implemented controls
 
-Velostra menerima input dari wallet, browser, builder-controlled HTTP endpoint,
-EVM RPC, Redis, dan Postgres. Yang paling sensitif adalah backend settlement key,
-contract owner authority, builder endpoint egress, financial ledger writes, dan
-chain-to-database reconciliation.
+### Wallet auth and HTTP boundary
 
-## Wallet auth dan session
+- EIP-191 challenge binds wallet, domain, URI, Robinhood chain ID, issue time,
+  expiry, and random nonce;
+- Redis stores challenges and atomically compare-deletes on success;
+- concurrent multi-instance verification produces exactly one winner;
+- production rejects memory nonce mode and Redis fail-open;
+- JWT cookie is httpOnly, secure in production, same-site lax, 24-hour expiry;
+- exact-origin CORS, proxy config, 64 KiB default JSON cap, security headers,
+  request correlation ID, structured machine error codes;
+- malformed JSON, oversized body, unknown origin, and unknown route have stable
+  error codes.
 
-Implemented:
+The frontend can discover MetaMask and EIP-6963/injected wallets, but a provider is
+only transport. Server signature/receipt/contract checks remain authoritative.
+Velostra never requests or stores a wallet private key or seed phrase.
 
-- EIP-191 `personal_sign` verification dengan viem;
-- challenge wallet-specific;
-- nonce one-time dan expiry 5 menit;
-- JWT HS256 expiry 24 jam;
-- httpOnly, `sameSite: lax` cookie;
-- spoofed signature dan replay test.
+### Builder egress and HMAC
 
-Gaps:
+- only allowed HTTP(S) scheme and ports;
+- DNS A/AAAA resolution with private, loopback, link-local, multicast,
+  documentation, and reserved ranges blocked;
+- requests connect to the validated resolved address while retaining TLS host/SNI;
+- every redirect is revalidated and redirect count is capped;
+- connect/read timeout and maximum response bytes;
+- test-only loopback exception is disabled by default;
+- outbound payload uses per-agent HMAC-SHA256 over timestamp + raw body.
 
-- nonce disimpan dalam in-memory `Map`; restart menghapus challenge dan beberapa
-  API instance tidak berbagi consume state;
-- cookie belum memakai `secure: true` atau environment-aware config;
-- single symmetric JWT key, tanpa key ID/rotation overlap;
-- belum ada login abuse/IP control atau anti-Sybil free-tier defense.
+An infrastructure egress firewall remains defense in depth.
 
-Before production: Redis-backed atomic nonce consume, TLS-only secure cookie,
-explicit proxy/CORS setup, request-size limit, security headers, and session/key
-rotation runbook.
+### Secrets
 
-### Wallet provider boundary
+- agent HMAC secrets use AES-256-GCM envelope encryption with random IV and auth
+  tag, version and key ID;
+- old decrypt keys support rotation overlap;
+- rotate and revoke APIs exist; secret material is omitted from normal responses;
+- production startup scans for plaintext rows and fails closed;
+- re-encryption tool migrates all stored envelopes.
 
-Frontend memprioritaskan official MetaMask connector (`@metamask/connect-evm`) dan
-juga menerima EIP-6963/injected provider seperti Rainbow atau Coinbase. Connector
-adalah transport menuju wallet, bukan authority baru:
+Runtime signer/JWT/DB/Redis/RPC/encryption secrets must come from a managed secret
+store in Phase 2. Repository and frontend env must never contain them.
 
-- Velostra tidak membaca/menyimpan seed phrase atau private key;
-- account access, signature, network switch, dan transaction tetap membutuhkan
-  wallet/user approval;
-- provider name/icon/announcement dianggap untrusted presentation input dan
-  dideduplikasi sebelum dirender;
-- server tetap memverifikasi EIP-191 signature, authenticated sender, receipt,
-  destination contract, event, amount, dan replay constraints;
-- UI error/pending state tidak boleh dianggap bukti transaksi confirmed.
+### Admin
 
-Browser smoke saat ini hanya membuktikan picker/state/layout. Real extension E2E
-untuk MetaMask dan minimal satu injected provider, termasuk rejection dan
-wrong-chain flow, tetap mainnet release gate.
+Roles: `SUPER_ADMIN`, `AGENT_REVIEWER`, `REPORT_MODERATOR`, `FINANCE_VIEWER`, and
+`AUDITOR`. Permissions are checked per route. Grant, revoke, agent decisions, and
+report resolution create audit records with request ID. A Postgres advisory lock
+prevents concurrent removal of the final active super admin.
 
-## Admin dan privileged authority
+`ADMIN_BOOTSTRAP_WALLETS` only seeds the first DB role. Legacy `ADMIN_WALLET` is
+accepted as a compatibility bootstrap input, not ongoing authorization.
 
-Backend admin adalah satu address dari `ADMIN_WALLET`. Tidak ada role roster,
-grant/revoke, approval quorum, atau structured audit log. Contract lebih sensitif:
-`onlyOwner` saat ini bisa settle earnings, mengubah fee, dan menarik treasury.
+### Financial and chain integrity
 
-Sebelum mainnet, pisahkan backend `SETTLER_ROLE` dari multisig admin/treasury dan
-buat emergency revoke/rotation path. Jangan menyimpan deployer key di long-running
-service.
+- canonical 6-decimal integer money and Solidity-identical fee rounding;
+- database nonnegative/reservation/split constraints;
+- onchain receipt, destination, sender, event, amount, and replay verification;
+- durable call + reservation + outbox before external side effects;
+- no long SQL transaction around builder/RPC waits;
+- correlated onchain call ID and replay guard;
+- conditional exactly-once finalization shared by live path and worker;
+- persistent event cursor, confirmation delay, adaptive RPC range handling,
+  pending retries, drift comparison, and safe retroactive cursor policy;
+- role-separated, pausable, collateral-checked contract and safe successor path.
 
-## Backend signer
+## Production startup checks
 
-`BACKEND_SIGNER_PRIVATE_KEY` menandatangani `creditBuilderEarnings`. Satu process
-menserialisasi writes dengan promise queue, tetapi beberapa process tidak
-berkoordinasi. Key compromise dapat membuat arbitrary earnings credit selama
-contract tetap memakai `onlyOwner`.
+In `NODE_ENV=production`, startup rejects missing/unsafe:
 
-Controls yang dibutuhkan:
+- PostgreSQL/Redis URLs and Redis failure mode;
+- JWT, gateway HMAC, and 32-byte agent encryption key;
+- canonical HTTPS auth/UI origins;
+- memory nonce storage;
+- zero/invalid escrow or signer key;
+- non-required settlement mode;
+- non-4663 chain, non-6-decimal policy, zero deployment block, non-HTTPS RPC;
+- plaintext agent secrets or missing initial super-admin path.
 
-- KMS/HSM atau restricted signer service;
-- role paling minimum dan spend/operation policy;
-- gas balance + nonce monitoring;
-- key rotation/revocation drill;
-- multi-instance nonce coordination;
-- alert untuk unknown builder/call ID dan abnormal volume.
+API and reconciliation worker both run these checks.
 
-## Builder endpoint dan SSRF
+## Residual risks and gates
 
-`endpoint_url` saat ini hanya divalidasi sebagai URL. Backend lalu melakukan
-server-side `fetch`, termasuk redirect behavior default. Malicious builder dapat
-mengarahkan request ke loopback, private network, link-local/cloud metadata, DNS
-rebinding target, atau response yang sangat besar.
+| Risk | Current treatment | Required before mainnet |
+|---|---|---|
+| Independent review absent | release blocked | contract + focused backend review |
+| Signer key in process env | least-privilege SETTLER_ROLE | managed KMS/restricted signer + rotation drill |
+| One logical signer writer | documented deployment constraint | load/nonce-pressure test before scale |
+| Reorg after confirmations | delay only | staging reorg drill; decide rollback policy |
+| Sustained RPC outage/429 | cursor safety + retry | dedicated RPC, alerts, failover decision |
+| Alert transport absent | clear logs | metrics/error tracking/on-call routing |
+| Real wallet automation absent | manual picker/browser QA | MetaMask + injected E2E |
+| Prompt/output retention policy open | avoid sensitive logs | privacy/retention/delete/export policy |
+| Web transitive moderate advisory | high threshold CI + tracking | upstream/reachability review and acceptance/fix |
 
-Ini blocker mainnet. Minimum fix:
+## Dependency and supply chain
 
-- hanya `https` (allow explicit local exception untuk test);
-- resolve semua A/AAAA dan blokir private, loopback, link-local, multicast,
-  documentation, dan metadata ranges;
-- validasi ulang setiap redirect dan batasi redirect count;
-- port allowlist dan egress firewall/proxy;
-- connect/read timeout, response-size cap, content-type policy;
-- DNS rebinding-safe connection strategy;
-- adversarial SSRF integration suite.
+CI uses lockfiles, read-only permissions, production audits at high severity, web
+lint/build, all backend security/unit gates, contract E2E, migration/money-loop
+E2E, and restore verification. Generated builds, `.env`, deployments, dumps, and
+credentials are ignored.
 
-## HMAC builder protocol
+Run dependency audits before release:
 
-Outbound request ditandatangani per-agent secret dengan HMAC-SHA256 atas
-`timestamp.rawBody`. Builder harus memverifikasi raw bytes, timestamp freshness,
-dan signature memakai timing-safe comparison.
+```bash
+npm audit --omit=dev --audit-level=high
+npm audit --prefix server --omit=dev --audit-level=high
+npm audit --prefix contracts --omit=dev --audit-level=high
+```
 
-`agents.secret_key` masih plaintext di Postgres dan tidak memiliki rotation API.
-Database compromise membuka semua agent secret. Enkripsi envelope/KMS dan
-rotation/revoke flow wajib sebelum builder eksternal.
+## Incident policy
 
-`GATEWAY_HMAC_SECRET` dipakai helper callback verification, tetapi tidak ada route
-callback yang menggunakannya saat ini.
+Do not manually repair money rows without exact chain evidence and an incident
+record. Pause new risk, preserve claims, keep ambiguous reservations, scan the exact
+range, verify zero drift, then reopen. Detailed signer, drift, successor, secret,
+and database procedures are in [OPERATIONS.md](./OPERATIONS.md).
 
-## Financial integrity dan replay
-
-Implemented defenses:
-
-- receipt status + destination contract verification;
-- authenticated sender dan exact event amount verification untuk top-up/claim;
-- unique top-up/settlement/claim hashes;
-- unique raw event `(tx_hash, log_index)`;
-- unique `onchain_call_id` dan onchain `settledCallIds`;
-- Postgres row locks untuk changing balances;
-- durable PROCESSING intent sebelum external side effects;
-- conditional `PROCESSING -> SUCCESS` ownership claim di live path dan worker;
-- confirmation delay, pending-event retry, and drift comparison.
-
-Remaining risks:
-
-- JS `number` dipakai setelah `numeric(20,6)` conversion;
-- onchain/offchain spending invariant belum formal;
-- no reorg rollback, hanya confirmation delay;
-- tx hash baru diekspos setelah receipt wait; post-broadcast RPC ambiguity dapat
-  salah menandai call FAILED sampai durable settlement-attempt/outbox dibuat;
-- manual high `--from-block` dapat memajukan cursor jika dioperasikan salah;
-- negative recovered credit balance perlu dedicated alert;
-- no distributed worker lease or cross-instance signer lock.
-
-## Redis behavior
-
-Rate limit fail-open ketika Redis down. Ini menjaga availability, tetapi membuka
-abuse window. Free-tier memiliki Postgres fallback. Production perlu memilih policy
-per operation: public browsing boleh fail-open, sedangkan costly execution mungkin
-memerlukan conservative local fallback/circuit breaker.
-
-## Data dan privacy
-
-Agent input/output disimpan di `agent_calls`; dapat berisi data sensitif. Belum ada
-retention, encryption policy, deletion/export flow, redaction, atau telemetry
-classification. Logs dan metrics tidak boleh merekam raw prompt/output, secrets,
-JWT, signature, atau private key.
-
-## Smart contract risks
-
-- belum audit;
-- single owner;
-- no pause;
-- no solvency check;
-- immutable token, no migration path;
-- 6-decimal minimum assumption.
-
-Detail ada di [SMART_CONTRACT.md](./SMART_CONTRACT.md).
-
-## Dependency dan supply chain
-
-GitHub Actions menjalankan lockfile installs, frontend lint/build, backend
-auth/build, contract local-EVM tests, serta full money-loop reconciliation. Web dan
-backend production audits berjalan dengan threshold high di CI.
-
-Audit penuh 2026-07-15 menunjukkan zero production advisories pada backend dan
-contract package. Web audit melaporkan 6 moderate findings untuk `uuid` `<11.1.1`
-(`GHSA-w5hq-g745-h8pq`) yang transitif melalui `@metamask/connect-evm` dan paket
-MetaMask turunannya; npm belum menawarkan fix. Sebelum production, review apakah
-jalur buffer-based UUID yang terdampak reachable di browser flow, pantau upstream,
-dan upgrade atau ganti connector bila risikonya tidak bisa diterima.
-
-Full dev scans tetap dapat melaporkan advisories lain dari Ganache, legacy crypto
-packages, Drizzle Kit tooling, dan `solc`; tooling itu tidak masuk runtime API
-image, tetapi harus tetap dipantau atau diganti saat upstream menyediakan jalur
-upgrade yang valid. Belum ada dedicated secret-scan workflow, SBOM, license
-automation, atau Dependabot/Renovate policy.
-
-## Mainnet security gate
-
-Tidak boleh mainnet dengan real value sebelum:
-
-- contract/backend independent review selesai tanpa open Critical/High;
-- roles dipisah dan signer diproteksi;
-- SSRF suite lolos;
-- secrets encrypted/managed dan rotation tested;
-- versioned migrations + backup/restore tested;
-- web MetaMask dependency advisory selesai ditriage/di-upgrade atau memiliki
-  explicit accepted-risk record;
-- real MetaMask/injected browser-wallet, load, reorg, RPC throttle, and one-hour
-  outage drills lolos;
-- cursor lag, pending event, drift, abnormal volume, key gas, dan error alerts
-  benar-benar sampai operator;
-- incident, pause/revoke, rollback, and contract migration runbooks tersedia.
-
-Urutan implementasi ada di [ROADMAP.md](./ROADMAP.md).
+The full asset/threat/control register is [THREAT_MODEL.md](./THREAT_MODEL.md).
+External review handoff is [AUDIT_READINESS.md](./AUDIT_READINESS.md).

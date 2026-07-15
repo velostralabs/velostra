@@ -1,142 +1,142 @@
-# Database schema
+# Database schema and recovery
 
-> Last verified against `server/src/db/schema.ts`: 2026-07-15.
+> Last verified against `server/src/db/schema.ts` and `server/drizzle`: 2026-07-15.
 
-Velostra memakai PostgreSQL dan Drizzle ORM. ID application row memakai CUID2.
-Money column memakai `numeric(20,6)` dengan Drizzle `mode: number`; keputusan
-production tentang arbitrary precision/rounding masih harus difinalisasi.
+Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and reviewed versioned
+SQL migrations. Financial columns are `numeric(20,6)` exposed to server logic as
+canonical decimal strings. Critical decisions convert them to integer minor units;
+JS numbers are used only at the JSON presentation boundary.
 
-Crystal V/public asset dan MetaMask/injected picker update tidak menambah schema;
-wallet identity tetap dinormalisasi melalui `users.wallet_address`.
-
-## Relationship map
+## Core relationships
 
 ```mermaid
 erDiagram
     USERS ||--|| CREDIT_BALANCES : owns
     USERS ||--o| BUILDERS : becomes
+    USERS ||--o{ ADMIN_ROLE_ASSIGNMENTS : receives
+    USERS ||--o{ ADMIN_AUDIT_LOGS : acts
     BUILDERS ||--|| BUILDER_EARNINGS : has
     BUILDERS ||--o{ EARNINGS_CLAIMS : claims
     BUILDERS ||--o{ AGENTS : publishes
-    AGENTS ||--o{ AGENT_TAGS : tagged
-    USERS ||--o{ AGENT_CALLS : runs
-    AGENTS ||--o{ AGENT_CALLS : receives
+    AGENTS ||--o{ AGENT_CALLS : executes
+    USERS ||--o{ AGENT_CALLS : requests
+    AGENT_CALLS ||--|| SETTLEMENT_ATTEMPTS : recovers
     AGENT_CALLS ||--o| TRANSACTIONS : settles
-    USERS ||--o{ REVIEWS : writes
-    AGENTS ||--o{ REVIEWS : receives
-    USERS ||--o{ REPORTS : creates
-    AGENTS ||--o{ REPORTS : receives
-    CHAIN_SYNC_STATE ||--o{ CHAIN_EVENTS : owns
+    CHAIN_SYNC_STATE ||--o{ CHAIN_EVENTS : indexes
 ```
 
-## Tabel
+## Tables
 
-| Table | Tujuan dan constraint penting |
+| Table | Purpose / invariant |
 |---|---|
-| `users` | Identity wallet; `wallet_address` unique, optional `email` unique. |
-| `credit_balances` | Satu row per user; spendable gateway balance dan free-tier fallback. |
-| `builders` | Satu profile per user; wallet unique; status dan verification. |
-| `builder_earnings` | Satu row per builder; total earned, available, total claimed. |
-| `earnings_claims` | Audit claim; `tx_hash` unique, chain/contract/block/log metadata. |
-| `agents` | Listing, endpoint, plaintext HMAC secret, price, status, stats. Slug unique. |
-| `agent_tags` | Tag per agent; unique `(agent_id, tag)`. |
-| `agent_calls` | Durable call intent/output/status, amounts, timing, unique `onchain_call_id`. |
-| `transactions` | Ledger TOPUP/AGENT_CALL/etc.; unique `tx_hash`, unique optional `agent_call_id`. |
-| `reviews` | Unique `(agent_id, user_id)`. |
-| `reports` | Moderation record; user-facing create route belum ada. |
-| `platform_stats` | Daily-rollup shape; belum ada job yang mengisi. |
-| `chain_sync_state` | Satu cursor per chain + contract; `last_processed_block`. |
-| `chain_events` | Raw event ledger; unique `(tx_hash, log_index)`, pending/reconciled state. |
+| `users` | unique EVM wallet identity |
+| `admin_role_assignments` | granular, revocable DB admin roles; unique user+role |
+| `admin_audit_logs` | action, actor, target, request ID, IP, metadata, time |
+| `credit_balances` | spendable, reserved, free-tier fallback; one row/user |
+| `builders` | one builder/user and wallet; lifecycle status |
+| `builder_earnings` | exact earned, available, claimed totals |
+| `earnings_claims` | claim evidence; unique tx hash and chain metadata |
+| `agents` | listing, encrypted secret envelope, revoke time, price, stats |
+| `agent_tags` | unique agent+tag |
+| `agent_calls` | durable input/output/status, correlation, exact split |
+| `transactions` | top-up/call/platform ledger; unique tx hash/call link |
+| `settlement_attempts` | reservation/outbox state and candidate hash |
+| `reviews` | unique agent+user review |
+| `reports` | moderation record |
+| `platform_stats` | future daily rollup shape |
+| `chain_sync_state` | deployment cursor |
+| `chain_events` | raw event ledger and retry state |
 
-## Enum
+There are 17 public application tables.
 
-- `builder_status`: `ACTIVE`, `SUSPENDED`, `BANNED`;
-- `claim_status`: `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`;
-- `agent_status`: `PENDING`, `APPROVED`, `REJECTED`, `SUSPENDED`, `REMOVED`;
-- `call_status`: `PENDING`, `PROCESSING`, `SUCCESS`, `FAILED`, `TIMEOUT`;
-- `transaction_type`: `TOPUP`, `AGENT_CALL`, `BUILDER_CLAIM`, `REFUND`,
-  `PLATFORM_WITHDRAWAL`;
-- `tx_status`: `PENDING`, `CONFIRMED`, `FAILED`;
-- `chain_event_type`: `DEPOSIT`, `EARNINGS_CREDITED`, `CLAIMED`,
-  `PLATFORM_REVENUE_WITHDRAWN`.
+## Money invariants
 
-Category, price tier, report reason, dan report status juga didefinisikan sebagai
-Postgres enum di schema.
+Database checks enforce:
 
-## Money-loop records
+```text
+balance_usd >= 0
+reserved_usd >= 0
+reserved_usd <= balance_usd
+gross_amount > 0
+builder_amount >= 0
+platform_amount >= 0
+gross_amount = builder_amount + platform_amount
+```
 
-### `credit_balances`
+Paid-call reservation uses a conditional update on available credit
+`balance - reserved`. Finalization requires both balance and reservation to cover
+the exact gross. A failed pre-chain call conditionally releases only its own
+reservation.
 
-`balance_usd` adalah spending authority gateway. Deposit menaikkannya; paid call
-yang berhasil menurunkannya. Worker boleh menghasilkan balance negatif ketika
-chain membuktikan settlement tetapi credit sempat dikonsumsi call lain setelah
-failed DB commit; ini mempertahankan debt daripada menyembunyikan undercharge.
-Production alert harus menangkap kondisi tersebut.
+## Settlement attempt states
 
-### `agent_calls`
+| State | Meaning |
+|---|---|
+| `PREPARED` | call, reservation, and outbox committed; builder not complete |
+| `READY` | successful builder output is durable; may broadcast |
+| `SUBMITTED` | candidate tx hash persisted |
+| `AMBIGUOUS` | broadcast or receipt outcome uncertain; keep reservation |
+| `CONFIRMED` | receipt success known; ledger not necessarily applied |
+| `APPLIED` | call and all financial effects committed |
+| `FAILED` | definitive safe failure; reservation released |
 
-Paid call intent dibuat `PROCESSING` sebelum external side effect.
-`onchain_call_id = keccak256(agent_calls.id)` dan unique. Output upstream disimpan
-sebelum settlement broadcast. Final status + financial fields hanya dimiliki oleh
-jalur yang memenangkan conditional `PROCESSING -> SUCCESS`.
+`attempt_count` distinguishes initial and recovery broadcasts. A correlated event
+can supply the authoritative successful hash if an ambiguous candidate differs.
 
-### `transactions` dan `earnings_claims`
+## Idempotency and race safety
 
-`transactions` menyimpan top-up, paid-call settlement, dan platform withdrawal.
-Claims disimpan di `earnings_claims`. Hash unik merupakan database-level replay
-defense; route juga melakukan early replay check untuk error yang lebih jelas.
+- unique `transactions.tx_hash`;
+- unique `earnings_claims.tx_hash`;
+- unique `(chain_events.tx_hash, log_index)`;
+- unique `agent_calls.onchain_call_id`;
+- unique optional `transactions.agent_call_id`;
+- one `settlement_attempts` row per call;
+- conditional `PROCESSING -> SUCCESS` owns all financial side effects.
 
-## Chain reconciliation records
+## Cursor behavior
 
-### `chain_sync_state`
+`chain_sync_state.id` is `escrow:<chainId>:<address>`. Normal scans advance only
+when starting at exactly `last_processed_block + 1`. Retroactive or intentionally
+overlapping ranges preserve the cursor, preventing an operator from jumping over
+an unscanned gap.
 
-- `id`: `escrow:<chainId>:<lowercaseAddress>`;
-- unique `(chain_id, contract_address)`;
-- `last_processed_block` hanya maju dengan `greatest(current, rangeEnd)`.
+## Migrations
 
-### `chain_events`
+```text
+0000_phase0_baseline.sql
+0001_security_rbac.sql
+0002_settlement_outbox.sql
+0003_query_indexes.sql
+0004_transaction_indexes.sql
+```
 
-Menyimpan event type, tx hash, log index, block number/timestamp, actor,
-correlation ID, primary amount, optional secondary amount, reconciliation flag,
-error, dan timestamp. `(tx_hash, log_index)` adalah identity yang benar karena
-satu transaction dapat mengemit lebih dari satu log.
-
-Unknown actor/call tetap tersimpan sebagai pending. Ini memungkinkan cursor maju
-tanpa kehilangan raw evidence dan worker melakukan retry setelah mapping tersedia.
-
-## Financial safety constraints
-
-- unique wallet/user/builder one-to-one relationships;
-- unique transaction and claim hashes;
-- unique raw event identity;
-- unique paid-call correlation ID;
-- maksimum satu transaction link per agent call;
-- foreign key pada seluruh core ownership path;
-- row locks untuk balance/earnings yang berubah;
-- conditional call finalization untuk side-effect ownership.
-
-Unique constraint menjamin idempotency, tetapi tidak menggantikan application
-transaction dan invariant monitoring.
-
-## Schema operations
-
-Current development flow:
+Use:
 
 ```bash
-cd server
-npm run db:push
+npm --prefix server run db:check
+npm --prefix server run db:migrate
+npm --prefix server run test:migrations
 ```
 
-`db:push` hanya cocok untuk disposable/local database. Workspace belum memiliki
-versioned migration files. Sebelum production:
+`test:migrations` proves both fresh install and upgrade path, exact balance
+preservation, reservation initialization, state enum order, money constraints, 17
+tables, and operational indexes. `db:push` is local prototyping only and must not
+be used on persistent staging/production data.
 
-1. generate dan review baseline migration;
-2. test fresh install dan upgrade path;
-3. backup + restore drill;
-4. tambahkan index berdasarkan query plan;
-5. hentikan direct `db:push` terhadap production;
-6. definisikan data retention/soft deletion;
-7. encrypt `agents.secret_key`;
-8. putuskan populate atau hapus `platform_stats`.
+## Operational indexes
 
-Rencana ini ada di Phase 1 [ROADMAP.md](./ROADMAP.md).
+Indexes cover marketplace/status/category, builder submissions, user/agent call
+history, call status queues, claims, reports, settlement pending work, admin audit,
+admin assignments, raw event scan/retry, credit transaction history, and
+chain-specific ledger queries.
+
+## Backup and restore
+
+The Phase 1 drill used `pg_dump --format=custom`, restored into a clean database,
+and ran `npm run restore:verify`. Verification compared every table/row count,
+migration history, exact financial aggregates, outbox states, constraints, and
+indexes.
+
+Production must add provider-native encrypted PITR/WAL, retention, access
+separation, and timed recurring restore drills. Exact procedure is in
+[OPERATIONS.md](./OPERATIONS.md).

@@ -124,7 +124,7 @@ try {
   await fs.writeFile(path.join(fixtureRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
 
   const valid = runValidator()
-  assert.equal(valid.status, 0, valid.stderr || valid.stdout)
+  assert.equal(valid.status, 0, valid.error?.stack || valid.stderr || valid.stdout)
   assert.match(valid.stdout, /"passed": true/)
 
   await fs.appendFile(path.join(fixtureRoot, artifacts.load.path), 'tamper')

@@ -189,6 +189,7 @@ export async function createPhase3Manifest({
     'confirmations must be positive'
   )
   validateConstructor(input?.contract?.constructor, failures)
+  check(validAddress(input?.contract?.deployer), failures, 'deployment-only deployer must be a non-zero address')
   if (failures.length) {
     throw new Error('Invalid Phase 3 release input:\n- ' + failures.join('\n- '))
   }
@@ -239,6 +240,9 @@ export async function createPhase3Manifest({
     fileEntry(repositoryRoot, 'scripts/lib/phase3-release.mjs'),
     fileEntry(repositoryRoot, 'scripts/prepare-phase3-release.mjs'),
     fileEntry(repositoryRoot, 'scripts/validate-phase3-release.mjs'),
+    fileEntry(repositoryRoot, 'scripts/lib/phase3-deployment.mjs'),
+    fileEntry(repositoryRoot, 'scripts/plan-phase3-deployment.mjs'),
+    fileEntry(repositoryRoot, 'scripts/finalize-phase3-deployment.mjs'),
     fileEntry(repositoryRoot, 'config/phase3-release-manifest.schema.json'),
   ])
   const externalEvidence = {
@@ -277,6 +281,7 @@ export async function createPhase3Manifest({
     contract: {
       source: source.path,
       artifact: contractArtifact.path,
+      deployer: input.contract.deployer,
       constructor: input.contract.constructor,
       address: input.contract.address ?? null,
       deploymentBlock: input.contract.deploymentBlock ?? null,
@@ -390,6 +395,7 @@ export async function validatePhase3Manifest({
     'confirmations must be positive'
   )
   validateConstructor(manifest?.contract?.constructor, failures)
+  check(validAddress(manifest?.contract?.deployer), failures, 'deployment-only deployer must be a non-zero address')
 
   const { integrity: _integrity, ...body } = manifest ?? {}
   check(

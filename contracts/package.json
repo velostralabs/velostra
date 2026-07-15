@@ -20,7 +20,8 @@
   "scripts": {
     "build": "node scripts/build.js",
     "test": "npm run build && node test/VelostraEscrow.e2e.test.js",
-    "deploy:robinhood": "node scripts/deploy.js"
+    "deploy:robinhood": "npm run build && node scripts/deploy.js",
+    "verify:robinhood": "npm run build && node scripts/verify-deployment.js"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.1.0",

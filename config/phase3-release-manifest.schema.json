@@ -42,6 +42,7 @@
     "policies": { "type": "object" },
     "externalEvidence": { "type": "object" },
     "authorization": { "type": "object" },
+    "deploymentRecord": { "type": "object" },
     "integrity": {
       "type": "object",
       "required": ["algorithm", "manifestSha256"],

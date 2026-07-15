@@ -12,6 +12,7 @@
   "contract": {
     "source": "contracts/VelostraEscrow.sol",
     "artifact": "contracts/build/VelostraEscrow.json",
+    "deployer": "0x9000000000000000000000000000000000000009",
     "constructor": {
       "settlementToken": "0x1000000000000000000000000000000000000001",
       "platformFeeBps": 1000,

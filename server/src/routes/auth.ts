@@ -7,12 +7,12 @@ export const authRouter = Router()
 
 const nonceSchema = z.object({ walletAddress: z.string() })
 
-authRouter.post('/nonce', (req, res) => {
+authRouter.post('/nonce', async (req, res) => {
   const parsed = nonceSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ error: 'walletAddress is required' })
 
   try {
-    const { message, nonce } = generateAuthNonce(parsed.data.walletAddress)
+    const { message, nonce } = await generateAuthNonce(parsed.data.walletAddress)
     res.json({ message, nonce })
   } catch {
     res.status(400).json({ error: 'Invalid EVM wallet address' })

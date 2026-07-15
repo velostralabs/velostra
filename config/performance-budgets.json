@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "measurement": {
+    "viewport": "1440x1000",
+    "browser": "Playwright Chromium",
+    "network": "local production preview",
+    "notes": "Browser transfer budgets complement build-time gzip budgets; staging baselines must be attached to the release evidence packet."
+  },
+  "routes": {
+    "/": {
+      "transferredJsBytes": 1600000,
+      "lcpMs": 2500,
+      "inpMs": 200,
+      "cls": 0.1,
+      "webglContexts": 2
+    },
+    "/marketplace": {
+      "transferredJsBytes": 850000,
+      "lcpMs": 2000,
+      "inpMs": 200,
+      "cls": 0.1,
+      "webglContexts": 0
+    },
+    "/dashboard": {
+      "transferredJsBytes": 900000,
+      "lcpMs": 2000,
+      "inpMs": 200,
+      "cls": 0.1,
+      "webglContexts": 0
+    }
+  },
+  "build": {
+    "initialEntryGzipBytes": 300000,
+    "largestAsyncChunkGzipBytes": 700000,
+    "totalJavaScriptGzipBytes": 1200000
+  }
+}

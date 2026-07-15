@@ -21,6 +21,9 @@ export default function WalletButton() {
   const [pendingConnectorUid, setPendingConnectorUid] = useState<string>()
   const pickerId = useId()
   const walletRootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const pickerRef = useRef<HTMLElement>(null)
+  const restoreFocusRef = useRef(false)
   const { address, isConnected, chainId } = useAccount()
   const { connect, connectors, error, isPending, reset } = useConnect()
   const { disconnect } = useDisconnect()
@@ -53,7 +56,25 @@ export default function WalletButton() {
       if (!walletRootRef.current?.contains(event.target as Node)) setPickerOpen(false)
     }
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPickerOpen(false)
+      if (event.key === 'Escape') {
+        restoreFocusRef.current = true
+        setPickerOpen(false)
+        return
+      }
+      if (event.key !== 'Tab' || !pickerRef.current) return
+      const focusable = Array.from(
+        pickerRef.current.querySelectorAll<HTMLElement>('button:not([disabled])')
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
     }
 
     document.addEventListener('pointerdown', closeOnOutsideClick)
@@ -63,6 +84,24 @@ export default function WalletButton() {
       document.removeEventListener('keydown', closeOnEscape)
     }
   }, [pickerOpen])
+
+  useEffect(() => {
+    if (!pickerOpen) {
+      if (restoreFocusRef.current && !isConnected) {
+        restoreFocusRef.current = false
+        window.requestAnimationFrame(() => triggerRef.current?.focus())
+      }
+      return
+    }
+    const frame = window.requestAnimationFrame(() => {
+      pickerRef.current?.querySelector<HTMLButtonElement>('.wallet-option:not([disabled])')?.focus()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [isConnected, pickerOpen])
+
+  useEffect(() => {
+    if (isConnected) setPickerOpen(false)
+  }, [isConnected])
 
   if (isConnected && address) {
     const wrongChain = chainId !== robinhoodChain.id
@@ -95,6 +134,7 @@ export default function WalletButton() {
   return (
     <div className="wallet-connect" ref={walletRootRef}>
       <button
+        ref={triggerRef}
         type="button"
         className="wallet-btn wallet-btn--primary"
         aria-controls={pickerId}
@@ -116,7 +156,14 @@ export default function WalletButton() {
       </button>
 
       {pickerOpen && (
-        <section id={pickerId} className="wallet-picker" role="dialog" aria-label="Choose a wallet">
+        <section
+          ref={pickerRef}
+          id={pickerId}
+          className="wallet-picker"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose a wallet"
+        >
           <div className="wallet-picker__header">
             <div>
               <span className="wallet-picker__eyebrow mono">SECURE CONNECTION</span>
@@ -126,7 +173,10 @@ export default function WalletButton() {
               type="button"
               className="wallet-picker__close"
               aria-label="Close wallet picker"
-              onClick={() => setPickerOpen(false)}
+              onClick={() => {
+                restoreFocusRef.current = true
+                setPickerOpen(false)
+              }}
             >
               <X size={15} />
             </button>

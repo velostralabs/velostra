@@ -31,7 +31,14 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:browser": "npm run build:browser-fixture && npm run performance:build && playwright test",
+    "test:browser:update": "npm run build:browser-fixture && playwright test tests/browser/accessibility-visual.spec.ts --update-snapshots",
+    "test:wallet:metamask": "playwright test tests/browser/metamask.external.spec.ts --workers=1",
+    "test:performance": "npm run build:browser-fixture && npm run performance:build && playwright test tests/browser/performance.spec.ts",
+    "performance:build": "node scripts/check-performance-budget.mjs",
+    "audit:metamask": "node scripts/check-metamask-advisory-reachability.mjs",
+    "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {
     "@metamask/connect-evm": "^2.1.1",
@@ -48,6 +55,8 @@
     "wagmi": "^3.7.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
     "@types/node": "^24.13.2",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

@@ -126,7 +126,7 @@
 
 .footer__identity > span {
   margin-top: 14px;
-  color: #4e5753;
+  color: #818985;
   font-size: 7px;
   letter-spacing: 0.1em;
 }
@@ -145,7 +145,7 @@
 
 .footer__col-title {
   margin-bottom: 7px;
-  color: #505955;
+  color: #818985;
   font-family: var(--font-mono);
   font-size: 7px;
   letter-spacing: 0.11em;
@@ -167,7 +167,7 @@
   display: flex;
   justify-content: space-between;
   padding: 20px clamp(28px, 5vw, 70px);
-  color: #4e5753;
+  color: #818985;
   border-top: 1px solid var(--border-hair);
   font-size: 8px;
   letter-spacing: 0.04em;

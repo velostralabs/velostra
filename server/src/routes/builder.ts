@@ -20,8 +20,26 @@ import {
   velostraChainId,
   verifyClaimTransaction,
 } from '../lib/gateway/onchain.js'
+import { compareMoney, money, moneyToNumber } from '../lib/money.js'
 
 export const builderRouter = Router()
+
+function serializeAgentMoney<T extends { secret_key_ciphertext: string; price_per_call: string; total_revenue: string }>(agent: T) {
+  return {
+    ...omitAgentSecret(agent),
+    price_per_call: moneyToNumber(agent.price_per_call),
+    total_revenue: moneyToNumber(agent.total_revenue),
+  }
+}
+
+function serializeEarnings<T extends { total_earned: string; available: string; total_claimed: string }>(row: T) {
+  return {
+    ...row,
+    total_earned: moneyToNumber(row.total_earned),
+    available: moneyToNumber(row.available),
+    total_claimed: moneyToNumber(row.total_claimed),
+  }
+}
 
 // ─────────────────────────────────────────
 // POST /api/builder/register — become a builder
@@ -92,8 +110,8 @@ builderRouter.get('/me', requireAuth, requireBuilder, async (req, res) => {
   res.json({
     builder: {
       ...builder,
-      earnings: earnings ?? null,
-      agents: builderAgents.map(omitAgentSecret),
+      earnings: earnings ? serializeEarnings(earnings) : null,
+      agents: builderAgents.map(serializeAgentMoney),
     },
   })
 })
@@ -129,6 +147,12 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
     throw error
   }
 
+  let pricePerCall: ReturnType<typeof money>
+  try {
+    pricePerCall = money(parsed.data.price_per_call)
+  } catch (error) {
+    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid price' })
+  }
   const slug = `${parsed.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nanoid(6)}`
   const secretKey = generateAgentSecret()
   const encryptedSecret = encryptAgentSecret(secretKey)
@@ -144,7 +168,7 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
       category: parsed.data.category,
       endpoint_url: parsed.data.endpoint_url,
       secret_key_ciphertext: encryptedSecret,
-      price_per_call: parsed.data.price_per_call,
+      price_per_call: pricePerCall,
       price_tier: priceTierFor(parsed.data.price_per_call),
       logo_url: parsed.data.logo_url,
       status: 'PENDING',
@@ -155,7 +179,7 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
     await db.insert(agentTags).values(parsed.data.tags.map((tag) => ({ agent_id: agent.id, tag })))
   }
 
-  res.json({ agent: omitAgentSecret(agent), secret_key: secretKey })
+  res.json({ agent: serializeAgentMoney(agent), secret_key: secretKey })
 })
 
 // ─────────────────────────────────────────
@@ -184,7 +208,7 @@ builderRouter.post('/agents/:id/secret/rotate', requireAuth, requireBuilder, asy
     .returning()
   if (!agent) return res.status(404).json({ error: 'Agent not found' })
 
-  res.json({ agent: omitAgentSecret(agent), secret_key: secretKey })
+  res.json({ agent: serializeAgentMoney(agent), secret_key: secretKey })
 })
 
 // ─────────────────────────────────────────
@@ -206,7 +230,7 @@ builderRouter.post('/agents/:id/secret/revoke', requireAuth, requireBuilder, asy
     .returning()
   if (!agent) return res.status(404).json({ error: 'Agent not found' })
 
-  res.json({ agent: omitAgentSecret(agent), secret_revoked: true })
+  res.json({ agent: serializeAgentMoney(agent), secret_revoked: true })
 })
 
 // ─────────────────────────────────────────
@@ -226,9 +250,10 @@ builderRouter.get('/earnings', requireAuth, requireBuilder, async (req, res) => 
     .limit(20)
 
   res.json({
-    earnings,
+    earnings: earnings ? serializeEarnings(earnings) : null,
     claims: claims.map((claim) => ({
       ...claim,
+      amount: moneyToNumber(claim.amount),
       block_number: claim.block_number?.toString() ?? null,
     })),
   })
@@ -257,6 +282,12 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
   if (!builder) return res.status(404).json({ error: 'Builder profile not found' })
 
+  let claimAmount: ReturnType<typeof money>
+  try {
+    claimAmount = money(parsed.data.amount)
+  } catch (error) {
+    return res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid amount' })
+  }
   const hash = parsed.data.tx_hash as `0x${string}`
   const [replayed] = await db
     .select({ id: earningsClaims.id })
@@ -270,7 +301,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
     const receipt = await verifyClaimTransaction(
       hash,
       builder.wallet_address as `0x${string}`,
-      parsed.data.amount
+      claimAmount
     )
     claimBlockNumber = receipt.blockNumber
   } catch (error) {
@@ -299,7 +330,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
         .for('update')
         .limit(1)
       if (!earnings) throw new Error('Earnings record not found')
-      if (parsed.data.amount > earnings.available) {
+      if (compareMoney(claimAmount, earnings.available) > 0) {
         const error = new Error('Amount exceeds available balance')
         error.name = 'InsufficientEarningsError'
         throw error
@@ -309,7 +340,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
         .insert(earningsClaims)
         .values({
           builder_id: builder.id,
-          amount: parsed.data.amount,
+          amount: claimAmount,
           wallet_address: builder.wallet_address,
           tx_hash: hash,
           chain_id: velostraChainId,
@@ -323,8 +354,8 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
       await tx
         .update(builderEarnings)
         .set({
-          available: sql`${builderEarnings.available} - ${parsed.data.amount}`,
-          total_claimed: sql`${builderEarnings.total_claimed} + ${parsed.data.amount}`,
+          available: sql`${builderEarnings.available} - ${claimAmount}`,
+          total_claimed: sql`${builderEarnings.total_claimed} + ${claimAmount}`,
           updated_at: new Date(),
         })
         .where(eq(builderEarnings.builder_id, builder.id))
@@ -335,6 +366,7 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
     res.json({
       claim: {
         ...claim,
+      amount: moneyToNumber(claim.amount),
         block_number: claim.block_number?.toString() ?? null,
       },
     })

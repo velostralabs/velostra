@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express'
+import { moneyToNumber } from '../lib/money.js'
 import { z } from 'zod'
 import { and, asc, count, desc, eq, isNull, sql, sum } from 'drizzle-orm'
 import { getAddress, isAddress } from 'viem'
@@ -60,6 +61,7 @@ adminRouter.get(
     res.json({
       agents: rows.map((row) => ({
         ...row,
+        price_per_call: moneyToNumber(row.price_per_call),
         builder: {
           display_name: row.builder_display_name,
           wallet_address: row.builder_wallet_address,

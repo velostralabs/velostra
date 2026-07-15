@@ -2,6 +2,7 @@ import { and, eq, gte, count } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { agentCalls, creditBalances } from '../../db/schema.js'
 import { ensureRedisConnected } from '../redis.js'
+import { compareMoney, moneyToNumber, subtractMoney, type MoneyInput } from '../money.js'
 
 const FREE_TIER_LIMIT = Number(process.env.FREE_TIER_CALLS_PER_MONTH ?? 10)
 if (!Number.isInteger(FREE_TIER_LIMIT) || FREE_TIER_LIMIT < 0) {
@@ -70,13 +71,16 @@ export async function getFreeTierStatus(userId: string): Promise<{
   }
 }
 
-export async function hasSufficientCredits(userId: string, pricePerCall: number): Promise<boolean> {
+export async function hasSufficientCredits(userId: string, pricePerCall: MoneyInput): Promise<boolean> {
   const [row] = await db
-    .select({ balance_usd: creditBalances.balance_usd })
+    .select({ balance_usd: creditBalances.balance_usd, reserved_usd: creditBalances.reserved_usd })
     .from(creditBalances)
     .where(eq(creditBalances.user_id, userId))
     .limit(1)
-  return (row?.balance_usd ?? 0) >= pricePerCall
+  return compareMoney(
+    subtractMoney(row?.balance_usd ?? '0', row?.reserved_usd ?? '0'),
+    pricePerCall
+  ) >= 0
 }
 
 export async function getCreditBalance(userId: string): Promise<number> {
@@ -85,5 +89,5 @@ export async function getCreditBalance(userId: string): Promise<number> {
     .from(creditBalances)
     .where(eq(creditBalances.user_id, userId))
     .limit(1)
-  return row?.balance_usd ?? 0
+  return moneyToNumber(row?.balance_usd ?? '0')
 }

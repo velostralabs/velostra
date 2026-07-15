@@ -4,7 +4,6 @@ import {
   decodeEventLog,
   defineChain,
   getAddress,
-  formatUnits,
   http,
   keccak256,
   isAddress,
@@ -15,6 +14,7 @@ import {
   type TransactionReceipt,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import { money, moneyFromMinor, moneyToMinor, type Money, type MoneyInput } from '../money.js'
 
 export const velostraEscrowAbi = [
   {
@@ -79,8 +79,8 @@ export const velostraRpcUrl =
   process.env.ROBINHOOD_RPC_URL ?? 'https://rpc.mainnet.chain.robinhood.com'
 export const velostraRpcTimeoutMs = Number(process.env.ROBINHOOD_RPC_TIMEOUT_MS ?? 10_000)
 
-if (!Number.isInteger(settlementTokenDecimals) || settlementTokenDecimals < 0 || settlementTokenDecimals > 18) {
-  throw new Error('SETTLEMENT_TOKEN_DECIMALS must be an integer between 0 and 18')
+if (settlementTokenDecimals !== 6) {
+  throw new Error('SETTLEMENT_TOKEN_DECIMALS must be exactly 6 for the Velostra money ledger')
 }
 if (!Number.isInteger(velostraRpcTimeoutMs) || velostraRpcTimeoutMs <= 0) {
   throw new Error('ROBINHOOD_RPC_TIMEOUT_MS must be a positive integer')
@@ -111,8 +111,8 @@ export function getVelostraEscrowAddress(): Address {
   return getAddress(value)
 }
 
-export function tokenUnitsToMoney(amount: bigint): number {
-  return Number(formatUnits(amount, settlementTokenDecimals))
+export function tokenUnitsToMoney(amount: bigint): Money {
+  return moneyFromMinor(amount)
 }
 
 export function hashAgentCallId(agentCallId: string): Hash {
@@ -120,11 +120,12 @@ export function hashAgentCallId(agentCallId: string): Hash {
   return keccak256(toBytes(agentCallId))
 }
 
-export function moneyToTokenUnits(amount: number): bigint {
-  if (!Number.isFinite(amount) || amount <= 0) {
-    throw new OnchainVerificationError('Amount must be a positive finite number')
+export function moneyToTokenUnits(amount: MoneyInput): bigint {
+  const minor = moneyToMinor(amount)
+  if (minor <= 0n) {
+    throw new OnchainVerificationError('Amount must be positive')
   }
-  return parseUnits(amount.toFixed(settlementTokenDecimals), settlementTokenDecimals)
+  return parseUnits(money(amount), settlementTokenDecimals)
 }
 
 async function verifyEscrowEvent({
@@ -136,7 +137,7 @@ async function verifyEscrowEvent({
 }: {
   hash: Hash
   sender: Address
-  amount: number
+  amount: MoneyInput
   eventName: 'Deposit' | 'Claimed'
   addressArg: 'user' | 'builder'
 }): Promise<TransactionReceipt> {
@@ -198,7 +199,7 @@ async function verifyEscrowEvent({
 export function verifyDepositTransaction(
   hash: Hash,
   sender: Address,
-  amount: number
+  amount: MoneyInput
 ): Promise<TransactionReceipt> {
   return verifyEscrowEvent({ hash, sender, amount, eventName: 'Deposit', addressArg: 'user' })
 }
@@ -206,17 +207,26 @@ export function verifyDepositTransaction(
 export function verifyClaimTransaction(
   hash: Hash,
   sender: Address,
-  amount: number
+  amount: MoneyInput
 ): Promise<TransactionReceipt> {
   return verifyEscrowEvent({ hash, sender, amount, eventName: 'Claimed', addressArg: 'builder' })
 }
 
+export class OnchainSettlementRevertedError extends Error {
+  constructor(message = 'creditBuilderEarnings reverted onchain') {
+    super(message)
+    this.name = 'OnchainSettlementRevertedError'
+  }
+}
+
 async function submitBuilderCredit(
   builder: Address,
-  grossAmount: number,
+  grossAmount: MoneyInput,
   callId: Hash
-): Promise<Hash | null> {
-  if (process.env.ONCHAIN_SETTLEMENT_MODE === 'disabled') return null
+): Promise<Hash> {
+  if (process.env.ONCHAIN_SETTLEMENT_MODE === 'disabled') {
+    throw new Error('Onchain settlement is disabled')
+  }
 
   const privateKey = process.env.BACKEND_SIGNER_PRIVATE_KEY
   if (!privateKey || !/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
@@ -229,28 +239,49 @@ async function submitBuilderCredit(
     chain: robinhoodChain,
     transport: http(velostraRpcUrl, { timeout: velostraRpcTimeoutMs }),
   })
-  const hash = await walletClient.writeContract({
+  return walletClient.writeContract({
     address: getVelostraEscrowAddress(),
     abi: velostraEscrowAbi,
     functionName: 'creditBuilderEarnings',
     args: [getAddress(builder), moneyToTokenUnits(grossAmount), callId],
   })
-  const receipt = await getVelostraPublicClient().waitForTransactionReceipt({ hash, confirmations: 1 })
-  if (receipt.status !== 'success') throw new Error('creditBuilderEarnings reverted onchain')
-  return hash
 }
 
-let settlementQueue: Promise<void> = Promise.resolve()
+let settlementBroadcastQueue: Promise<void> = Promise.resolve()
 
-export function creditBuilderEarningsOnchain(
+// Serialize only signer nonce allocation/broadcast. Receipt polling happens
+// outside the queue so one slow block cannot stall unrelated submissions.
+export function broadcastBuilderCredit(
   builder: Address,
-  grossAmount: number,
+  grossAmount: MoneyInput,
   callId: Hash
-): Promise<Hash | null> {
-  const job = settlementQueue.then(() => submitBuilderCredit(builder, grossAmount, callId))
-  settlementQueue = job.then(
+): Promise<Hash> {
+  const job = settlementBroadcastQueue.then(() =>
+    submitBuilderCredit(builder, grossAmount, callId)
+  )
+  settlementBroadcastQueue = job.then(
     () => undefined,
     () => undefined
   )
   return job
+}
+
+export async function waitForBuilderCredit(hash: Hash): Promise<TransactionReceipt> {
+  const receipt = await getVelostraPublicClient().waitForTransactionReceipt({
+    hash,
+    confirmations: 1,
+  })
+  if (receipt.status !== 'success') throw new OnchainSettlementRevertedError()
+  return receipt
+}
+
+// Compatibility helper for callers that do not need durable hash persistence.
+export async function creditBuilderEarningsOnchain(
+  builder: Address,
+  grossAmount: MoneyInput,
+  callId: Hash
+): Promise<Hash> {
+  const hash = await broadcastBuilderCredit(builder, grossAmount, callId)
+  await waitForBuilderCredit(hash)
+  return hash
 }

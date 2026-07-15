@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { and, desc, asc, eq, ilike, avg, count, gte, sql } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
+import type { Hash } from 'viem'
 import { db } from '../db/client.js'
 import {
   agents,
@@ -11,22 +12,32 @@ import {
   agentCategoryEnum,
   agentCalls,
   creditBalances,
-  builderEarnings,
-  transactions,
+  settlementAttempts,
 } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { buildGatewayHeaders } from '../lib/gateway/hmac.js'
 import { AgentEndpointError, safeFetchAgent } from '../lib/gateway/ssrf.js'
 import { decryptAgentSecret, omitAgentSecret } from '../lib/gateway/secrets.js'
 import { checkRateLimit, checkAgentRateLimit, checkGlobalRateLimit } from '../lib/gateway/ratelimit.js'
-import { hasFreeTierRemaining, hasSufficientCredits, incrementFreeTier } from '../lib/gateway/quota.js'
-import { BUILDER_SHARE_BPS, PLATFORM_FEE_BPS } from '../lib/constants.js'
+import { hasFreeTierRemaining, incrementFreeTier } from '../lib/gateway/quota.js'
+import { PLATFORM_FEE_BPS } from '../lib/constants.js'
 import {
-  creditBuilderEarningsOnchain,
+  broadcastBuilderCredit,
+  waitForBuilderCredit,
+  OnchainSettlementRevertedError,
   getVelostraEscrowAddress,
   hashAgentCallId,
   velostraChainId,
 } from '../lib/gateway/onchain.js'
+import { money, moneyToNumber, splitFee } from '../lib/money.js'
+import {
+  failUnsettledCall,
+  finalizeSettlement,
+  markSettlementAmbiguous,
+  markSettlementConfirmed,
+  markSettlementReady,
+  markSettlementSubmitted,
+} from '../lib/gateway/settlement.js'
 
 export const agentsRouter = Router()
 
@@ -69,6 +80,7 @@ agentsRouter.get('/', async (req, res) => {
 
   const list = rows.map((r) => ({
     ...r,
+    price_per_call: moneyToNumber(r.price_per_call),
     builder: { display_name: r.builder_name, verified: r.builder_verified },
   }))
 
@@ -95,6 +107,8 @@ agentsRouter.get('/:slug', async (req, res) => {
   res.json({
     agent: {
       ...omitAgentSecret(agent),
+      price_per_call: moneyToNumber(agent.price_per_call),
+      total_revenue: moneyToNumber(agent.total_revenue),
       builder: builder
         ? { display_name: builder.display_name, verified: builder.verified, bio: builder.bio }
         : null,
@@ -112,319 +126,315 @@ const runSchema = z.object({ input: z.string().min(1).max(10_000) })
 
 agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
   const parsed = runSchema.safeParse(req.body)
-  if (!parsed.success) return res.status(400).json({ error: 'input is required' })
-
-  const userId = req.auth!.id
-
-  if (!(await checkGlobalRateLimit())) {
-    return res.status(429).json({ error: 'Platform is busy, try again shortly' })
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'input is required', code: 'INVALID_INPUT' })
   }
 
+  const userId = req.auth!.id
+  if (!(await checkGlobalRateLimit())) {
+    return res.status(429).json({ error: 'Platform is busy, try again shortly', code: 'GLOBAL_RATE_LIMITED' })
+  }
   const { allowed } = await checkRateLimit(userId)
   if (!allowed) {
-    return res.status(429).json({ error: 'Rate limit exceeded, try again in a minute' })
+    return res.status(429).json({ error: 'Rate limit exceeded, try again in a minute', code: 'USER_RATE_LIMITED' })
   }
 
   const [agent] = await db.select().from(agents).where(eq(agents.slug, req.params.slug)).limit(1)
   if (!agent || agent.status !== 'APPROVED') {
-    return res.status(404).json({ error: 'Agent not found' })
+    return res.status(404).json({ error: 'Agent not found', code: 'AGENT_NOT_FOUND' })
   }
-
   if (!(await checkAgentRateLimit(userId, agent.id))) {
-    return res.status(429).json({ error: 'Too many calls to this agent, slow down' })
+    return res.status(429).json({ error: 'Too many calls to this agent, slow down', code: 'AGENT_RATE_LIMITED' })
   }
-
-  const isFreeTier = await hasFreeTierRemaining(userId)
-  if (!isFreeTier && !(await hasSufficientCredits(userId, agent.price_per_call))) {
-    return res.status(402).json({ error: 'Insufficient credits - top up to keep using this agent' })
-  }
-
-  const [builder] = await db
-    .select({ wallet_address: builders.wallet_address })
-    .from(builders)
-    .where(eq(builders.id, agent.builder_id))
-    .limit(1)
-  if (!builder) return res.status(500).json({ error: 'Agent builder profile is missing' })
-
-  const callId = createId()
-  const onchainCallId = isFreeTier ? null : hashAgentCallId(callId)
-  const body = JSON.stringify({ input: parsed.data.input, user_id: userId, call_id: callId })
   if (agent.secret_revoked_at) {
     return res.status(409).json({
       error: 'Agent gateway secret has been revoked by its builder',
       code: 'AGENT_SECRET_REVOKED',
     })
   }
+
+  const isFreeTier = await hasFreeTierRemaining(userId)
+  const [builder] = await db
+    .select({ wallet_address: builders.wallet_address })
+    .from(builders)
+    .where(eq(builders.id, agent.builder_id))
+    .limit(1)
+  if (!builder) {
+    return res.status(500).json({ error: 'Agent builder profile is missing', code: 'BUILDER_MISSING' })
+  }
+
+  const callId = createId()
+  const onchainCallId = isFreeTier ? null : hashAgentCallId(callId)
+  const split = splitFee(agent.price_per_call, PLATFORM_FEE_BPS)
+  const body = JSON.stringify({ input: parsed.data.input, user_id: userId, call_id: callId })
   const headers = buildGatewayHeaders(
     body,
     agent.id,
     decryptAgentSecret(agent.secret_key_ciphertext)
   )
-  const platformCut = Number(
-    ((agent.price_per_call * PLATFORM_FEE_BPS) / 10_000).toFixed(6)
-  )
-  const builderCut = Number(
-    ((agent.price_per_call * BUILDER_SHARE_BPS) / 10_000).toFixed(6)
-  )
 
   let durableCallCreated = false
-  let settlementTxHash: string | null = null
+  let settlementTxHash: Hash | null = null
 
   try {
-    // This intent must commit before any external side effect. If the API dies
-    // after the chain receipt, the reconciliation worker can still find the
-    // exact call through onchain_call_id.
-    await db.insert(agentCalls).values({
-      id: callId,
-      agent_id: agent.id,
-      user_id: userId,
-      input: parsed.data.input,
-      status: 'PROCESSING',
-      is_free_tier: isFreeTier,
-      onchain_call_id: onchainCallId,
-    })
-    durableCallCreated = true
+    // Commit the call intent, funds reservation, and outbox row together.
+    // No database transaction remains open during builder HTTP or chain RPC.
+    await db.transaction(async (tx) => {
+      await tx.insert(agentCalls).values({
+        id: callId,
+        agent_id: agent.id,
+        user_id: userId,
+        input: parsed.data.input,
+        status: 'PROCESSING',
+        is_free_tier: isFreeTier,
+        onchain_call_id: onchainCallId,
+      })
 
-    const result = await db.transaction(async (tx) => {
       if (!isFreeTier) {
-        const [lockedBalance] = await tx
-          .select({ balance_usd: creditBalances.balance_usd })
-          .from(creditBalances)
-          .where(eq(creditBalances.user_id, userId))
-          .for('update')
-          .limit(1)
-
-        if (!lockedBalance || lockedBalance.balance_usd < agent.price_per_call) {
-          const error = new Error('Insufficient credits')
+        const [reserved] = await tx
+          .update(creditBalances)
+          .set({
+            reserved_usd: sql`${creditBalances.reserved_usd} + ${split.gross}`,
+            updated_at: new Date(),
+          })
+          .where(
+            and(
+              eq(creditBalances.user_id, userId),
+              gte(
+                sql`${creditBalances.balance_usd} - ${creditBalances.reserved_usd}`,
+                split.gross
+              )
+            )
+          )
+          .returning({ id: creditBalances.id })
+        if (!reserved) {
+          const error = new Error('Insufficient available credits')
           error.name = 'InsufficientCreditsError'
           throw error
         }
-      }
 
-      const started = Date.now()
-      const upstream = await safeFetchAgent(agent.endpoint_url, {
-        method: 'POST',
-        headers,
-        body,
-      })
-      const rawOutput = upstream.text
-      let output: unknown = rawOutput
-      try {
-        output = rawOutput ? JSON.parse(rawOutput) : null
-      } catch {
-        // Plain-text agent responses are valid output too.
-      }
-      if (!upstream.ok) {
-        const error = new Error(`Agent endpoint returned HTTP ${upstream.status}`)
-        error.name = 'UpstreamAgentError'
-        throw error
-      }
-
-      const executionMs = Date.now() - started
-
-      // Persist the successful upstream result independently of the settlement
-      // transaction. A later onchain-confirmed/DB-rollback recovery therefore
-      // keeps the actual agent output instead of only repairing money totals.
-      await db
-        .update(agentCalls)
-        .set({ output, execution_ms: executionMs, error_message: null })
-        .where(eq(agentCalls.id, callId))
-
-      if (!isFreeTier) {
-        settlementTxHash = await creditBuilderEarningsOnchain(
-          builder.wallet_address as `0x${string}`,
-          agent.price_per_call,
-          onchainCallId!
-        )
-
-        if (
-          process.env.NODE_ENV === 'test' &&
-          process.env.RECONCILE_TEST_FAIL_AFTER_SETTLEMENT_INPUT === parsed.data.input
-        ) {
-          const error = new Error('Injected failure after onchain settlement')
-          error.name = 'PostSettlementTestError'
-          throw error
-        }
-
-        if (
-          process.env.NODE_ENV === 'test' &&
-          process.env.RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_INPUT === parsed.data.input
-        ) {
-          const pauseMs = Number(
-            process.env.RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_MS ?? 0
-          )
-          if (Number.isFinite(pauseMs) && pauseMs > 0) {
-            await new Promise((resolve) => setTimeout(resolve, pauseMs))
-          }
-        }
-      }
-
-      // Atomically claim finalization. The live path and reconciliation worker
-      // use the same PROCESSING -> SUCCESS guard, so exactly one transaction
-      // owns every ledger/stat side effect for this call.
-      const [wonFinalization] = await tx
-        .update(agentCalls)
-        .set({
-          status: 'SUCCESS',
-          output,
-          execution_ms: executionMs,
-          price_charged: isFreeTier ? 0 : agent.price_per_call,
-          builder_earned: isFreeTier ? 0 : builderCut,
-          platform_earned: isFreeTier ? 0 : platformCut,
-          error_message: null,
-          completed_at: new Date(),
+        await tx.insert(settlementAttempts).values({
+          agent_call_id: callId,
+          onchain_call_id: onchainCallId!,
+          builder_address: builder.wallet_address,
+          gross_amount: split.gross,
+          builder_amount: split.builder,
+          platform_amount: split.platform,
+          status: 'PREPARED',
+          chain_id: velostraChainId,
+          contract_address: getVelostraEscrowAddress(),
         })
-        .where(and(eq(agentCalls.id, callId), eq(agentCalls.status, 'PROCESSING')))
-        .returning({ id: agentCalls.id })
-
-      const wonCallFinalization = Boolean(wonFinalization)
-      let shouldApplyPaidLedger = wonCallFinalization && !isFreeTier
-
-      if (!wonCallFinalization) {
-        console.info('[agent-call] call already finalized; live path no-op', { callId })
       }
-
-      if (!isFreeTier && settlementTxHash) {
-        if (wonCallFinalization) {
-          const [insertedSettlement] = await tx
-            .insert(transactions)
-            .values({
-              agent_call_id: callId,
-              type: 'AGENT_CALL',
-              amount: agent.price_per_call,
-              currency: 'USDG',
-              tx_hash: settlementTxHash,
-              wallet_address: builder.wallet_address,
-              chain_id: velostraChainId,
-              contract_address: getVelostraEscrowAddress(),
-              event_name: 'EarningsCredited',
-              status: 'CONFIRMED',
-              confirmed_at: new Date(),
-            })
-            .onConflictDoNothing({ target: transactions.tx_hash })
-            .returning({ id: transactions.id })
-
-          shouldApplyPaidLedger = Boolean(insertedSettlement)
-          if (!insertedSettlement) {
-            await tx
-              .update(transactions)
-              .set({ agent_call_id: callId })
-              .where(eq(transactions.tx_hash, settlementTxHash))
-          }
-        } else {
-          await tx
-            .update(transactions)
-            .set({ agent_call_id: callId })
-            .where(eq(transactions.tx_hash, settlementTxHash))
-        }
-      }
-
-      if (shouldApplyPaidLedger) {
-          const [deducted] = await tx
-            .update(creditBalances)
-            .set({
-              balance_usd: sql`${creditBalances.balance_usd} - ${agent.price_per_call}`,
-              updated_at: new Date(),
-            })
-            .where(
-              and(
-                eq(creditBalances.user_id, userId),
-                gte(creditBalances.balance_usd, agent.price_per_call)
-              )
-            )
-            .returning({ balance_usd: creditBalances.balance_usd })
-          if (!deducted) {
-            const error = new Error('Insufficient credits')
-            error.name = 'InsufficientCreditsError'
-            throw error
-          }
-
-          const [credited] = await tx
-            .update(builderEarnings)
-            .set({
-              available: sql`${builderEarnings.available} + ${builderCut}`,
-              total_earned: sql`${builderEarnings.total_earned} + ${builderCut}`,
-              updated_at: new Date(),
-            })
-            .where(eq(builderEarnings.builder_id, agent.builder_id))
-            .returning({ id: builderEarnings.id })
-          if (!credited) throw new Error('Builder earnings record is missing')
-      }
-
-      if (wonCallFinalization && (isFreeTier || shouldApplyPaidLedger)) {
-        await tx
-          .update(agents)
-          .set({
-            total_calls: sql`${agents.total_calls} + 1`,
-            total_revenue: sql`${agents.total_revenue} + ${isFreeTier ? 0 : agent.price_per_call}`,
-            updated_at: new Date(),
-          })
-          .where(eq(agents.id, agent.id))
-      }
-
-      return { output, executionMs }
     })
+    durableCallCreated = true
 
-    if (isFreeTier) {
-      try {
-        await incrementFreeTier(userId)
-      } catch (error) {
-        console.error('[free-tier] Redis increment failed; Postgres fallback remains authoritative', error)
-      }
+    const started = Date.now()
+    const upstream = await safeFetchAgent(agent.endpoint_url, {
+      method: 'POST',
+      headers,
+      body,
+    })
+    const executionMs = Date.now() - started
+    let output: unknown = upstream.text
+    try {
+      output = upstream.text ? JSON.parse(upstream.text) : null
+    } catch {
+      // Plain-text responses are valid.
+    }
+    if (!upstream.ok) {
+      const error = new Error(`Agent endpoint returned HTTP ${upstream.status}`)
+      error.name = 'UpstreamAgentError'
+      throw error
     }
 
-    res.json({
-      call_id: callId,
-      output: result.output,
-      execution_ms: result.executionMs,
-      is_free_tier: isFreeTier,
-      settlement_tx_hash: settlementTxHash,
-    })
-  } catch (err) {
-    if (durableCallCreated && !settlementTxHash) {
-      try {
-        await db
+    await db
+      .update(agentCalls)
+      .set({ output, execution_ms: executionMs, error_message: null })
+      .where(and(eq(agentCalls.id, callId), eq(agentCalls.status, 'PROCESSING')))
+
+    if (!isFreeTier) await markSettlementReady(callId)
+
+    if (isFreeTier) {
+      const finalized = await db.transaction(async (tx) => {
+        const [won] = await tx
           .update(agentCalls)
           .set({
-            status: 'FAILED',
-            error_message: err instanceof Error ? err.message : 'Unknown error',
+            status: 'SUCCESS',
+            output,
+            execution_ms: executionMs,
+            price_charged: money(0),
+            builder_earned: money(0),
+            platform_earned: money(0),
+            error_message: null,
             completed_at: new Date(),
           })
           .where(and(eq(agentCalls.id, callId), eq(agentCalls.status, 'PROCESSING')))
-      } catch (recordError) {
-        console.error('[agent-call] failed to update failed call', recordError)
+          .returning({ id: agentCalls.id })
+        if (won) {
+          await tx
+            .update(agents)
+            .set({
+              total_calls: sql`${agents.total_calls} + 1`,
+              updated_at: new Date(),
+            })
+            .where(eq(agents.id, agent.id))
+        }
+        return Boolean(won)
+      })
+
+      if (finalized) {
+        try {
+          await incrementFreeTier(userId)
+        } catch (error) {
+          console.error('[free-tier] Redis increment failed; Postgres remains authoritative', error)
+        }
       }
+
+      return res.json({
+        call_id: callId,
+        output,
+        execution_ms: executionMs,
+        is_free_tier: true,
+        settlement_tx_hash: null,
+      })
     }
 
-    if (settlementTxHash) {
-      console.error(
-        '[agent-call] settlement confirmed but DB commit failed; reconciliation pending',
-        { callId, onchainCallId, settlementTxHash, error: err }
+    try {
+      settlementTxHash = await broadcastBuilderCredit(
+        builder.wallet_address as `0x${string}`,
+        split.gross,
+        onchainCallId!
       )
+    } catch (error) {
+      await markSettlementAmbiguous(callId, error)
+      console.error('[agent-call] broadcast outcome is ambiguous; reconciliation pending', {
+        callId,
+        onchainCallId,
+        error,
+      })
       return res.status(503).json({
-        error: 'Settlement confirmed; call reconciliation is pending',
+        error: 'Settlement broadcast outcome is uncertain; reconciliation is pending',
+        code: 'SETTLEMENT_AMBIGUOUS',
+        call_id: callId,
+        reconciliation_pending: true,
+      })
+    }
+
+    // Persist the hash before receipt polling. A crash after this write is
+    // recoverable without relying only on a broad event scan.
+    await markSettlementSubmitted(callId, settlementTxHash)
+
+    let receipt
+    try {
+      if (
+        process.env.NODE_ENV === 'test' &&
+        process.env.RECONCILE_TEST_AMBIGUOUS_RECEIPT_INPUT === parsed.data.input
+      ) {
+        throw new Error('Injected ambiguous receipt lookup')
+      }
+      receipt = await waitForBuilderCredit(settlementTxHash)
+    } catch (error) {
+      if (error instanceof OnchainSettlementRevertedError) {
+        await failUnsettledCall(callId, error)
+        return res.status(502).json({
+          error: 'Onchain settlement reverted; reserved credits were released',
+          code: 'SETTLEMENT_REVERTED',
+          call_id: callId,
+          settlement_tx_hash: settlementTxHash,
+        })
+      }
+
+      await markSettlementAmbiguous(callId, error, settlementTxHash)
+      console.error('[agent-call] receipt unavailable; reconciliation pending', {
+        callId,
+        settlementTxHash,
+        error,
+      })
+      return res.status(503).json({
+        error: 'Settlement receipt is not yet available; reconciliation is pending',
+        code: 'SETTLEMENT_AMBIGUOUS',
         call_id: callId,
         settlement_tx_hash: settlementTxHash,
         reconciliation_pending: true,
       })
     }
 
-    if (err instanceof Error && err.name === 'InsufficientCreditsError') {
-      return res.status(402).json({ error: 'Insufficient credits - top up to keep using this agent' })
+    await markSettlementConfirmed(callId, settlementTxHash, receipt.blockNumber)
+
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.RECONCILE_TEST_FAIL_AFTER_SETTLEMENT_INPUT === parsed.data.input
+    ) {
+      const error = new Error('Injected failure after onchain settlement')
+      error.name = 'PostSettlementTestError'
+      throw error
+    }
+    if (
+      process.env.NODE_ENV === 'test' &&
+      process.env.RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_INPUT === parsed.data.input
+    ) {
+      const pauseMs = Number(process.env.RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_MS ?? 0)
+      if (Number.isFinite(pauseMs) && pauseMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, pauseMs))
+      }
     }
 
-    const message =
-      err instanceof AgentEndpointError ||
-      (err instanceof Error && err.name === 'UpstreamAgentError')
+    await finalizeSettlement({
+      callId,
+      txHash: settlementTxHash,
+      blockNumber: receipt.blockNumber,
+      confirmedAt: new Date(),
+    })
+
+    return res.json({
+      call_id: callId,
+      output,
+      execution_ms: executionMs,
+      is_free_tier: false,
+      settlement_tx_hash: settlementTxHash,
+    })
+  } catch (error) {
+    if (durableCallCreated && !settlementTxHash) {
+      try {
+        await failUnsettledCall(callId, error)
+      } catch (recordError) {
+        console.error('[agent-call] failed to release failed call reservation', recordError)
+      }
+    }
+
+    if (settlementTxHash) {
+      console.error('[agent-call] chain side effect may exist; reconciliation pending', {
+        callId,
+        onchainCallId,
+        settlementTxHash,
+        error,
+      })
+      return res.status(503).json({
+        error: 'Settlement may be confirmed; call reconciliation is pending',
+        code: 'RECONCILIATION_PENDING',
+        call_id: callId,
+        settlement_tx_hash: settlementTxHash,
+        reconciliation_pending: true,
+      })
+    }
+    if (error instanceof Error && error.name === 'InsufficientCreditsError') {
+      return res.status(402).json({
+        error: 'Insufficient credits - top up to keep using this agent',
+        code: 'INSUFFICIENT_CREDITS',
+      })
+    }
+
+    const endpointFailure =
+      error instanceof AgentEndpointError ||
+      (error instanceof Error && error.name === 'UpstreamAgentError')
+    return res.status(endpointFailure ? 502 : 500).json({
+      error: endpointFailure
         ? 'Agent endpoint failed to respond safely'
-        : 'Onchain settlement failed; the call was not charged'
-    res.status(502).json({ error: message })
+        : 'Agent call could not be completed',
+      code: endpointFailure ? 'AGENT_ENDPOINT_FAILED' : 'AGENT_CALL_FAILED',
+    })
   }
 })
-
-// ─────────────────────────────────────────
-// POST /api/agents/:slug/review
-// ─────────────────────────────────────────
 
 const reviewSchema = z.object({ rating: z.number().min(1).max(5), comment: z.string().max(1000).optional() })
 

@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   pgTable,
   pgEnum,
@@ -11,6 +12,7 @@ import {
   jsonb,
   uniqueIndex,
   index,
+  check,
 } from 'drizzle-orm/pg-core'
 import { createId } from '@paralleldrive/cuid2'
 
@@ -43,6 +45,15 @@ export const transactionTypeEnum = pgEnum('transaction_type', [
   'PLATFORM_WITHDRAWAL',
 ])
 export const txStatusEnum = pgEnum('tx_status', ['PENDING', 'CONFIRMED', 'FAILED'])
+export const settlementStatusEnum = pgEnum('settlement_status', [
+  'PREPARED',
+  'READY',
+  'SUBMITTED',
+  'AMBIGUOUS',
+  'CONFIRMED',
+  'APPLIED',
+  'FAILED',
+])
 export const reportReasonEnum = pgEnum('report_reason', [
   'HARMFUL_CONTENT',
   'MISLEADING',
@@ -123,20 +134,31 @@ export const adminAuditLogs = pgTable(
 // CREDIT BALANCE
 // ─────────────────────────────────────────
 
-export const creditBalances = pgTable('credit_balances', {
-  id: id(),
-  user_id: text('user_id')
-    .notNull()
-    .unique()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  balance_usd: numeric('balance_usd', { precision: 20, scale: 6, mode: 'number' })
-    .notNull()
-    .default(0),
-  free_tier_used: integer('free_tier_used').notNull().default(0),
-  free_tier_reset_date: timestamp('free_tier_reset_date').notNull().defaultNow(),
-  created_at: timestamp('created_at').notNull().defaultNow(),
-  updated_at: timestamp('updated_at').notNull().defaultNow(),
-})
+export const creditBalances = pgTable(
+  'credit_balances',
+  {
+    id: id(),
+    user_id: text('user_id')
+      .notNull()
+      .unique()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    balance_usd: numeric('balance_usd', { precision: 20, scale: 6 })
+      .notNull()
+      .default('0.000000'),
+    reserved_usd: numeric('reserved_usd', { precision: 20, scale: 6 })
+      .notNull()
+      .default('0.000000'),
+    free_tier_used: integer('free_tier_used').notNull().default(0),
+    free_tier_reset_date: timestamp('free_tier_reset_date').notNull().defaultNow(),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+    updated_at: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    check('credit_balance_nonnegative', sql.raw('balance_usd >= 0')),
+    check('credit_reservation_nonnegative', sql.raw('reserved_usd >= 0')),
+    check('credit_reservation_within_balance', sql.raw('reserved_usd <= balance_usd')),
+  ]
+)
 
 // ─────────────────────────────────────────
 // BUILDER
@@ -170,15 +192,15 @@ export const builderEarnings = pgTable('builder_earnings', {
     .notNull()
     .unique()
     .references(() => builders.id, { onDelete: 'cascade' }),
-  total_earned: numeric('total_earned', { precision: 20, scale: 6, mode: 'number' })
+  total_earned: numeric('total_earned', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
-  available: numeric('available', { precision: 20, scale: 6, mode: 'number' })
+    .default('0.000000'),
+  available: numeric('available', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
-  total_claimed: numeric('total_claimed', { precision: 20, scale: 6, mode: 'number' })
+    .default('0.000000'),
+  total_claimed: numeric('total_claimed', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
+    .default('0.000000'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 })
@@ -192,7 +214,7 @@ export const earningsClaims = pgTable('earnings_claims', {
   builder_id: text('builder_id')
     .notNull()
     .references(() => builders.id, { onDelete: 'cascade' }),
-  amount: numeric('amount', { precision: 20, scale: 6, mode: 'number' }).notNull(),
+  amount: numeric('amount', { precision: 20, scale: 6 }).notNull(),
   status: claimStatusEnum('status').notNull().default('PENDING'),
   tx_hash: text('tx_hash').unique(), // Robinhood Chain (EVM) transaction hash; unique prevents replay
   wallet_address: text('wallet_address').notNull(),
@@ -223,15 +245,15 @@ export const agents = pgTable('agents', {
   secret_version: integer('secret_version').notNull().default(1),
   secret_rotated_at: timestamp('secret_rotated_at').notNull().defaultNow(),
   secret_revoked_at: timestamp('secret_revoked_at'),
-  price_per_call: numeric('price_per_call', { precision: 20, scale: 6, mode: 'number' }).notNull(),
+  price_per_call: numeric('price_per_call', { precision: 20, scale: 6 }).notNull(),
   price_tier: priceTierEnum('price_tier').notNull().default('BASIC'),
   logo_url: text('logo_url'),
   status: agentStatusEnum('status').notNull().default('PENDING'),
   featured: boolean('featured').notNull().default(false),
   total_calls: integer('total_calls').notNull().default(0),
-  total_revenue: numeric('total_revenue', { precision: 20, scale: 6, mode: 'number' })
+  total_revenue: numeric('total_revenue', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
+    .default('0.000000'),
   avg_rating: doublePrecision('avg_rating'),
   review_count: integer('review_count').notNull().default(0),
   created_at: timestamp('created_at').notNull().defaultNow(),
@@ -267,15 +289,15 @@ export const agentCalls = pgTable('agent_calls', {
   status: callStatusEnum('status').notNull().default('PENDING'),
   is_free_tier: boolean('is_free_tier').notNull().default(false),
   onchain_call_id: text('onchain_call_id').unique(),
-  price_charged: numeric('price_charged', { precision: 20, scale: 6, mode: 'number' })
+  price_charged: numeric('price_charged', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
-  builder_earned: numeric('builder_earned', { precision: 20, scale: 6, mode: 'number' })
+    .default('0.000000'),
+  builder_earned: numeric('builder_earned', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
-  platform_earned: numeric('platform_earned', { precision: 20, scale: 6, mode: 'number' })
+    .default('0.000000'),
+  platform_earned: numeric('platform_earned', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
+    .default('0.000000'),
   execution_ms: integer('execution_ms'),
   tokens_used: integer('tokens_used'),
   error_message: text('error_message'),
@@ -296,7 +318,7 @@ export const transactions = pgTable('transactions', {
     .unique()
     .references(() => agentCalls.id, { onDelete: 'set null' }),
   type: transactionTypeEnum('type').notNull(),
-  amount: numeric('amount', { precision: 20, scale: 6, mode: 'number' }).notNull(),
+  amount: numeric('amount', { precision: 20, scale: 6 }).notNull(),
   currency: text('currency').notNull().default('USDG'), // Robinhood Chain stablecoin
   tx_hash: text('tx_hash').unique(), // Robinhood Chain (EVM) tx hash; unique prevents replay
   wallet_address: text('wallet_address'),
@@ -314,6 +336,43 @@ export const transactions = pgTable('transactions', {
 // REVIEW
 // ─────────────────────────────────────────
 
+// Durable intent/outbox for the backend-signed EarningsCredited transaction.
+// A row exists before broadcast, and the tx hash is persisted before waiting
+// for a receipt. The chain event remains the recovery source of truth.
+export const settlementAttempts = pgTable(
+  'settlement_attempts',
+  {
+    id: id(),
+    agent_call_id: text('agent_call_id')
+      .notNull()
+      .unique()
+      .references(() => agentCalls.id, { onDelete: 'cascade' }),
+    onchain_call_id: text('onchain_call_id').notNull().unique(),
+    builder_address: text('builder_address').notNull(),
+    gross_amount: numeric('gross_amount', { precision: 20, scale: 6 }).notNull(),
+    builder_amount: numeric('builder_amount', { precision: 20, scale: 6 }).notNull(),
+    platform_amount: numeric('platform_amount', { precision: 20, scale: 6 }).notNull(),
+    status: settlementStatusEnum('status').notNull().default('PREPARED'),
+    tx_hash: text('tx_hash').unique(),
+    chain_id: integer('chain_id').notNull(),
+    contract_address: text('contract_address').notNull(),
+    block_number: bigint('block_number', { mode: 'bigint' }),
+    attempt_count: integer('attempt_count').notNull().default(0),
+    last_error: text('last_error'),
+    submitted_at: timestamp('submitted_at'),
+    confirmed_at: timestamp('confirmed_at'),
+    applied_at: timestamp('applied_at'),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+    updated_at: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('settlement_attempt_status_updated_idx').on(table.status, table.updated_at),
+    check('settlement_gross_positive', sql.raw('gross_amount > 0')),
+    check('settlement_builder_nonnegative', sql.raw('builder_amount >= 0')),
+    check('settlement_platform_nonnegative', sql.raw('platform_amount >= 0')),
+    check('settlement_amounts_balance', sql.raw('gross_amount = builder_amount + platform_amount')),
+  ]
+)
 export const reviews = pgTable(
   'reviews',
   {
@@ -359,9 +418,9 @@ export const platformStats = pgTable('platform_stats', {
   id: id(),
   date: timestamp('date').notNull().unique(),
   total_calls: integer('total_calls').notNull().default(0),
-  total_revenue: numeric('total_revenue', { precision: 20, scale: 6, mode: 'number' })
+  total_revenue: numeric('total_revenue', { precision: 20, scale: 6 })
     .notNull()
-    .default(0),
+    .default('0.000000'),
   active_users: integer('active_users').notNull().default(0),
   active_builders: integer('active_builders').notNull().default(0),
   new_agents: integer('new_agents').notNull().default(0),
@@ -399,11 +458,10 @@ export const chainEvents = pgTable(
     block_timestamp: timestamp('block_timestamp').notNull(),
     actor_address: text('actor_address').notNull(),
     correlation_id: text('correlation_id'),
-    amount: numeric('amount', { precision: 20, scale: 6, mode: 'number' }).notNull(),
+    amount: numeric('amount', { precision: 20, scale: 6 }).notNull(),
     secondary_amount: numeric('secondary_amount', {
       precision: 20,
       scale: 6,
-      mode: 'number',
     }),
     reconciled: boolean('reconciled').notNull().default(false),
     reconciliation_error: text('reconciliation_error'),

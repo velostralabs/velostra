@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { pathToFileURL } from 'node:url'
-import { asc, and, eq, sql } from 'drizzle-orm'
+import { asc, and, eq, inArray, sql } from 'drizzle-orm'
 import { decodeEventLog, getAddress, type Address, type Hash, type Log } from 'viem'
 import { db, pool } from '../db/client.js'
 import {
@@ -13,22 +13,35 @@ import {
   creditBalances,
   earningsClaims,
   transactions,
+  settlementAttempts,
   users,
 } from '../db/schema.js'
 import {
+  broadcastBuilderCredit,
   getVelostraEscrowAddress,
   getVelostraPublicClient,
   tokenUnitsToMoney,
   velostraChainId,
   velostraEscrowAbi,
 } from '../lib/gateway/onchain.js'
+import { money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
+import {
+  failUnsettledCall,
+  finalizeSettlement,
+  markSettlementAmbiguous,
+  markSettlementConfirmed,
+  markSettlementSubmitted,
+} from '../lib/gateway/settlement.js'
 
 const intervalMs = positiveIntegerEnv('RECONCILE_INTERVAL_MS', 30_000)
 const maxBlockRange = BigInt(positiveIntegerEnv('RECONCILE_MAX_BLOCK_RANGE', 2_000))
 const confirmations = BigInt(nonNegativeIntegerEnv('RECONCILE_CONFIRMATIONS', 12))
 const rpcRetries = positiveIntegerEnv('RECONCILE_RPC_RETRIES', 3)
 const rpcRetryBaseMs = positiveIntegerEnv('RECONCILE_RPC_RETRY_BASE_MS', 1_000)
-const driftThreshold = nonNegativeNumberEnv('RECONCILE_DRIFT_THRESHOLD', 0.000001)
+const driftThreshold = money(process.env.RECONCILE_DRIFT_THRESHOLD ?? '0.000001')
+if (moneyToMinor(driftThreshold) < 0n) {
+  throw new Error('RECONCILE_DRIFT_THRESHOLD must be non-negative')
+}
 const deploymentBlock = bigintEnv('VELOSTRA_DEPLOYMENT_BLOCK', 0n)
 
 type ChainEventRow = typeof chainEvents.$inferSelect
@@ -46,8 +59,8 @@ interface ParsedChainEvent {
   blockNumber: bigint
   actorAddress: Address
   correlationId: Hash | null
-  amount: number
-  secondaryAmount: number | null
+  amount: Money
+  secondaryAmount: Money | null
 }
 
 function positiveIntegerEnv(name: string, fallback: number): number {
@@ -59,12 +72,6 @@ function positiveIntegerEnv(name: string, fallback: number): number {
 function nonNegativeIntegerEnv(name: string, fallback: number): number {
   const value = Number(process.env[name] ?? fallback)
   if (!Number.isInteger(value) || value < 0) throw new Error(name + ' must be a non-negative integer')
-  return value
-}
-
-function nonNegativeNumberEnv(name: string, fallback: number): number {
-  const value = Number(process.env[name] ?? fallback)
-  if (!Number.isFinite(value) || value < 0) throw new Error(name + ' must be a non-negative number')
   return value
 }
 
@@ -202,7 +209,76 @@ async function markPendingError(id: string, message: string): Promise<void> {
   await db.update(chainEvents).set({ reconciliation_error: message }).where(eq(chainEvents.id, id))
 }
 
+async function reconcileEarningsEvent(event: ChainEventRow): Promise<boolean> {
+  if (!event.correlation_id) {
+    await markPendingError(event.id, 'EarningsCredited event is missing its bytes32 callId')
+    return false
+  }
+
+  const [call] = await db
+    .select({
+      id: agentCalls.id,
+      builder_id: agents.builder_id,
+      builder_wallet: builders.wallet_address,
+    })
+    .from(agentCalls)
+    .innerJoin(agents, eq(agents.id, agentCalls.agent_id))
+    .innerJoin(builders, eq(builders.id, agents.builder_id))
+    .where(eq(agentCalls.onchain_call_id, event.correlation_id))
+    .limit(1)
+
+  if (!call) {
+    await markPendingError(event.id, 'No agent call matches onchain callId ' + event.correlation_id)
+    return false
+  }
+  if (call.builder_wallet.toLowerCase() !== event.actor_address.toLowerCase()) {
+    await markPendingError(event.id, 'Earnings builder does not match correlated call ' + call.id)
+    return false
+  }
+
+  const [attempt] = await db
+    .select({ id: settlementAttempts.id })
+    .from(settlementAttempts)
+    .where(eq(settlementAttempts.agent_call_id, call.id))
+    .limit(1)
+  if (!attempt) {
+    await markPendingError(
+      event.id,
+      'Durable settlement attempt is missing for correlated call ' + call.id
+    )
+    return false
+  }
+
+  try {
+    await finalizeSettlement({
+      callId: call.id,
+      txHash: event.tx_hash as Hash,
+      blockNumber: event.block_number,
+      logIndex: event.log_index,
+      confirmedAt: event.block_timestamp,
+      builderAmount: event.amount,
+      platformAmount: event.secondary_amount ?? money(0),
+    })
+    await db
+      .update(chainEvents)
+      .set({ reconciled: true, reconciliation_error: null, reconciled_at: new Date() })
+      .where(eq(chainEvents.id, event.id))
+    return true
+  } catch (error) {
+    await markPendingError(event.id, error instanceof Error ? error.message : String(error))
+    throw error
+  }
+}
 async function reconcileStoredEvent(txHash: string, logIndex: number): Promise<boolean> {
+  const [stored] = await db
+    .select()
+    .from(chainEvents)
+    .where(and(eq(chainEvents.tx_hash, txHash), eq(chainEvents.log_index, logIndex)))
+    .limit(1)
+  if (!stored || stored.reconciled) return true
+  if (stored.event_type === 'EARNINGS_CREDITED') {
+    return reconcileEarningsEvent(stored)
+  }
   try {
     return await db.transaction(async (tx) => {
       const [event] = await tx
@@ -251,7 +327,7 @@ async function reconcileStoredEvent(txHash: string, logIndex: number): Promise<b
 
         await tx
           .insert(creditBalances)
-          .values({ user_id: user.id, balance_usd: 0 })
+          .values({ user_id: user.id, balance_usd: money(0) })
           .onConflictDoNothing({ target: creditBalances.user_id })
         const [balance] = await tx
           .select({ id: creditBalances.id })
@@ -364,192 +440,6 @@ async function reconcileStoredEvent(txHash: string, logIndex: number): Promise<b
         return true
       }
 
-      if (event.event_type === 'EARNINGS_CREDITED') {
-        if (!event.correlation_id) {
-          await markUnmatched('EarningsCredited event is missing its bytes32 callId')
-          return false
-        }
-
-        const [call] = await tx
-          .select({
-            id: agentCalls.id,
-            agent_id: agentCalls.agent_id,
-            user_id: agentCalls.user_id,
-          })
-          .from(agentCalls)
-          .where(eq(agentCalls.onchain_call_id, event.correlation_id))
-          .limit(1)
-        if (!call) {
-          await markUnmatched(
-            'No agent call matches onchain callId ' + event.correlation_id
-          )
-          return false
-        }
-
-        const [callAgent] = await tx
-          .select({ builder_id: agents.builder_id })
-          .from(agents)
-          .where(eq(agents.id, call.agent_id))
-          .limit(1)
-        if (!callAgent) {
-          await markUnmatched('Agent is missing for correlated call ' + call.id)
-          return false
-        }
-
-        const [builder] = await tx
-          .select({ id: builders.id, wallet_address: builders.wallet_address })
-          .from(builders)
-          .where(eq(builders.id, callAgent.builder_id))
-          .limit(1)
-        if (
-          !builder ||
-          builder.wallet_address.toLowerCase() !== event.actor_address.toLowerCase()
-        ) {
-          await markUnmatched(
-            'Earnings builder does not match correlated call ' + call.id
-          )
-          return false
-        }
-
-        // Match the normal paid-call lock order. A live API transaction holds
-        // this row before broadcasting; the worker waits for it to commit or
-        // roll back instead of racing it into a double debit.
-        const [balance] = await tx
-          .select({ id: creditBalances.id })
-          .from(creditBalances)
-          .where(eq(creditBalances.user_id, call.user_id))
-          .for('update')
-          .limit(1)
-        if (!balance) {
-          await markUnmatched('Credit balance is missing for correlated call ' + call.id)
-          return false
-        }
-
-        await tx
-          .insert(builderEarnings)
-          .values({ builder_id: builder.id })
-          .onConflictDoNothing({ target: builderEarnings.builder_id })
-        await tx
-          .select({ id: builderEarnings.id })
-          .from(builderEarnings)
-          .where(eq(builderEarnings.builder_id, builder.id))
-          .for('update')
-          .limit(1)
-
-        const grossAmount = Number(
-          (event.amount + (event.secondary_amount ?? 0)).toFixed(6)
-        )
-
-        // This conditional transition is the ownership claim shared with the
-        // live request path. If another transaction already finalized the call,
-        // this transaction must not touch any user/builder/agent ledger.
-        const [wonFinalization] = await tx
-          .update(agentCalls)
-          .set({
-            status: 'SUCCESS',
-            price_charged: grossAmount,
-            builder_earned: event.amount,
-            platform_earned: event.secondary_amount ?? 0,
-            error_message: null,
-            completed_at: event.block_timestamp,
-          })
-          .where(
-            and(
-              eq(agentCalls.id, call.id),
-              eq(agentCalls.status, 'PROCESSING')
-            )
-          )
-          .returning({ id: agentCalls.id })
-
-        if (!wonFinalization) {
-          const [currentCall] = await tx
-            .select({ status: agentCalls.status })
-            .from(agentCalls)
-            .where(eq(agentCalls.id, call.id))
-            .limit(1)
-          if (currentCall?.status === 'SUCCESS') {
-            console.info('[reconcile] correlated call already finalized; no-op ' + call.id)
-            await markReconciled()
-            return true
-          }
-          await markUnmatched(
-            'Correlated call is not PROCESSING: ' + call.id + ' status=' + (currentCall?.status ?? 'missing')
-          )
-          return false
-        }
-
-        const [existing] = await tx
-          .select({ id: transactions.id, agent_call_id: transactions.agent_call_id })
-          .from(transactions)
-          .where(eq(transactions.tx_hash, event.tx_hash))
-          .limit(1)
-
-        if (existing) {
-          if (existing.agent_call_id !== call.id) {
-            await tx
-              .update(transactions)
-              .set({ agent_call_id: call.id })
-              .where(eq(transactions.id, existing.id))
-          }
-        } else {
-          const [inserted] = await tx
-            .insert(transactions)
-            .values({
-              agent_call_id: call.id,
-              type: 'AGENT_CALL',
-              amount: grossAmount,
-              currency: 'USDG',
-              tx_hash: event.tx_hash,
-              wallet_address: event.actor_address,
-              chain_id: velostraChainId,
-              contract_address: getVelostraEscrowAddress(),
-              event_name: 'EarningsCredited',
-              block_number: event.block_number,
-              log_index: event.log_index,
-              status: 'CONFIRMED',
-              created_at: event.block_timestamp,
-              confirmed_at: event.block_timestamp,
-            })
-            .onConflictDoNothing({ target: transactions.tx_hash })
-            .returning({ id: transactions.id })
-
-          if (inserted) {
-            // The chain event is authoritative. A later call may have consumed
-            // the previously locked credits after the failed transaction, so
-            // preserve the debt even if this temporarily makes the balance
-            // negative rather than silently undercharging the settled call.
-            await tx
-              .update(creditBalances)
-              .set({
-                balance_usd: sql`${creditBalances.balance_usd} - ${grossAmount}`,
-                updated_at: new Date(),
-              })
-              .where(eq(creditBalances.id, balance.id))
-
-            await tx
-              .update(builderEarnings)
-              .set({
-                available: sql`${builderEarnings.available} + ${event.amount}`,
-                total_earned: sql`${builderEarnings.total_earned} + ${event.amount}`,
-                updated_at: new Date(),
-              })
-              .where(eq(builderEarnings.builder_id, builder.id))
-
-            await tx
-              .update(agents)
-              .set({
-                total_calls: sql`${agents.total_calls} + 1`,
-                total_revenue: sql`${agents.total_revenue} + ${grossAmount}`,
-                updated_at: new Date(),
-              })
-              .where(eq(agents.id, call.agent_id))
-          }
-        }
-
-        await markReconciled()
-        return true
-      }
-
       const [existing] = await tx
         .select({ id: transactions.id })
         .from(transactions)
@@ -610,6 +500,124 @@ async function retryPendingEvents(limit = 1_000): Promise<number> {
   return healed
 }
 
+const outboxGraceMs = positiveIntegerEnv('RECONCILE_OUTBOX_GRACE_MS', 120_000)
+
+export async function recoverSettlementAttempts(limit = 500): Promise<number> {
+  const attempts = await db
+    .select()
+    .from(settlementAttempts)
+    .where(
+      inArray(settlementAttempts.status, [
+        'PREPARED',
+        'READY',
+        'SUBMITTED',
+        'AMBIGUOUS',
+        'CONFIRMED',
+      ])
+    )
+    .orderBy(asc(settlementAttempts.updated_at))
+    .limit(limit)
+
+  let recovered = 0
+  const staleBefore = Date.now() - outboxGraceMs
+
+  for (const attempt of attempts) {
+    if (attempt.status === 'PREPARED') {
+      if (attempt.updated_at.getTime() <= staleBefore) {
+        if (
+          await failUnsettledCall(
+            attempt.agent_call_id,
+            new Error('Upstream completion was not durably recorded before timeout')
+          )
+        ) {
+          recovered += 1
+        }
+      }
+      continue
+    }
+
+    if (attempt.status === 'CONFIRMED' && attempt.tx_hash) {
+      await finalizeSettlement({
+        callId: attempt.agent_call_id,
+        txHash: attempt.tx_hash as Hash,
+        blockNumber: attempt.block_number ?? undefined,
+        confirmedAt: attempt.confirmed_at ?? new Date(),
+      })
+      recovered += 1
+      continue
+    }
+
+    if (!attempt.tx_hash) {
+      if (attempt.updated_at.getTime() > staleBefore) continue
+      try {
+        const hash = await broadcastBuilderCredit(
+          getAddress(attempt.builder_address),
+          attempt.gross_amount,
+          attempt.onchain_call_id as Hash
+        )
+        await markSettlementSubmitted(attempt.agent_call_id, hash, true)
+        recovered += 1
+      } catch (error) {
+        await markSettlementAmbiguous(attempt.agent_call_id, error)
+        console.warn('[reconcile] outbox rebroadcast remains ambiguous', {
+          attemptId: attempt.id,
+          callId: attempt.agent_call_id,
+          error,
+        })
+      }
+      continue
+    }
+
+    let receipt
+    try {
+      receipt = await getVelostraPublicClient().getTransactionReceipt({
+        hash: attempt.tx_hash as Hash,
+      })
+    } catch (error) {
+      await markSettlementAmbiguous(
+        attempt.agent_call_id,
+        error instanceof Error ? error : new Error(String(error)),
+        attempt.tx_hash as Hash
+      )
+      if (attempt.updated_at.getTime() <= staleBefore) {
+        console.warn('[reconcile] stale settlement transaction still has no receipt', {
+          attemptId: attempt.id,
+          callId: attempt.agent_call_id,
+          txHash: attempt.tx_hash,
+        })
+      }
+      continue
+    }
+
+    if (receipt.status !== 'success') {
+      if (attempt.last_error === 'RECOVERY_REBROADCAST') {
+        await markSettlementAmbiguous(
+          attempt.agent_call_id,
+          new Error('Recovery rebroadcast reverted; waiting for correlated event'),
+          attempt.tx_hash as Hash
+        )
+      } else if (await failUnsettledCall(attempt.agent_call_id, new Error('Settlement reverted onchain'))) {
+        recovered += 1
+      }
+      continue
+    }
+
+    await markSettlementConfirmed(
+      attempt.agent_call_id,
+      attempt.tx_hash as Hash,
+      receipt.blockNumber
+    )
+    await finalizeSettlement({
+      callId: attempt.agent_call_id,
+      txHash: attempt.tx_hash as Hash,
+      blockNumber: receipt.blockNumber,
+      confirmedAt: new Date(),
+    })
+    recovered += 1
+  }
+
+  return recovered
+}
 async function ingestRange(syncId: string, fromBlock: bigint, toBlock: bigint): Promise<number> {
   const rawLogs = await fetchLogsAdaptive(fromBlock, toBlock)
   const events = rawLogs
@@ -669,7 +677,7 @@ async function sumChainEvents(
   syncId: string,
   eventType: EventType,
   includeSecondary = false
-): Promise<number> {
+): Promise<Money> {
   const expression = includeSecondary
     ? sql<string>`coalesce(sum(${chainEvents.amount} + coalesce(${chainEvents.secondary_amount}, 0)), 0)`
     : sql<string>`coalesce(sum(${chainEvents.amount}), 0)`
@@ -677,13 +685,13 @@ async function sumChainEvents(
     .select({ total: expression })
     .from(chainEvents)
     .where(and(eq(chainEvents.sync_state_id, syncId), eq(chainEvents.event_type, eventType)))
-  return Number(row?.total ?? 0)
+  return money(row?.total ?? '0')
 }
 
 async function sumTransactions(
   address: Address,
   type: 'TOPUP' | 'AGENT_CALL' | 'PLATFORM_WITHDRAWAL'
-): Promise<number> {
+): Promise<Money> {
   const [row] = await db
     .select({ total: sql<string>`coalesce(sum(${transactions.amount}), 0)` })
     .from(transactions)
@@ -695,10 +703,10 @@ async function sumTransactions(
         eq(transactions.status, 'CONFIRMED')
       )
     )
-  return Number(row?.total ?? 0)
+  return money(row?.total ?? '0')
 }
 
-async function sumClaims(address: Address): Promise<number> {
+async function sumClaims(address: Address): Promise<Money> {
   const [row] = await db
     .select({ total: sql<string>`coalesce(sum(${earningsClaims.amount}), 0)` })
     .from(earningsClaims)
@@ -709,7 +717,7 @@ async function sumClaims(address: Address): Promise<number> {
         eq(earningsClaims.status, 'COMPLETED')
       )
     )
-  return Number(row?.total ?? 0)
+  return money(row?.total ?? '0')
 }
 
 export async function reportReconciliationDrift() {
@@ -736,12 +744,14 @@ export async function reportReconciliationDrift() {
   const drift = Object.fromEntries(
     Object.entries(totals).map(([key, value]) => [
       key,
-      Number((value.onchain - value.postgres).toFixed(6)),
+      subtractMoney(value.onchain, value.postgres),
     ])
-  )
-  const exceedsThreshold = Object.values(drift).some(
-    (value) => Math.abs(value) > driftThreshold
-  )
+  ) as Record<string, Money>
+  const thresholdMinor = moneyToMinor(driftThreshold)
+  const exceedsThreshold = Object.values(drift).some((value) => {
+    const units = moneyToMinor(value)
+    return (units < 0n ? -units : units) > thresholdMinor
+  })
   const log = exceedsThreshold ? console.warn : console.info
   log(
     '[reconcile] ' + (exceedsThreshold ? 'DRIFT WARNING ' : 'drift clean ') +
@@ -794,6 +804,7 @@ export async function runReconciliation(options: ReconcileOptions = {}) {
   }
 
   const retriedAfterScan = await retryPendingEvents()
+  const recoveredOutbox = await recoverSettlementAttempts()
   const drift = await reportReconciliationDrift()
   const result = {
     fromBlock: fromBlock.toString(),
@@ -802,6 +813,7 @@ export async function runReconciliation(options: ReconcileOptions = {}) {
     ranges,
     scannedEvents,
     retriedPending: retriedBeforeScan + retriedAfterScan,
+    recoveredOutbox,
     drift,
   }
   console.info('[reconcile] run complete ' + JSON.stringify(result))

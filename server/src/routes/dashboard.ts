@@ -12,6 +12,7 @@ import {
   velostraChainId,
   verifyDepositTransaction,
 } from '../lib/gateway/onchain.js'
+import { compareMoney, money, moneyToNumber } from '../lib/money.js'
 
 export const dashboardRouter = Router()
 
@@ -46,10 +47,11 @@ dashboardRouter.get('/', async (req, res) => {
   ])
 
   res.json({
-    balance_usd: balance?.balance_usd ?? 0,
+    balance_usd: moneyToNumber(balance?.balance_usd ?? '0'),
     free_tier: freeTier,
     recent_calls: recentCalls.map((c) => ({
       ...c,
+      price_charged: moneyToNumber(c.price_charged),
       agent: { name: c.agent_name, slug: c.agent_slug, logo_url: c.agent_logo_url },
     })),
   })
@@ -74,6 +76,10 @@ dashboardRouter.post('/topup', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}` })
 
   const userId = req.auth!.id
+  const amount = money(parsed.data.amount_usd)
+  if (compareMoney(amount, MIN_TOPUP_USD) < 0) {
+    return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}` })
+  }
   const hash = parsed.data.tx_hash as `0x${string}`
 
   const [replayed] = await db
@@ -88,7 +94,7 @@ dashboardRouter.post('/topup', async (req, res) => {
     const receipt = await verifyDepositTransaction(
       hash,
       req.auth!.wallet_address as `0x${string}`,
-      parsed.data.amount_usd
+      amount
     )
     depositBlockNumber = receipt.blockNumber
   } catch (error) {
@@ -112,11 +118,11 @@ dashboardRouter.post('/topup', async (req, res) => {
 
       const [updatedBalance] = await tx
         .insert(creditBalances)
-        .values({ user_id: userId, balance_usd: parsed.data.amount_usd })
+        .values({ user_id: userId, balance_usd: amount })
         .onConflictDoUpdate({
           target: creditBalances.user_id,
           set: {
-            balance_usd: sql`${creditBalances.balance_usd} + ${parsed.data.amount_usd}`,
+            balance_usd: sql`${creditBalances.balance_usd} + ${amount}`,
             updated_at: new Date(),
           },
         })
@@ -125,7 +131,7 @@ dashboardRouter.post('/topup', async (req, res) => {
       await tx.insert(transactions).values({
         credit_balance_id: updatedBalance.id,
         type: 'TOPUP',
-        amount: parsed.data.amount_usd,
+        amount,
         currency: 'USDG',
         tx_hash: hash,
         wallet_address: req.auth!.wallet_address,
@@ -140,7 +146,7 @@ dashboardRouter.post('/topup', async (req, res) => {
       return updatedBalance
     })
 
-    res.json({ balance_usd: balance.balance_usd })
+    res.json({ balance_usd: moneyToNumber(balance.balance_usd) })
   } catch (error) {
     const code =
       typeof error === 'object' && error !== null && 'code' in error ? String(error.code) : ''

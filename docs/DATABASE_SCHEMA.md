@@ -1,10 +1,13 @@
 # Database schema
 
-> Last verified against `server/src/db/schema.ts`: 2026-07-14.
+> Last verified against `server/src/db/schema.ts`: 2026-07-15.
 
 Velostra memakai PostgreSQL dan Drizzle ORM. ID application row memakai CUID2.
 Money column memakai `numeric(20,6)` dengan Drizzle `mode: number`; keputusan
 production tentang arbitrary precision/rounding masih harus difinalisasi.
+
+Crystal V/public asset dan MetaMask/injected picker update tidak menambah schema;
+wallet identity tetap dinormalisasi melalui `users.wallet_address`.
 
 ## Relationship map
 

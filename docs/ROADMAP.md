@@ -1,6 +1,6 @@
 # Roadmap Velostra
 
-> Dibuat dari audit codebase pada 2026-07-14. `STATUS.md` adalah snapshot keadaan;
+> Dibuat dari audit codebase pada 2026-07-15. `STATUS.md` adalah snapshot keadaan;
 > dokumen ini adalah urutan eksekusi.
 
 ## Cara memakai roadmap
@@ -22,8 +22,10 @@ Tujuan: membangun satu loop produk yang benar dan recoverable sebelum production
 
 Sudah selesai:
 
-- responsive premium frontend, adaptive 3D/motion, clean semantic routes, dan
-  URL/query-state synchronization;
+- responsive premium frontend, Crystal V brand/public asset system, adaptive
+  3D/motion, clean semantic routes, dan URL/query-state synchronization;
+- explicit provider picker dengan first-class MetaMask extension/mobile connector
+  serta EIP-6963/injected discovery untuk Rainbow, Coinbase, dan wallet browser lain;
 - EVM wallet auth, marketplace, builder onboarding, approval, agent execution,
   reviews, dashboard, earnings, dan admin basics;
 - ERC-20 escrow, 90/10 settlement, top-up, builder claim, dan platform withdrawal;
@@ -116,8 +118,9 @@ Tujuan: membuktikan sistem operasional, bukan hanya correctness unit/E2E.
 - Metric minimum: API latency/error, upstream agent latency/error, DB pool,
   Redis errors, signer nonce queue, worker cursor lag, safe-head lag, pending
   event age/count, RPC 429/timeout, dan reconciliation drift.
-- Jalankan browser-wallet Playwright E2E untuk responsive breakpoints dan full
-  top-up → call → earnings → claim flow.
+- Jalankan real browser-wallet Playwright E2E untuk MetaMask dan minimal satu
+  EIP-6963/injected provider: connect, reject, wrong-chain switch, responsive
+  breakpoints, dan full top-up → call → earnings → claim flow.
 - Jalankan chaos drills: API mati 1 jam, worker mati 1 jam, RPC throttling, DB
   disconnect, Redis outage, process restart mid-settlement, dan reorg simulation.
 - Tambahkan load test concurrent paid calls dan signer nonce pressure.
@@ -191,6 +194,8 @@ Backlog berikutnya yang direkomendasikan:
 5. Buat versioned migrations + financial invariant suite.
 6. Pindahkan nonce/secrets ke Redis/KMS-compatible design.
 7. Tambahkan metrics/alerts worker dan production-like staging.
-8. Jalankan audit, browser-wallet E2E, load test, dan one-hour outage drill.
+8. Triage advisory `uuid` transitif MetaMask connector; upgrade/replace dependency
+   atau dokumentasikan accepted risk berdasarkan reachability review.
+9. Jalankan audit, real browser-wallet E2E, load test, dan one-hour outage drill.
 
-Jangan melakukan mainnet deploy sebelum item 1–8 memenuhi exit gate Phase 1–2.
+Jangan melakukan mainnet deploy sebelum item 1–9 memenuhi exit gate Phase 1–2.

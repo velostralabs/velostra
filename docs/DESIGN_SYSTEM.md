@@ -1,6 +1,6 @@
 # Design system
 
-> Last verified against frontend source: 2026-07-14.
+> Last verified against frontend source: 2026-07-15.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display
@@ -15,11 +15,33 @@ type, dense data labels, dan depth/motion yang tetap menjaga keterbacaan.
 | `src/luxury.css` | Ambient layers, premium motion, interaction effects, final refinements. |
 | `src/components/PageShell.css` | Shared shell dan console surface. |
 | Component CSS | Local section/page layout dan visuals. |
-| `src/components/BrandMark.*` | Logo mark yang dipakai nav/loading/favicon language. |
+| `src/components/BrandMark.*` | Code-native Crystal V untuk navigation, footer, dan product motion. |
+| `src/lib/chain.ts`, `src/components/WalletButton.*` | Chain definition, provider order, dan wallet-picker interaction. |
+| `public/velostra-crystal-v*`, `favicon.svg`, `site.webmanifest` | Browser tab, launcher, dan installable identity assets. |
+| `brand/*`, `docs/assets/velostra-hero.svg` | Editable public logo kit dan animated GitHub presentation asset. |
 
 Karena CSS cascade tersebar di global dan component files, perubahan token sebaiknya
 dilakukan di `index.css`, sedangkan perubahan local harus tetap di component CSS.
 Jangan menambah one-off inline style untuk page layout.
+
+## Crystal V brand identity
+
+Crystal V adalah canonical Velostra mark. Dua faceted wings melambangkan velocity
+serta verified execution; settlement point di tengah melambangkan satu correlated
+financial outcome. Jangan menggantinya dengan rounded/plain V pada product atau
+public repository surfaces.
+
+Rules:
+
+- pertahankan silhouette, center separation, facet ridges, dan sumbu simetris;
+- gunakan master `64 × 64` geometry untuk React/public assets dan simplified tab
+  icon pada ukuran kecil;
+- navigation/footer boleh memberi hover depth, tetapi geometry inti tidak berubah;
+- favicon, manifest icons, README hero, dan downloadable brand kit harus berasal
+  dari identity yang sama;
+- outer card/connector pada README SVG tetap fixed. Motion hanya berada pada scan,
+  pulse, line flow, dan facet shimmer supaya setiap captured GitHub frame lurus;
+- semua SVG publik memiliki title/description atau konteks alt text yang sesuai.
 
 ## Color tokens
 
@@ -95,6 +117,25 @@ Semantic routes menggantikan hash navigation:
 Link internal harus memakai React Router `Link/NavLink`, bukan raw anchor, kecuali
 external URL atau in-page accessible skip link.
 
+## Wallet connection UX
+
+`Connect Wallet` tidak lagi mengeksekusi connector pertama yang diumumkan browser.
+Ia membuka explicit dialog dan mengurutkan pilihan sebagai berikut:
+
+1. MetaMask first-class melalui `@metamask/connect-evm` untuk extension/mobile;
+2. named EIP-6963 providers yang diumumkan browser;
+3. generic injected fallback untuk Rainbow, Coinbase, atau provider lain.
+
+Nama MetaMask dideduplikasi agar SDK dan injected announcement tidak membuat opsi
+ganda. Setiap instance memakai `useId()` untuk `aria-controls`, memiliki pending dan
+error state, menutup lewat Escape/outside click, dan mempertahankan provider choice
+sebagai aksi eksplisit user. UI tidak pernah meminta, membaca, atau menyimpan seed
+phrase/private key.
+
+Picker/browser smoke membuktikan rendering dan state interaction. Real extension
+permission, account access, signature rejection, wrong-chain switch, serta onchain
+transaction tetap harus dibuktikan oleh browser-wallet E2E sebelum release.
+
 ## Motion system
 
 Base easing:
@@ -140,6 +181,7 @@ Implemented baseline:
 - skip link ke `#main-content`;
 - semantic primary/mobile `nav` labels;
 - Escape-close menu dan focus return;
+- wallet dialog dengan unique `aria-controls`, explicit provider labels, pending/error state, dan Escape/outside dismissal;
 - visible focus states;
 - form `label`/`htmlFor` pairs;
 - async loading/status roles;
@@ -166,7 +208,8 @@ modals/third-party UI.
 
 Current protections: route lazy loading, async 3D chunk, viewport/motion gating,
 capped DPR, visibility/intersection suspension, passive pointer/scroll listeners,
-dan requestAnimationFrame batching pada interface cursor.
+requestAnimationFrame batching pada interface cursor, dan lazy MetaMask SDK chunks
+yang baru dimuat ketika connection path memerlukannya.
 
 Release budget formal belum diset. Phase 2 harus mencatat baseline per route dan
 menetapkan budget untuk JS gzip, LCP, INP, CLS, WebGL memory, and mobile CPU.
@@ -176,6 +219,7 @@ menetapkan budget untuk JS gzip, LCP, INP, CLS, WebGL memory, and mobile CPU.
 - 1440, 1280, 1024/980, 820/768, 390, dan 320 widths;
 - long titles, empty data, error/loading, large wallet/address;
 - mouse, touch, keyboard, reduced motion;
+- MetaMask/injected option dedupe, picker bounds, Escape/outside dismissal, rejected provider, dan wrong-chain state;
 - no horizontal overflow atau clipped focus;
 - menu safe area dan sticky navigation;
 - 3D fallback/scene parity;

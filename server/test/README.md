@@ -1,6 +1,8 @@
 # Server test quick reference
 
-> Last verified: 2026-07-14. Full setup and coverage: [docs/TESTING.md](../../docs/TESTING.md).
+> Last verified against server scripts and reconciliation coverage: 2026-07-15.
+> Full setup, browser release QA, and remaining coverage gaps:
+> [docs/TESTING.md](../../docs/TESTING.md).
 
 Run from `server/`:
 

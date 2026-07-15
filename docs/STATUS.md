@@ -1,6 +1,6 @@
 # Status Velostra
 
-> Last verified against the workspace: 2026-07-14.
+> Last verified against the workspace: 2026-07-15.
 
 ## Executive snapshot
 
@@ -11,8 +11,10 @@ ke hardening, tetapi belum production-ready atau mainnet-ready.
 
 | Area | Status | Bukti / catatan |
 |---|---|---|
-| Frontend | Selesai untuk current scope | Vite build dan lint; clean routes; responsive UI; adaptive 3D; reduced-motion dan keyboard basics. |
+| Frontend | Selesai untuk current scope | Crystal V identity; clean routes; responsive UI; adaptive 3D; accessible wallet picker; Vite build/lint dan browser smoke pass. |
 | Auth + marketplace | Implemented | EIP-191 login, builder registration, submission, approval, discovery, execution, review, dashboard. |
+| Wallet UX | Implemented, real-wallet E2E pending | First-class MetaMask extension/mobile connector plus EIP-6963/injected discovery for Rainbow, Coinbase, and other browser wallets. |
+| Dependency audit | Review required | API dan contract: 0 production advisories. Web: 6 moderate dari transitive `uuid` di MetaMask connector tree; upstream belum menyediakan fix. |
 | Paid money loop | Implemented di local EVM | Top-up, paid call 90/10, claim, receipt verification, replay protection. |
 | Reconciliation | Implemented dan E2E-tested | Cursor, chunk scan, four events, backfill, retry pending, drift log, retroactive scan. |
 | Paid-call correlation | Implemented | `keccak256(agent_calls.id)` dikirim sebagai `bytes32 callId`. |
@@ -28,6 +30,13 @@ ke hardening, tetapi belum production-ready atau mainnet-ready.
   admin console, protocol docs, dan not-found page.
 - Canonical URL `/system`, `/proof`, `/economics`, `/marketplace`,
   `/agents/:slug`, `/dashboard`, `/builder`, `/admin`, `/docs`.
+- Crystal V konsisten di navigation, footer, favicon/manifest, public launch assets,
+  brand kit, dan animated GitHub README hero dengan fixed aligned geometry.
+- `Connect Wallet` membuka provider picker yang memakai unique dialog IDs,
+  memprioritaskan MetaMask extension/mobile, mendeduplikasi provider, dan tetap
+  menampilkan Rainbow/Coinbase/wallet browser lain melalui EIP-6963/injected.
+- Wallet picker memiliki error surface, pending state, outside-click dan Escape
+  dismissal; aplikasi tidak pernah membaca atau menyimpan private key.
 - Legacy `/#proof`-style URL dikonversi ke semantic path; `/agent/:slug`
   redirect ke `/agents/:slug`.
 - Marketplace search/category/sort tersimpan di query string dan dinormalisasi.
@@ -93,7 +102,8 @@ ke hardening, tetapi belum production-ready atau mainnet-ready.
    structured audit log, dan hardened rate limiting.
 10. Production observability: worker cursor lag, pending events, drift, RPC errors,
     API error rate, key balance/gas, dan alert delivery.
-11. Browser-wallet E2E pada target chain/config serta load, outage, receipt
+11. Real browser-wallet E2E pada target chain/config (MetaMask dan injected) serta
+    load, outage, receipt
     ambiguity, and reorg drills.
 
 ### Product/scale gap setelah hardening
@@ -107,18 +117,31 @@ ke hardening, tetapi belum production-ready atau mainnet-ready.
 
 ## Verification evidence terbaru
 
-Dijalankan ulang pada 2026-07-14 setelah docs audit:
+Dijalankan ulang pada 2026-07-15 setelah docs audit:
 
 - frontend `npm run lint`: pass;
-- frontend `npm run build`: pass, dengan expected warning untuk async 3D chunk;
+- frontend `npm run build`: pass, dengan expected >500 kB warning untuk main dan
+  async 3D chunks;
 - backend `npm run build`: pass;
 - backend `npm run test:auth`: 4 assertions pass;
-- contract `npm test`: seluruh 11 test groups pass di local EVM.
+- contract `npm test`: seluruh 11 test groups pass di local EVM;
+- API dan contract `npm audit --omit=dev`: zero production advisories;
+- web audit: 6 moderate advisories dari `uuid` `<11.1.1` yang transitif melalui
+  `@metamask/connect-evm`; npm melaporkan belum ada fix, sehingga perlu upstream
+  monitoring dan exploitability/risk review sebelum production;
+- desktop browser smoke pada 10 canonical routes: tidak ada horizontal overflow
+  atau console error; lazy surfaces, marketplace offline fallback, execution tabs,
+  settlement controls, dan MetaMask/injected picker terverifikasi;
+- README hero SVG: XML/viewBox/link target valid dan Crystal V visual render aligned.
+
+Browser smoke tidak memberi account permission, signature, atau transaction ke
+wallet extension nyata; coverage tersebut tetap release gate Phase 2.
 
 `test:money` tidak dijalankan ulang pada docs-only pass ini karena membutuhkan
 Postgres disposable. Coverage recovery/race yang dicatat di atas berasal dari
 suite integration yang sudah ada dan telah digunakan untuk membuktikan flow itu;
 jalankan ulang sebagai release gate setelah disposable DB tersedia.
+
 ## Command utama
 
 ```bash

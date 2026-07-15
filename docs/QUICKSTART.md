@@ -1,6 +1,6 @@
 # Quickstart lokal
 
-> Last verified against package scripts and env templates: 2026-07-14.
+> Last verified against package scripts and env templates: 2026-07-15.
 
 Run commands from the cloned repository root unless a section says otherwise.
 
@@ -9,7 +9,8 @@ Run commands from the cloned repository root unless a section says otherwise.
 - Node.js 20+ dan npm;
 - PostgreSQL 14+;
 - Redis 7 direkomendasikan, tetapi development tetap berjalan saat Redis down;
-- EVM wallet extension hanya diperlukan untuk manual wallet UI testing.
+- MetaMask extension/mobile atau EIP-6963/injected wallet (misalnya Rainbow atau
+  Coinbase) hanya diperlukan untuk manual wallet UI/write testing.
 
 ## 1. Jalankan Postgres dan Redis
 
@@ -98,6 +99,21 @@ Clean local URLs:
 - `http://localhost:5173/admin`
 - `http://localhost:5173/docs`
 
+### Wallet provider check
+
+1. Klik `Connect Wallet`; picker harus menampilkan satu opsi MetaMask yang
+   direkomendasikan dan `Other browser wallet`/named injected provider bila ada.
+2. MetaMask memakai official connector untuk extension atau mobile handoff.
+3. Rainbow, Coinbase, dan provider lain ditemukan melalui EIP-6963/injected path;
+   urutan announcement browser tidak boleh memaksa koneksi otomatis.
+4. Setelah connect, Velostra meminta Robinhood Chain `4663`; gunakan `Switch
+   network` jika wallet berada di chain berbeda.
+5. Sign-in memakai EIP-191 tanpa gas. Top-up/claim tetap menampilkan confirmation
+   transaction di wallet dan hanya aktif jika contract/token address terisi.
+
+Velostra tidak meminta seed phrase/private key. Jangan pernah menaruh credential
+wallet di `.env` frontend atau paste ke browser UI.
+
 Refresh direct route memerlukan SPA fallback di production host; Vite dev server
 sudah menangani ini.
 
@@ -177,6 +193,8 @@ Private key address harus sama dengan backend `ADMIN_WALLET`.
 - Paid call config error: signer, escrow, RPC, chain ID, atau owner tidak cocok.
 - Wallet write salah network: samakan wallet chain, frontend addresses, backend
   chain/RPC, dan deployment.
+- MetaMask tidak terbuka: unlock/enable extension atau ulang mobile handoff; opsi
+  browser lain memerlukan provider injected/EIP-6963 yang aktif.
 - Worker scan genesis lambat: set exact `VELOSTRA_DEPLOYMENT_BLOCK`.
 - Direct route 404 setelah deploy: tambahkan rewrite seluruh route ke `index.html`.
 

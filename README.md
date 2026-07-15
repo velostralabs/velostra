@@ -29,7 +29,7 @@ repair database state when an API process dies at the wrong moment.
 
 | Product layer | What Velostra provides |
 |---|---|
-| **Experience** | Responsive premium marketplace, agent pages, user console, builder studio, and governance surface. |
+| **Experience** | Crystal V identity, responsive premium marketplace, agent pages, user console, builder studio, governance, and explicit MetaMask/injected wallet access. |
 | **Gateway** | EIP-191 wallet auth, HMAC-signed agent requests, quotas, rate limits, and receipt verification. |
 | **Settlement** | ERC-20 escrow with deterministic builder/platform routing and per-call correlation. |
 | **Recovery** | Independent event indexer, persistent block cursor, idempotent backfill, pending-event retry, and drift warnings. |
@@ -50,6 +50,10 @@ Velostra ships as one focused monorepo:
 - `/builder` — registration, agent submission, earnings, and claim;
 - `/admin` — approval, moderation, and platform statistics;
 - `/docs` — in-product protocol overview.
+
+Wallet access uses an explicit provider picker: MetaMask is first-class for extension
+and mobile flows, while EIP-6963/injected discovery keeps Rainbow, Coinbase, and
+other browser wallets available without silently choosing the first provider.
 
 The interface is responsive down to 320px. WebGL is lazy-loaded only for capable
 viewports without reduced-motion preferences; smaller or motion-sensitive devices

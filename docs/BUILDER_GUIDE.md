@@ -1,6 +1,6 @@
 # Builder guide
 
-> Last verified against builder routes and HMAC implementation: 2026-07-14.
+> Last verified against builder routes and HMAC implementation: 2026-07-15.
 
 Velostra menerima AI agent dalam bahasa/framework apa pun selama tersedia sebagai
 HTTP POST endpoint. Platform menangani listing, access, metering, settlement, dan
@@ -16,7 +16,8 @@ Contract juga belum mainnet; alur builder saat ini untuk local/staging verificat
 
 ## Onboarding flow
 
-1. Connect wallet dan sign-in di `/builder`.
+1. Pilih MetaMask extension/mobile atau provider EIP-6963/injected dari explicit
+   picker, lalu sign-in di /builder.
 2. Register profile melalui `POST /api/builder/register`.
 3. Initialize builder account di contract jika paid settlement aktif.
 4. Submit agent melalui `POST /api/builder/agents`.
@@ -127,8 +128,10 @@ contract menolak reused callId dan database paths memakai unique/conditional gua
 
 ## Claim flow
 
-1. Buka `/builder` dan pilih amount ≤ onchain available.
-2. Wallet memanggil `claimEarnings(amount)` ke escrow.
+1. Buka `/builder`, pilih amount ≤ onchain available, dan pastikan connected wallet
+   adalah builder address yang sama.
+2. MetaMask atau injected provider memanggil `claimEarnings(amount)` ke escrow
+   setelah explicit user confirmation.
 3. Tunggu confirmed receipt.
 4. Frontend mengirim `{ amount, tx_hash }` ke `POST /api/builder/claim`.
 5. Jika browser/API gagal sebelum report, reconciliation worker memproses `Claimed`

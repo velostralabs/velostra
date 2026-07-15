@@ -1,6 +1,6 @@
 # Testing
 
-> Last verified against test files and package scripts: 2026-07-14.
+> Last verified against test files and package scripts: 2026-07-15.
 
 ## Test matrix
 
@@ -8,6 +8,7 @@
 |---|---|---|---|
 | Frontend lint | `npm run lint` | None | OXLint source checks. |
 | Frontend build | `npm run build` | None | TypeScript project build + Vite production bundle. |
+| Browser release QA | Manual against `npm run dev` | Local Vite | Canonical routes, overflow/errors, state controls, marketplace fallback, wallet picker. |
 | Backend build | `cd server && npm run build` | None | Strict TypeScript compile ke `dist/`. |
 | Auth crypto | `cd server && npm run test:auth` | None | Real EVM keypair, valid signature, replay, spoof, missing challenge. |
 | Contract E2E | `cd contracts && npm test` | None | Compile + deploy MockUSD/escrow ke in-process Ganache, 11 test groups. |
@@ -17,8 +18,10 @@
 ## GitHub product verification
 
 `.github/workflows/ci.yml` menjalankan empat job pada push/PR ke `main`: web
-lint/build + production dependency audit, backend build/auth + production audit,
-contract local-EVM suite, dan disposable-Postgres money-loop reconciliation.
+lint/build + production dependency audit pada threshold high, backend build/auth +
+production audit pada threshold high, contract local-EVM suite, dan
+disposable-Postgres money-loop reconciliation.
+
 ## Static verification
 
 ```bash
@@ -28,9 +31,47 @@ cd server
 npm run build
 ```
 
-Vite dapat memberi warning karena async Three.js scene chunk lebih dari default
-500 kB threshold. Itu warning performance, bukan build failure. Route pages dan 3D
-scene sudah lazy-loaded; performance budget formal tetap ada di roadmap.
+Vite memberi warning karena main application dan async Three.js scene chunks lebih
+besar dari default 500 kB threshold. Itu warning performance, bukan build failure.
+Route pages, 3D scene, dan MetaMask connection path memiliki async boundaries;
+performance budget formal tetap ada di roadmap.
+
+## Browser release QA evidence — 2026-07-15
+
+Local Vite surface diuji pada desktop `1440 × 900` terhadap 10 route:
+`/`, `/index`, `/system`, `/proof`, `/economics`, `/marketplace`, `/docs`,
+`/builder`, `/dashboard`, dan `/admin`.
+
+Observed pass:
+
+- setiap route memiliki title/main surface, zero horizontal document overflow, dan
+  zero captured console error;
+- lazy page loading selesai pada direct navigation;
+- marketplace API-offline state berubah dari loading menjadi explicit alert tanpa
+  merusak filter/search layout;
+- execution tabs dan settlement proof controls mengubah selected/pressed state;
+- wallet dialog menampilkan tepat satu MetaMask recommended option dan satu generic
+  injected path saat tidak ada named provider;
+- picker berada penuh di viewport, memakai explicit labels, dan Escape menutupnya;
+- Crystal V README hero berhasil dirender, XML/viewBox valid, dan fixed card/mark
+  geometry tetap centered pada animation frames.
+
+Limitasi: QA ini sengaja tidak memberikan account permission atau memicu signature
+/transaction pada extension nyata. Real MetaMask + injected wallet E2E tetap ada di
+coverage gaps dan Phase 2 roadmap.
+
+## Production dependency audit
+
+Audit penuh 2026-07-15 (`npm audit --omit=dev`) menghasilkan:
+
+- backend: 0 vulnerabilities;
+- contract package: 0 vulnerabilities;
+- web: 6 moderate findings dari transitive `uuid` `<11.1.1` pada MetaMask
+  connector tree, dengan status `No fix available` dari npm.
+
+CI memakai `--audit-level=high`, jadi moderate finding tersebut tetap terlihat namun
+tidak menggagalkan job. Ini bukan alasan mengabaikannya: upstream monitoring dan
+exploitability/risk review tetap menjadi pre-production gate di `SECURITY.md`.
 
 ## Auth crypto suite
 
@@ -148,13 +189,14 @@ Automated Playwright belum ada. Sebelum release, uji minimal:
 - reduced-motion OS preference dan touch pointer;
 - direct refresh seluruh canonical route dan browser back/forward restoration;
 - marketplace search/filter query URL sync;
-- wallet connect/disconnect, wrong-chain, rejected signature/transaction;
+- MetaMask extension/mobile dan minimal satu injected provider: option dedupe,
+  connect/disconnect, wrong-chain, rejected permission/signature/transaction;
 - approve→deposit, paid call, reconciliation-pending response, claim;
 - loading, empty, API error, slow RPC, and long content states.
 
 ## Coverage gaps / next suites
 
-- Playwright browser-wallet E2E dan visual regression;
+- real MetaMask/injected Playwright browser-wallet E2E dan visual regression;
 - SSRF adversarial endpoint suite;
 - versioned migration upgrade/rollback and DB restore tests;
 - Redis-backed multi-instance nonce test;

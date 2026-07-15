@@ -1,6 +1,9 @@
 # Smart contract — VelostraEscrow
 
-> Last verified against `contracts/VelostraEscrow.sol`: 2026-07-14.
+> Last verified against `contracts/VelostraEscrow.sol`: 2026-07-15.
+>
+> Frontend provider choice (MetaMask atau injected/EIP-6963) tidak mengubah ABI,
+> sender checks, event correlation, atau contract authority.
 >
 > Status: tested on Ganache/local EVM; not audited and not deployed to mainnet.
 
@@ -136,7 +139,8 @@ mempercayai timestamp field event sebagai database timestamp.
 10. fee cap;
 11. lifetime volume/revenue totals.
 
-Ini functional local-EVM evidence, bukan independent audit.
+Suite 11 group tersebut dijalankan ulang dan pass pada 2026-07-15. Ini functional
+local-EVM evidence, bukan independent audit.
 
 ## Pre-mainnet risks
 

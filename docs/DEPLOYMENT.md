@@ -1,6 +1,6 @@
 # Deployment dan operasi
 
-> Last verified against build/deploy scripts: 2026-07-14.
+> Last verified against build/deploy scripts: 2026-07-15.
 >
 > Belum ada production/mainnet deployment yang tercatat di workspace ini.
 
@@ -31,7 +31,8 @@ signer memberi hot key treasury authority. Fix role separation harus terjadi
 sebelum ABI freeze/audit/deploy.
 
 Selain itu wajib: audited contract, final token/decimals, SSRF hardening, versioned
-migrations, secrets management, browser-wallet E2E, staging soak, dan worker alerts.
+migrations, secrets management, real MetaMask/injected browser-wallet E2E, staging
+soak, dan worker alerts.
 
 ## PostgreSQL
 
@@ -173,9 +174,24 @@ Deploy `dist/` ke static host/CDN. Build-time env:
 - `VITE_ESCROW_ADDRESS`;
 - `VITE_SETTLEMENT_TOKEN`.
 
+Wallet provider config tidak membutuhkan WalletConnect project ID. Build membawa
+official MetaMask connector untuk extension/mobile dan injected/EIP-6963 discovery
+untuk Rainbow, Coinbase, serta wallet browser lain. Dapp metadata memakai origin
+frontend dan Crystal V `192px` asset.
+
 Configure SPA fallback semua unknown path ke `/index.html`, sehingga refresh
 `/proof`, `/marketplace`, atau `/agents/:slug` tidak 404. Tambahkan immutable cache
-untuk hashed assets dan short/no-cache untuk `index.html`.
+untuk hashed assets dan short/no-cache untuk `index.html`. Public Crystal V icons,
+`favicon.svg`, dan `site.webmanifest` boleh memakai long cache hanya jika deploy
+memiliki cache invalidation/versioning yang jelas.
+
+Frontend smoke sebelum write UI dibuka:
+
+1. seluruh canonical route direct-refresh tanpa 404/overflow/console error;
+2. picker menampilkan tepat satu MetaMask dan opsi injected/named provider;
+3. connect, rejection, disconnect, dan wrong-chain switch bekerja;
+4. favicon/manifest/Crystal V asset resolve dari production origin;
+5. top-up/claim confirmation hanya muncul setelah contract/token address benar.
 
 ## Contract deployment
 
@@ -207,7 +223,7 @@ Deployment irreversible untuk token address. Setelah audited deployment:
 2. deploy API in read/closed mode;
 3. deploy/start worker and observe cursor/drift;
 4. deploy frontend assets with write actions still gated;
-5. run health, auth, marketplace, top-up, paid-call, reconciliation, claim smoke;
+5. run health, MetaMask/injected wallet, auth, marketplace, top-up, paid-call, reconciliation, dan claim smoke;
 6. enable canary users/limits;
 7. promote only after ledger/onchain manual reconciliation.
 

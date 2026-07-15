@@ -1,8 +1,12 @@
 # API reference
 
-> Last verified against `server/src/routes/*`: 2026-07-14.
+> Last verified against `server/src/routes/*`: 2026-07-15.
 
 Base URL lokal: `http://localhost:8787`. Health check: `GET /health`.
+
+MetaMask/injected provider selection berada sepenuhnya di frontend; auth dan
+financial API tetap menerima wallet address, signature, amount, dan transaction hash
+dengan contract yang sama.
 
 Semua body/response menggunakan JSON. Authenticated routes membaca JWT dari
 httpOnly cookie `velostra_token` atau `Authorization: Bearer <token>`. Error dasar

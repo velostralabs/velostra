@@ -1,6 +1,6 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace: 2026-07-14.
+> Last verified against the workspace: 2026-07-15.
 
 ## System map
 
@@ -52,7 +52,7 @@ Inilah salah satu invariant yang harus difinalisasi sebelum mainnet.
 ## Frontend
 
 Stack: React 19, Vite 8, TypeScript, React Router, TanStack Query, wagmi/viem,
-Framer Motion, Three.js, dan React Three Fiber.
+`@metamask/connect-evm`, Framer Motion, Three.js, dan React Three Fiber.
 
 Canonical routes:
 
@@ -71,6 +71,14 @@ scroll restoration, dan memperbarui document title. `/agent/:slug` redirect ke
 `/agents/:slug`. Non-home pages di-lazy-load. Hero WebGL juga lazy dan hanya aktif
 pada viewport minimum 821px tanpa reduced-motion; fallback poster dipakai di
 perangkat lain.
+
+Wallet connector layer didefinisikan di `src/lib/chain.ts`. MetaMask SDK connector
+didaftarkan lebih dulu untuk extension/mobile flow, kemudian injected connector
+menampung provider EIP-6963 seperti Rainbow atau Coinbase. `WalletButton` selalu
+membuka explicit provider picker, mengurutkan dan mendeduplikasi connector, lalu
+meminta Robinhood Chain `4663`; ia tidak lagi mengeksekusi provider pertama yang
+diumumkan browser. Provider hanya mengusulkan account/signature/transaction—API
+receipt verification dan contract tetap menjadi security boundary.
 
 ## Backend
 
@@ -94,11 +102,13 @@ trade-off abuse dari policy ini dicatat di `SECURITY.md`.
 
 ## Wallet authentication
 
-1. Client meminta challenge lewat `POST /api/auth/nonce`.
-2. Wallet menandatangani message EIP-191 tanpa gas.
-3. Client mengirim wallet + signature ke `POST /api/auth/login`.
-4. Server memverifikasi nonce yang belum dipakai dan belum kedaluwarsa.
-5. Server membuat/memperbarui user dan mengirim JWT di httpOnly cookie.
+1. User memilih MetaMask atau provider injected dari explicit picker.
+2. Connector meminta account dan memastikan/switch ke target chain bila diperlukan.
+3. Client meminta challenge lewat `POST /api/auth/nonce`.
+4. Wallet menandatangani message EIP-191 tanpa gas setelah user approval.
+5. Client mengirim wallet + signature ke `POST /api/auth/login`.
+6. Server memverifikasi nonce yang belum dipakai dan belum kedaluwarsa.
+7. Server membuat/memperbarui user dan mengirim JWT di httpOnly cookie.
 
 Nonce saat ini berada di memory process. Karena itu auth belum aman untuk beberapa
 instance API; Redis-backed atomic nonce consume adalah pekerjaan Phase 1.
@@ -156,7 +166,7 @@ harus diuji sebelum horizontal scaling.
 
 ## Top-up dan claim
 
-Top-up dan claim ditandatangani langsung oleh wallet:
+Top-up dan claim ditandatangani langsung oleh connected wallet yang sama:
 
 1. frontend mengirim transaction ke contract dan menunggu receipt;
 2. frontend melaporkan amount + `tx_hash` ke API;

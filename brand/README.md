@@ -1,5 +1,7 @@
 # Velostra Crystal V logo kit
 
+> Last verified against product, public, and README surfaces: 2026-07-15.
+
 Editable source assets for the Crystal V identity used by the Velostra product.
 The two faceted wings express velocity and verified execution, while their shared
 settlement point represents one correlated financial outcome.
@@ -16,6 +18,13 @@ settlement point represents one correlated financial outcome.
 | `velostra-tab-icon.svg` | Simplified, high-contrast Crystal V optimized for browser tabs and app launchers. |
 | `exports/*.png` | Transparent and ready-to-preview raster exports. |
 | `velostra-logo-kit.zip` | Portable bundle containing the complete public kit. |
+
+## Repository integration
+
+- `src/components/BrandMark.tsx` is the code-native product mark.
+- `public/velostra-crystal-v*`, `favicon.svg`, and `site.webmanifest` serve browser and launcher surfaces.
+- `docs/assets/velostra-hero.svg` uses the same centered Crystal V in the GitHub README hero.
+- The README card and connector geometry remain fixed; motion is limited to internal scan, pulse, and facet layers so every captured frame stays aligned.
 
 ## Construction
 

@@ -1,6 +1,6 @@
 # Security
 
-> Last verified against the workspace: 2026-07-14.
+> Last verified against the workspace: 2026-07-15.
 >
 > Current posture: development/local-EVM ready, not approved for mainnet funds.
 
@@ -33,6 +33,25 @@ Gaps:
 Before production: Redis-backed atomic nonce consume, TLS-only secure cookie,
 explicit proxy/CORS setup, request-size limit, security headers, and session/key
 rotation runbook.
+
+### Wallet provider boundary
+
+Frontend memprioritaskan official MetaMask connector (`@metamask/connect-evm`) dan
+juga menerima EIP-6963/injected provider seperti Rainbow atau Coinbase. Connector
+adalah transport menuju wallet, bukan authority baru:
+
+- Velostra tidak membaca/menyimpan seed phrase atau private key;
+- account access, signature, network switch, dan transaction tetap membutuhkan
+  wallet/user approval;
+- provider name/icon/announcement dianggap untrusted presentation input dan
+  dideduplikasi sebelum dirender;
+- server tetap memverifikasi EIP-191 signature, authenticated sender, receipt,
+  destination contract, event, amount, dan replay constraints;
+- UI error/pending state tidak boleh dianggap bukti transaksi confirmed.
+
+Browser smoke saat ini hanya membuktikan picker/state/layout. Real extension E2E
+untuk MetaMask dan minimal satu injected provider, termasuk rejection dan
+wrong-chain flow, tetap mainnet release gate.
 
 ## Admin dan privileged authority
 
@@ -145,14 +164,20 @@ Detail ada di [SMART_CONTRACT.md](./SMART_CONTRACT.md).
 
 GitHub Actions menjalankan lockfile installs, frontend lint/build, backend
 auth/build, contract local-EVM tests, serta full money-loop reconciliation. Web dan
-backend production dependencies juga melewati `npm audit --omit=dev` pada CI.
+backend production audits berjalan dengan threshold high di CI.
 
-Audit 2026-07-14 menunjukkan zero production advisories pada backend. Full dev
-scans tetap melaporkan transitive advisories dari Ganache, legacy crypto packages,
-Drizzle Kit tooling, dan `solc`; tooling itu tidak masuk runtime API image, tetapi
-harus tetap dipantau atau diganti saat upstream menyediakan jalur upgrade yang
-valid. Belum ada dedicated secret-scan workflow, SBOM, license automation, atau
-Dependabot/Renovate policy.
+Audit penuh 2026-07-15 menunjukkan zero production advisories pada backend dan
+contract package. Web audit melaporkan 6 moderate findings untuk `uuid` `<11.1.1`
+(`GHSA-w5hq-g745-h8pq`) yang transitif melalui `@metamask/connect-evm` dan paket
+MetaMask turunannya; npm belum menawarkan fix. Sebelum production, review apakah
+jalur buffer-based UUID yang terdampak reachable di browser flow, pantau upstream,
+dan upgrade atau ganti connector bila risikonya tidak bisa diterima.
+
+Full dev scans tetap dapat melaporkan advisories lain dari Ganache, legacy crypto
+packages, Drizzle Kit tooling, dan `solc`; tooling itu tidak masuk runtime API
+image, tetapi harus tetap dipantau atau diganti saat upstream menyediakan jalur
+upgrade yang valid. Belum ada dedicated secret-scan workflow, SBOM, license
+automation, atau Dependabot/Renovate policy.
 
 ## Mainnet security gate
 
@@ -163,7 +188,10 @@ Tidak boleh mainnet dengan real value sebelum:
 - SSRF suite lolos;
 - secrets encrypted/managed dan rotation tested;
 - versioned migrations + backup/restore tested;
-- browser wallet, load, reorg, RPC throttle, and one-hour outage drills lolos;
+- web MetaMask dependency advisory selesai ditriage/di-upgrade atau memiliki
+  explicit accepted-risk record;
+- real MetaMask/injected browser-wallet, load, reorg, RPC throttle, and one-hour
+  outage drills lolos;
 - cursor lag, pending event, drift, abnormal volume, key gas, dan error alerts
   benar-benar sampai operator;
 - incident, pause/revoke, rollback, and contract migration runbooks tersedia.

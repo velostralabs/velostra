@@ -57,6 +57,13 @@
       "when": 1784144730536,
       "tag": "0007_phase3_canary_admissions",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784155883319,
+      "tag": "0008_phase4_platform",
+      "breakpoints": true
     }
   ]
 }

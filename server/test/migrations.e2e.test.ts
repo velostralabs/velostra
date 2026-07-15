@@ -15,6 +15,7 @@ const migrations = [
   'drizzle/0005_earnings_invariants.sql',
   'drizzle/0006_dark_darkstar.sql',
   'drizzle/0007_phase3_canary_admissions.sql',
+  'drizzle/0008_phase4_platform.sql',
 ]
 
 async function loadMigration(path: string, schema: string): Promise<string[]> {
@@ -53,6 +54,28 @@ try {
     ['upgrade-balance', 'upgrade-user', '7.123456']
   )
 
+  await client.query(
+    'insert into builders (id, user_id, wallet_address, display_name) values ($1, $2, $3, $4)',
+    ['upgrade-builder', 'upgrade-user', '0x0000000000000000000000000000000000000001', 'Upgrade Builder']
+  )
+  await client.query(
+    `insert into agents
+       (id, builder_id, name, slug, description, category, endpoint_url, secret_key,
+        price_per_call, price_tier)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+    [
+      'upgrade-agent',
+      'upgrade-builder',
+      'Upgrade Agent',
+      'upgrade-agent',
+      'Agent preserved across the Phase 4 upgrade.',
+      'OTHER',
+      'https://agent.example.test/run',
+      'legacy-encrypted-secret',
+      '0.200000',
+      'BASIC',
+    ]
+  )
   await apply(client, upgradeSchema, migrations.slice(2))
   const upgraded = await client.query(
     'select balance_usd, reserved_usd from credit_balances where id = $1',
@@ -62,6 +85,24 @@ try {
   assert.equal(upgraded.rows[0].reserved_usd, '0.000000')
   console.log('✅ upgrade migration preserves exact balances and initializes reservations')
 
+  const upgradedRevision = await client.query(
+    `select a.active_revision_id, r.revision_number, r.status, r.name
+       from agents a
+       join agent_revisions r on r.id = a.active_revision_id
+      where a.id = $1`,
+    ['upgrade-agent']
+  )
+  assert.equal(upgradedRevision.rows[0].revision_number, 1)
+  assert.equal(upgradedRevision.rows[0].status, 'PUBLISHED')
+  assert.equal(upgradedRevision.rows[0].name, 'Upgrade Agent')
+  await assert.rejects(
+    client.query(
+      `update agent_revisions set name = 'Mutated' where id = $1`,
+      [upgradedRevision.rows[0].active_revision_id]
+    ),
+    /published agent revisions are immutable/
+  )
+  console.log('✅ Phase 4 upgrade backfills and protects the immutable active revision')
   const enumValues = await client.query(
     `select enumlabel
        from pg_enum e
@@ -94,8 +135,8 @@ try {
       where table_schema = $1 and table_type = 'BASE TABLE'`,
     [freshSchema]
   )
-  assert.equal(tableCount.rows[0].count, 20)
-  console.log('✅ fresh install creates the complete Phase 3 operational schema')
+  assert.equal(tableCount.rows[0].count, 30)
+  console.log('✅ fresh install creates the complete Phase 4 platform schema')
 
   const constraints = await client.query(
     `select conname
@@ -118,12 +159,24 @@ try {
           'release_canary_manifest_hash_check',
           'release_canary_policy_hash_check',
           'release_canary_gross_positive',
-          'release_canary_status_check'
+          'release_canary_status_check',
+          'api_idempotency_key_length_check',
+          'api_idempotency_request_hash_check',
+          'agent_revision_number_positive',
+          'agent_revision_price_positive',
+          'webhook_subscription_event_types_check',
+          'webhook_delivery_attempt_count_check',
+          'webhook_attempt_number_positive',
+          'webhook_attempt_duration_nonnegative',
+          'telemetry_retention_nonnegative',
+          'telemetry_prohibited_disabled',
+          'report_description_length_check',
+          'report_evidence_object_check'
         )`,
     [freshSchema]
   )
-  assert.equal(constraints.rowCount, 16)
-  console.log('✅ fresh install includes all critical money invariants')
+  assert.equal(constraints.rowCount, 28)
+  console.log('✅ fresh install includes financial and Phase 4 platform invariants')
 
   await client.query(
     'insert into users (id, wallet_address) values ($1, $2)',
@@ -175,12 +228,26 @@ try {
           'operational_alert_rule_seen_idx',
           'release_canary_release_policy_idx',
           'release_canary_wallet_idx',
-          'release_canary_status_updated_idx'
+          'release_canary_status_updated_idx',
+          'agent_revision_number_unique',
+          'agent_revision_status_created_idx',
+          'api_idempotency_actor_operation_key_unique',
+          'api_idempotency_expiry_idx',
+          'moderation_action_report_created_idx',
+          'privacy_request_user_created_idx',
+          'privacy_request_status_created_idx',
+          'notification_user_created_idx',
+          'webhook_delivery_event_subscription_unique',
+          'webhook_delivery_ready_idx',
+          'webhook_attempt_delivery_number_unique',
+          'webhook_attempt_created_idx',
+          'webhook_event_created_idx',
+          'webhook_subscription_builder_status_idx'
         )`,
     [freshSchema]
   )
-  assert.equal(operationalIndexes.rowCount, 13)
-  console.log('PASS: operational ledger, heartbeat, and alert indexes are installed')
+  assert.equal(operationalIndexes.rowCount, 27)
+  console.log('PASS: operational and Phase 4 platform indexes are installed')
 
   const operationalTimestamps = await client.query(
     `select data_type

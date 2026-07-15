@@ -77,6 +77,42 @@ export const adminRoleEnum = pgEnum('admin_role', [
   'AUDITOR',
 ])
 
+export const agentRevisionStatusEnum = pgEnum('agent_revision_status', [
+  'DRAFT',
+  'PUBLISHED',
+  'ARCHIVED',
+])
+export const idempotencyStatusEnum = pgEnum('idempotency_status', [
+  'PROCESSING',
+  'COMPLETED',
+  'FAILED',
+])
+export const webhookSubscriptionStatusEnum = pgEnum('webhook_subscription_status', [
+  'ACTIVE',
+  'PAUSED',
+  'REVOKED',
+])
+export const webhookDeliveryStatusEnum = pgEnum('webhook_delivery_status', [
+  'PENDING',
+  'RETRYING',
+  'DELIVERED',
+  'DEAD_LETTER',
+  'CANCELLED',
+])
+export const privacyRequestTypeEnum = pgEnum('privacy_request_type', ['EXPORT', 'DELETE'])
+export const privacyRequestStatusEnum = pgEnum('privacy_request_status', [
+  'PENDING',
+  'PROCESSING',
+  'COMPLETED',
+  'REJECTED',
+])
+export const telemetryClassificationEnum = pgEnum('telemetry_classification', [
+  'PUBLIC',
+  'OPERATIONAL',
+  'SENSITIVE',
+  'FINANCIAL',
+  'PROHIBITED',
+])
 const id = () => text('id').primaryKey().$defaultFn(() => createId())
 
 // ─────────────────────────────────────────
@@ -93,6 +129,35 @@ export const users = pgTable('users', {
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 })
 
+export const apiIdempotencyRecords = pgTable(
+  'api_idempotency_records',
+  {
+    id: id(),
+    user_id: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    operation: text('operation').notNull(),
+    idempotency_key: text('idempotency_key').notNull(),
+    request_hash: text('request_hash').notNull(),
+    status: idempotencyStatusEnum('status').notNull().default('PROCESSING'),
+    response_status: integer('response_status'),
+    response_body: jsonb('response_body'),
+    locked_until: timestamp('locked_until', { withTimezone: true }).notNull(),
+    expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('api_idempotency_actor_operation_key_unique').on(
+      table.user_id,
+      table.operation,
+      table.idempotency_key
+    ),
+    index('api_idempotency_expiry_idx').on(table.expires_at),
+    check('api_idempotency_key_length_check', sql.raw("length(idempotency_key) between 8 and 128")),
+    check('api_idempotency_request_hash_check', sql.raw("request_hash ~ '^[0-9a-f]{64}$'")),
+  ]
+)
 export const adminRoleAssignments = pgTable(
   'admin_role_assignments',
   {
@@ -273,6 +338,7 @@ export const agents = pgTable('agents', {
     .default('0.000000'),
   avg_rating: doublePrecision('avg_rating'),
   review_count: integer('review_count').notNull().default(0),
+  active_revision_id: text('active_revision_id'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 },
@@ -299,6 +365,37 @@ export const agentTags = pgTable(
 // AGENT CALL
 // ─────────────────────────────────────────
 
+export const agentRevisions = pgTable(
+  'agent_revisions',
+  {
+    id: id(),
+    agent_id: text('agent_id')
+      .notNull()
+      .references(() => agents.id, { onDelete: 'cascade' }),
+    revision_number: integer('revision_number').notNull(),
+    status: agentRevisionStatusEnum('status').notNull().default('DRAFT'),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    long_description: text('long_description'),
+    category: agentCategoryEnum('category').notNull(),
+    endpoint_url: text('endpoint_url').notNull(),
+    price_per_call: numeric('price_per_call', { precision: 20, scale: 6 }).notNull(),
+    price_tier: priceTierEnum('price_tier').notNull(),
+    logo_url: text('logo_url'),
+    change_summary: text('change_summary'),
+    created_by_user_id: text('created_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    published_at: timestamp('published_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_revision_number_unique').on(table.agent_id, table.revision_number),
+    index('agent_revision_status_created_idx').on(table.agent_id, table.status, table.created_at),
+    check('agent_revision_number_positive', sql.raw('revision_number > 0')),
+    check('agent_revision_price_positive', sql.raw('price_per_call > 0')),
+  ]
+)
 export const agentCalls = pgTable('agent_calls', {
   id: id(),
   agent_id: text('agent_id')
@@ -307,6 +404,7 @@ export const agentCalls = pgTable('agent_calls', {
   user_id: text('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
+  agent_revision_id: text('agent_revision_id'),
   input: text('input').notNull(),
   output: jsonb('output'),
   status: callStatusEnum('status').notNull().default('PENDING'),
@@ -476,9 +574,12 @@ export const reports = pgTable('reports', {
     .references(() => users.id, { onDelete: 'cascade' }),
   reason: reportReasonEnum('reason').notNull(),
   description: text('description').notNull(),
+  evidence: jsonb('evidence').notNull().default({}),
   status: reportStatusEnum('status').notNull().default('PENDING'),
+  assigned_to_user_id: text('assigned_to_user_id').references(() => users.id, { onDelete: 'set null' }),
   admin_note: text('admin_note'),
   created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
   resolved_at: timestamp('resolved_at'),
 },
   (table) => [
@@ -491,6 +592,174 @@ export const reports = pgTable('reports', {
 // PLATFORM STATS
 // ─────────────────────────────────────────
 
+export const userNotifications = pgTable(
+  'user_notifications',
+  {
+    id: id(),
+    user_id: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').notNull(),
+    title: text('title').notNull(),
+    body: text('body').notNull(),
+    metadata: jsonb('metadata').notNull().default({}),
+    read_at: timestamp('read_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('notification_user_created_idx').on(table.user_id, table.created_at)]
+)
+
+export const webhookSubscriptions = pgTable(
+  'webhook_subscriptions',
+  {
+    id: id(),
+    builder_id: text('builder_id')
+      .notNull()
+      .references(() => builders.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    description: text('description'),
+    event_types: text('event_types').array().notNull(),
+    secret_ciphertext: text('secret_ciphertext').notNull(),
+    secret_hint: text('secret_hint').notNull(),
+    status: webhookSubscriptionStatusEnum('status').notNull().default('ACTIVE'),
+    last_delivery_at: timestamp('last_delivery_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('webhook_subscription_builder_status_idx').on(table.builder_id, table.status),
+    check('webhook_subscription_event_types_check', sql.raw('cardinality(event_types) between 1 and 32')),
+  ]
+)
+
+export const webhookEvents = pgTable(
+  'webhook_events',
+  {
+    id: id(),
+    event_type: text('event_type').notNull(),
+    aggregate_type: text('aggregate_type').notNull(),
+    aggregate_id: text('aggregate_id').notNull(),
+    dedupe_key: text('dedupe_key').notNull().unique(),
+    payload: jsonb('payload').notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('webhook_event_created_idx').on(table.created_at)]
+)
+
+export const webhookDeliveries = pgTable(
+  'webhook_deliveries',
+  {
+    id: id(),
+    event_id: text('event_id')
+      .notNull()
+      .references(() => webhookEvents.id, { onDelete: 'cascade' }),
+    subscription_id: text('subscription_id')
+      .notNull()
+      .references(() => webhookSubscriptions.id, { onDelete: 'cascade' }),
+    status: webhookDeliveryStatusEnum('status').notNull().default('PENDING'),
+    attempt_count: integer('attempt_count').notNull().default(0),
+    next_attempt_at: timestamp('next_attempt_at', { withTimezone: true }).notNull().defaultNow(),
+    locked_until: timestamp('locked_until', { withTimezone: true }),
+    last_status_code: integer('last_status_code'),
+    last_error: text('last_error'),
+    delivered_at: timestamp('delivered_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('webhook_delivery_event_subscription_unique').on(table.event_id, table.subscription_id),
+    index('webhook_delivery_ready_idx').on(table.status, table.next_attempt_at),
+    check('webhook_delivery_attempt_count_check', sql.raw('attempt_count >= 0')),
+  ]
+)
+
+export const webhookDeliveryAttempts = pgTable(
+  'webhook_delivery_attempts',
+  {
+    id: id(),
+    delivery_id: text('delivery_id')
+      .notNull()
+      .references(() => webhookDeliveries.id, { onDelete: 'cascade' }),
+    attempt_number: integer('attempt_number').notNull(),
+    request_timestamp: text('request_timestamp').notNull(),
+    signature: text('signature').notNull(),
+    response_status: integer('response_status'),
+    error_code: text('error_code'),
+    duration_ms: integer('duration_ms').notNull(),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('webhook_attempt_delivery_number_unique').on(table.delivery_id, table.attempt_number),
+    index('webhook_attempt_created_idx').on(table.created_at),
+    check('webhook_attempt_number_positive', sql.raw('attempt_number > 0')),
+    check('webhook_attempt_duration_nonnegative', sql.raw('duration_ms >= 0')),
+  ]
+)
+
+export const moderationActions = pgTable(
+  'moderation_actions',
+  {
+    id: id(),
+    report_id: text('report_id')
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    actor_user_id: text('actor_user_id').references(() => users.id, { onDelete: 'set null' }),
+    action: text('action').notNull(),
+    previous_status: reportStatusEnum('previous_status'),
+    next_status: reportStatusEnum('next_status').notNull(),
+    note: text('note'),
+    metadata: jsonb('metadata').notNull().default({}),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('moderation_action_report_created_idx').on(table.report_id, table.created_at)]
+)
+
+export const privacyRequests = pgTable(
+  'privacy_requests',
+  {
+    id: id(),
+    user_id: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'restrict' }),
+    type: privacyRequestTypeEnum('type').notNull(),
+    status: privacyRequestStatusEnum('status').notNull().default('PENDING'),
+    request_reason: text('request_reason'),
+    result_manifest: jsonb('result_manifest'),
+    rejection_reason: text('rejection_reason'),
+    requested_at: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+    processed_at: timestamp('processed_at', { withTimezone: true }),
+    processed_by_user_id: text('processed_by_user_id').references(() => users.id, {
+      onDelete: 'set null',
+    }),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('privacy_request_user_created_idx').on(table.user_id, table.created_at),
+    index('privacy_request_status_created_idx').on(table.status, table.created_at),
+  ]
+)
+
+export const telemetryFieldRegistry = pgTable(
+  'telemetry_field_registry',
+  {
+    field_name: text('field_name').primaryKey(),
+    classification: telemetryClassificationEnum('classification').notNull(),
+    purpose: text('purpose').notNull(),
+    owner: text('owner').notNull(),
+    retention_days: integer('retention_days').notNull(),
+    enabled: boolean('enabled').notNull().default(false),
+    created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('telemetry_retention_nonnegative', sql.raw('retention_days >= 0')),
+    check(
+      'telemetry_prohibited_disabled',
+      sql.raw("classification <> 'PROHIBITED' OR enabled = false")
+    ),
+  ]
+)
 export const platformStats = pgTable('platform_stats', {
   id: id(),
   date: timestamp('date').notNull().unique(),

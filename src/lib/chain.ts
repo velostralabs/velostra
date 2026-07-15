@@ -1,6 +1,6 @@
 import { defineChain } from 'viem'
 import { createConfig, http } from 'wagmi'
-import { injected } from 'wagmi/connectors'
+import { injected, metaMask } from 'wagmi/connectors'
 
 // ─────────────────────────────────────────
 // Robinhood Chain — Arbitrum Orbit L2
@@ -21,7 +21,18 @@ export const robinhoodChain = defineChain({
 
 export const wagmiConfig = createConfig({
   chains: [robinhoodChain],
-  connectors: [injected()],
+  connectors: [
+    metaMask({
+      dapp: {
+        name: 'Velostra',
+        url: typeof window === 'undefined' ? undefined : window.location.origin,
+        iconUrl: typeof window === 'undefined'
+          ? undefined
+          : `${window.location.origin}/velostra-crystal-v-192.png`,
+      },
+    }),
+    injected({ shimDisconnect: true }),
+  ],
   transports: {
     [robinhoodChain.id]: http(),
   },

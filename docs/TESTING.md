@@ -1,6 +1,7 @@
 # Testing and release evidence
 
 > Last verified against test files and scripts: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 
 ## Automated matrix
 
@@ -34,7 +35,11 @@
 - money-loop: Postgres 16 service, versioned migrate, fresh/upgrade migration test,
   money-loop test, then PostgreSQL 16 dump/clean restore/exact verification.
 
-CI has read-only repository permission and cancels superseded runs.
+CI has read-only repository permission and cancels superseded runs. The canonical
+Phase 1 handoff run is [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476):
+all four jobs passed against implementation baseline
+`ea1b61de20613edd3727f90efb86766918152b07`. CI uses Node.js 22 with
+`actions/checkout@v6` and `actions/setup-node@v6`.
 
 ## Money-loop coverage
 

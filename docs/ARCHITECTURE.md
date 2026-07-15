@@ -1,6 +1,7 @@
 # Arsitektur Velostra
 
 > Last verified against the workspace: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 
 ## System map
 

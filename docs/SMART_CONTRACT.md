@@ -1,8 +1,9 @@
 # Smart contract - VelostraEscrow
 
 > Last verified against `contracts/VelostraEscrow.sol`: 2026-07-15.
-> Status: Phase 1 implementation frozen and local-EVM tested; not independently
-> audited and not deployed to mainnet.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Status: Phase 1 implementation baseline published, local and Linux-CI EVM tested;
+> not independently audited and not deployed to mainnet.
 
 ## Build
 

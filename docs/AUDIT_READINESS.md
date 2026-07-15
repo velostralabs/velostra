@@ -1,7 +1,7 @@
 # Phase 1 audit readiness packet
 
 > Prepared: 2026-07-15.
-> Status: implementation frozen locally; independent review not yet performed.
+> Status: implementation baseline published; independent review not yet performed.
 
 ## Review objective
 
@@ -9,6 +9,17 @@ Give an external contract auditor and focused backend security reviewer a bounde
 reproducible scope. Local tests are evidence, not a substitute for independence.
 No contract deployment should occur until this packet references the reviewed
 commit and all Critical/High findings are closed.
+
+## Frozen implementation record
+
+- implementation baseline: `ea1b61de20613edd3727f90efb86766918152b07`;
+- handoff evidence: [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md);
+- GitHub evidence: [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476), four of four jobs passed;
+- repository state at handoff: clean `main`, local and `origin/main` SHA identical;
+- deployment state: no mainnet address recorded.
+
+Documentation-only commits after that SHA do not alter the implementation baseline.
+The signed external scope must still pin an immutable reviewed commit or tag.
 
 ## In-scope contract
 
@@ -98,6 +109,23 @@ npm --prefix server run test:money
 CI also performs production dependency audits and a pg_dump/pg_restore integrity
 verification. See [TESTING.md](./TESTING.md).
 
+## Toolchain snapshot
+
+| Tool | Handoff version/policy |
+|---|---|
+| Node.js | 22.23.0 locally; CI major 22; documented minimum 22 |
+| npm | 10.9.8 locally; lockfile installs use `npm ci` |
+| Solidity compiler | `solc` 0.8.24; optimizer enabled, 200 runs |
+| OpenZeppelin contracts | 5.6.1 |
+| Ethers / Ganache | 6.17.0 / 7.9.2 |
+| Drizzle ORM / Kit | 0.45.2 / 0.31.10 |
+| PostgreSQL CI/restore | 16 |
+| GitHub actions | `checkout@v6`, `setup-node@v6` |
+
+`package-lock.json`, `server/package-lock.json`, and `contracts/package-lock.json`
+are the dependency source of truth. Optimizer configuration is defined by
+`contracts/scripts/build.js` and must not change after scope freeze without review.
+
 ## Design decisions frozen for review
 
 - `userCreditBalance` is cumulative deposit evidence, never spendable authority.
@@ -128,11 +156,11 @@ Policy:
 
 ## Handoff checklist
 
-- [ ] Record frozen commit SHA and clean-tree status.
-- [ ] Confirm no deployment address exists.
-- [ ] Provide compiler, optimizer, OpenZeppelin, Node, and lockfile versions.
-- [ ] Provide threat model, architecture, operations runbook, schema, and ABI docs.
-- [ ] Provide all local/CI outputs and restore evidence.
+- [x] Record implementation baseline SHA and clean-tree status.
+- [x] Confirm no mainnet deployment address is recorded.
+- [x] Provide compiler, optimizer, OpenZeppelin, Node, and lockfile versions.
+- [x] Provide threat model, architecture, operations runbook, schema, and ABI docs.
+- [x] Provide local/CI and restore evidence references.
 - [ ] Provide proposed multisig, signer, treasury, guardian, token, fee, and limits.
 - [ ] Receive signed scope and reviewer independence statement.
 - [ ] Enter findings without filtering.

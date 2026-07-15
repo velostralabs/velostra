@@ -1,6 +1,7 @@
 # Database schema and recovery
 
 > Last verified against `server/src/db/schema.ts` and `server/drizzle`: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 
 Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and reviewed versioned
 SQL migrations. Financial columns are `numeric(20,6)` exposed to server logic as

@@ -1,7 +1,8 @@
 # Velostra threat model
 
 > Last verified against the workspace: 2026-07-15.
-> Scope: pre-mainnet Phase 1 design freeze.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Scope: verified Phase 1 baseline plus Phase 2 pre-mainnet operational proof.
 
 ## Security objective
 
@@ -123,7 +124,8 @@ to its call.
 
 ## Review status
 
-The implementation and adversarial local tests are complete for Phase 1 sections
-1.1-1.3. This document is an internal threat model, not an independent audit.
-External contract and focused backend review remain the final Phase 1 sign-off; see
-[AUDIT_READINESS.md](./AUDIT_READINESS.md).
+The implementation and adversarial tests are complete for Phase 1 sections 1.1-1.3
+at the baseline recorded in [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). This document
+is an internal threat model, not an independent audit. Phase 2 operational evidence
+may proceed in parallel, while external contract and focused backend review remain
+mandatory before Phase 3/mainnet; see [AUDIT_READINESS.md](./AUDIT_READINESS.md).

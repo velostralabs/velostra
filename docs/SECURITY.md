@@ -1,7 +1,8 @@
 # Security posture
 
 > Last verified against the workspace: 2026-07-15.
-> Phase 1 implementation is locally verified; external audit is still open.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase 1 implementation is locally/CI verified; external audit is still open.
 
 ## Implemented controls
 
@@ -105,7 +106,8 @@ API and reconciliation worker both run these checks.
 CI uses lockfiles, read-only permissions, production audits at high severity, web
 lint/build, all backend security/unit gates, contract E2E, migration/money-loop
 E2E, and restore verification. Generated builds, `.env`, deployments, dumps, and
-credentials are ignored.
+credentials are ignored. The canonical Phase 1 handoff run passed all four jobs on
+Node.js 22; see [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md).
 
 Run dependency audits before release:
 

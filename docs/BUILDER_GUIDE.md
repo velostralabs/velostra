@@ -1,56 +1,34 @@
 # Builder guide
 
-> Last verified against builder routes and HMAC implementation: 2026-07-15.
+> Last verified against builder routes, egress policy, and HMAC code: 2026-07-15.
 
-Velostra menerima AI agent dalam bahasa/framework apa pun selama tersedia sebagai
-HTTP POST endpoint. Platform menangani listing, access, metering, settlement, dan
-90/10 split; builder menangani execution behavior dan endpoint availability.
+Velostra accepts framework-agnostic HTTP agents. The platform owns discovery,
+access, metering, reservation, settlement, and recovery; the builder owns execution
+quality and endpoint availability. Contract is not mainnet-deployed yet.
 
-## Current availability
+## Onboarding
 
-Workspace belum berisi JavaScript atau Python SDK package. Integrasi current
-menggunakan HTTP + HMAC protocol yang didokumentasikan di bawah. Jangan menganggap
-package npm/PyPI Velostra tersedia sampai roadmap SDK selesai.
+1. connect/sign in with MetaMask or another injected wallet;
+2. register at `/builder`;
+3. initialize the same builder wallet on the active escrow;
+4. submit an HTTPS agent endpoint and price (minimum $0.08);
+5. store the returned `secret_key`; plaintext is shown only in submit/rotate
+   responses;
+6. admin approves the pending listing;
+7. observe calls/earnings and claim from the same wallet.
 
-Contract juga belum mainnet; alur builder saat ini untuk local/staging verification.
+Secret rotation and revoke are available. A revoked agent cannot execute until a
+new secret is rotated and the builder endpoint configuration is synchronized.
 
-## Onboarding flow
+## Request protocol
 
-1. Pilih MetaMask extension/mobile atau provider EIP-6963/injected dari explicit
-   picker, lalu sign-in di /builder.
-2. Register profile melalui `POST /api/builder/register`.
-3. Initialize builder account di contract jika paid settlement aktif.
-4. Submit agent melalui `POST /api/builder/agents`.
-5. Simpan `secret_key` dari response; nilai hanya ditampilkan saat submit.
-6. Admin approve agent; status awal adalah `PENDING`.
-7. Agent muncul di `/marketplace` setelah `APPROVED`.
-8. Track earnings lewat `/builder` atau `GET /api/builder/earnings`.
-9. Claim langsung dari wallet, lalu report tx hash; worker menjadi fallback jika
-   report tidak sampai API.
-
-Minimum price per call: `$0.08`.
-
-| Tier | Range code |
-|---|---|
-| Basic | `$0.08 <= price < $0.50` |
-| Standard | `$0.50 <= price < $2.00` |
-| Pro | `$2.00 <= price < $10.00` |
-| Premium | `$10.00+` |
-
-Boundary menggunakan `<` pada code, jadi `$0.50` masuk Standard dan `$2.00` masuk
-Pro.
-
-## Request format
-
-Velostra melakukan POST ke submitted `endpoint_url`.
-
-Body:
+Velostra sends POST JSON:
 
 ```json
 {
   "input": "user input",
-  "user_id": "internal-user-cuid",
-  "call_id": "agent-call-cuid"
+  "user_id": "internal user id",
+  "call_id": "durable call id"
 }
 ```
 
@@ -60,18 +38,16 @@ Headers:
 Content-Type: application/json
 X-Velostra-Agent-Id: <agent id>
 X-Velostra-Timestamp: <unix seconds>
-X-Velostra-Signature: <lowercase hex hmac sha256>
+X-Velostra-Signature: <lowercase hex HMAC-SHA256>
 ```
 
-Canonical payload:
+Canonical bytes are:
 
 ```text
-<timestamp>.<raw request body>
+<timestamp>.<exact raw request body>
 ```
 
-Secret adalah per-agent `secret_key`.
-
-## Verification example (Node.js)
+Node verification:
 
 ```js
 import crypto from 'node:crypto'
@@ -79,8 +55,9 @@ import crypto from 'node:crypto'
 export function verifyVelostra(rawBody, headers, secret) {
   const timestamp = String(headers['x-velostra-timestamp'] ?? '')
   const signature = String(headers['x-velostra-signature'] ?? '')
-  const age = Math.abs(Math.floor(Date.now() / 1000) - Number(timestamp))
-  if (!Number.isFinite(Number(timestamp)) || age > 300) return false
+  const parsed = Number(timestamp)
+  if (!Number.isInteger(parsed)) return false
+  if (Math.abs(Math.floor(Date.now() / 1000) - parsed) > 300) return false
 
   const expected = crypto
     .createHmac('sha256', secret)
@@ -95,82 +72,77 @@ export function verifyVelostra(rawBody, headers, secret) {
 }
 ```
 
-Capture raw body sebelum JSON parsing; re-serializing JSON dapat menghasilkan byte
-yang berbeda. Gunakan timing-safe compare dan maksimal age 5 menit. Production
-builder sebaiknya juga menyimpan short-lived request ID/call ID cache untuk menolak
-replay request yang sama.
+Capture raw bytes before JSON parsing. Re-serialization may change the signature.
+Keep a short-lived `call_id` replay cache if execution is not naturally idempotent.
 
-## Endpoint response
+## Egress requirements
 
-- return HTTP 2xx untuk successful execution;
-- JSON dan plain text sama-sama diterima;
-- non-2xx menjadi upstream failure;
-- default timeout 30 detik (`AGENT_TIMEOUT_MS` di platform);
-- response besar saat ini belum memiliki explicit size cap, tetapi akan dibatasi
-  dalam security hardening—jaga output compact.
+The platform validates and pins endpoint DNS before connecting. Production builder
+endpoints should:
 
-Agent sebaiknya idempotent terhadap `call_id` pada retry internal builder, dan tidak
-memasukkan secrets atau data sensitif ke response/log.
+- use HTTPS on an allowed port with stable public DNS;
+- never resolve to private, loopback, link-local, metadata, multicast, or reserved
+  networks;
+- keep redirects public and minimal;
+- return before the configured 30-second timeout;
+- keep response below the configured 1 MiB default cap;
+- use 2xx for success and a deterministic non-2xx for failure;
+- avoid secrets or sensitive internals in response/logs.
 
-## Paid-call settlement
+JSON and plain text are accepted. The platform does not hold a database transaction
+open while waiting for the endpoint.
 
-Untuk paid call, backend:
+## Paid-call recovery
 
-1. membuat durable `agent_calls` intent;
-2. mengirim request berisi `call_id`;
-3. menyimpan output;
-4. memanggil `creditBuilderEarnings(builder, gross, keccak256(call_id))`;
-5. conditional-finalize DB ledger.
+For paid calls the platform:
 
-Jika chain sukses tetapi DB commit gagal, worker memakai emitted bytes32 ID untuk
-memulihkan call spesifik. Builder onchain earnings tidak dikredit dua kali karena
-contract menolak reused callId dan database paths memakai unique/conditional guards.
+1. commits `PROCESSING` call, exact credit reservation, and `PREPARED` outbox;
+2. sends the HMAC request containing `call_id`;
+3. persists output and marks the attempt `READY`;
+4. submits `creditBuilderEarnings(builder,gross,keccak256(call_id))`;
+5. persists/observes the transaction and finalizes exactly once.
 
-## Claim flow
+If API/RPC/DB fails, the worker can recover from the outbox or correlated event,
+including a lost broadcast response where no tx hash reached Postgres. The builder
+is never credited twice because the contract rejects duplicate call IDs and the DB
+uses conditional finalization/unique constraints.
 
-1. Buka `/builder`, pilih amount ≤ onchain available, dan pastikan connected wallet
-   adalah builder address yang sama.
-2. MetaMask atau injected provider memanggil `claimEarnings(amount)` ke escrow
-   setelah explicit user confirmation.
-3. Tunggu confirmed receipt.
-4. Frontend mengirim `{ amount, tx_hash }` ke `POST /api/builder/claim`.
-5. Jika browser/API gagal sebelum report, reconciliation worker memproses `Claimed`
-   event otomatis.
+A 503 with `reconciliation_pending: true` is not permission to rerun the same user
+work. Support should track the returned `call_id` until `SUCCESS/APPLIED` or a
+verified definitive failure.
 
-## Reliability checklist untuk builder
+## Claim
 
-- HTTPS public endpoint dengan stable DNS;
-- p95 latency jauh di bawah 30s timeout;
-- validate content type/input size;
-- verify HMAC dan timestamp sebelum expensive work;
-- do not expose internal metadata/admin endpoint;
-- structured logs keyed by `call_id`, tanpa raw secrets;
-- retry policy untuk dependency internal;
-- health/readiness monitoring;
-- deterministic error and non-2xx behavior;
-- retain mapping `call_id` ke execution log untuk support dispute.
+Call `claimEarnings(amount)` from the builder wallet, wait for confirmation, then
+report `{ amount, tx_hash }` to `/api/builder/claim`. If the browser/API report is
+lost, `Claimed` event reconciliation backfills it. Claims remain available while
+the escrow is paused/deprecated.
 
-## Rate limits
+## Rotation and revoke
 
-Current gateway limits:
+- `POST /api/builder/agents/:id/secret/rotate`: returns the new plaintext once and
+  stores an encrypted envelope;
+- update the builder service atomically during a maintenance window;
+- `POST /api/builder/agents/:id/secret/revoke`: emergency stop for gateway calls;
+- never commit or log the secret.
 
-- 100 requests/minute per user;
-- 10 requests/minute per user + agent;
-- 5,000 requests/minute global.
+Platform encryption-key rotation is an operator concern and does not change the
+builder plaintext secret unless the builder explicitly rotates it.
 
-Redis outage membuat limiter fail-open. Jangan mengandalkan limiter Velostra sebagai
-satu-satunya DDoS protection endpoint builder.
+## Builder reliability checklist
 
-## Current builder gaps
+- HMAC/timestamp validation before expensive work;
+- call ID idempotency and searchable structured logs;
+- p95 comfortably below timeout;
+- health/readiness and dependency timeouts;
+- no raw user secrets in telemetry;
+- documented response schema and failure behavior;
+- retain call-to-execution mapping for disputes;
+- independent DDoS/abuse protection; do not rely only on platform limits.
 
-- no agent edit/version API;
-- no secret rotation/revoke;
-- no approval webhook/notification;
-- no per-day analytics, error rate, atau latency percentile;
-- no public SDK;
-- no endpoint test console;
-- HMAC secret masih plaintext di Postgres;
-- platform SSRF hardening belum selesai, sehingga external onboarding belum boleh
-  dibuka luas.
+## Current product gaps
 
-Prioritas builder platform ada di Phase 4 [ROADMAP.md](./ROADMAP.md).
+Public JS/Python SDKs, agent edit/versioning, approval webhook, test console,
+time-series analytics, and pagination are later roadmap work. SSRF protection,
+response caps, encrypted secrets, rotation/revoke, recovery correlation, and stable
+errors are implemented.

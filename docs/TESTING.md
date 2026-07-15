@@ -1,212 +1,120 @@
-# Testing
+# Testing and release evidence
 
-> Last verified against test files and package scripts: 2026-07-15.
+> Last verified against test files and scripts: 2026-07-15.
 
-## Test matrix
+## Automated matrix
 
-| Suite | Command | External dependency | Coverage utama |
+| Suite | Command | Dependency | Proves |
 |---|---|---|---|
-| Frontend lint | `npm run lint` | None | OXLint source checks. |
-| Frontend build | `npm run build` | None | TypeScript project build + Vite production bundle. |
-| Browser release QA | Manual against `npm run dev` | Local Vite | Canonical routes, overflow/errors, state controls, marketplace fallback, wallet picker. |
-| Backend build | `cd server && npm run build` | None | Strict TypeScript compile ke `dist/`. |
-| Auth crypto | `cd server && npm run test:auth` | None | Real EVM keypair, valid signature, replay, spoof, missing challenge. |
-| Contract E2E | `cd contracts && npm test` | None | Compile + deploy MockUSD/escrow ke in-process Ganache, 11 test groups. |
-| Platform E2E | `cd server && npm run test:platform` | Running stack | Older signup→submit→approve→browse→free run→review→stats→dashboard flow. |
-| Money-loop E2E | `cd server && npm run test:money` | Disposable Postgres | Full local EVM/API/worker/HMAC/financial recovery/race proof. |
+| Web lint | `npm run lint` | none | source/static checks |
+| Web build | `npm run build` | none | TypeScript + Vite production bundle |
+| API build | `npm --prefix server run build` | none | strict server compile |
+| Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
+| Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
+| Auth | `npm --prefix server run test:auth` | none | bound challenge, Redis-style atomic multi-instance replay defense |
+| SSRF | `npm --prefix server run test:ssrf` | local sockets/DNS doubles | blocked ranges, redirect/DNS/size/timeout boundary |
+| HTTP security | `npm --prefix server run test:http-security` | none | origin, headers, request IDs, body/JSON/404 codes |
+| Secret envelope | `npm --prefix server run test:secrets` | none | encrypt/decrypt/tamper/rotation/revoke behavior |
+| Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
+| Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
+| Contract E2E | `npm test --prefix contracts` | in-process Ganache | 10 Phase 1 authority/solvency/migration groups |
+| Migration E2E | `npm --prefix server run test:migrations` | disposable Postgres | fresh + upgrade + invariants + indexes |
+| Money-loop E2E | `npm --prefix server run test:money` | disposable Postgres | real API/EVM/worker recovery and races |
+| Restore verify | `npm --prefix server run restore:verify` | source + restored DB | exact restore integrity |
+| Legacy platform smoke | `npm --prefix server run test:platform` | running local stack | older marketplace happy path |
 
-## GitHub product verification
+## CI
 
-`.github/workflows/ci.yml` menjalankan empat job pada push/PR ke `main`: web
-lint/build + production dependency audit pada threshold high, backend build/auth +
-production audit pada threshold high, contract local-EVM suite, dan
-disposable-Postgres money-loop reconciliation.
+`.github/workflows/ci.yml` has four jobs:
 
-## Static verification
+- web: lockfile install, production audit at high threshold, lint, build;
+- server: lockfile install, production audit, build, migration check, all isolated
+  security/unit suites;
+- contract: compile and local-EVM E2E;
+- money-loop: Postgres 16 service, versioned migrate, fresh/upgrade migration test,
+  money-loop test, then PostgreSQL 16 dump/clean restore/exact verification.
+
+CI has read-only repository permission and cancels superseded runs.
+
+## Money-loop coverage
+
+The suite starts Ganache, deploys MockUSD and the current escrow, starts the real
+Express API and HMAC-validating builder, and invokes the real worker. It proves:
+
+1. wallet login, builder registration/init, agent submission/approval;
+2. normal deposit, paid call, 90/10 split, claim, and hash replay rejection;
+3. deposit/claim/platform withdrawal with no reporting endpoint call;
+4. chain success followed by forced DB rollback;
+5. exact `callId` recovery of output, user debit, builder credit, stats, and ledger;
+6. retroactive idempotency with persistent cursor preservation;
+7. concurrent live request and worker on one PROCESSING row: one winner/no-op loser;
+8. receipt timeout with durable hash: AMBIGUOUS to APPLIED;
+9. lost broadcast response with no DB hash: correlated event supplies the
+   authoritative hash and applies exactly once;
+10. zero drift after every recovery and one reservation release/application.
+
+The suite intentionally uses tiny block ranges so multi-chunk behavior executes.
+
+## Migration and restore evidence
+
+`test:migrations` creates isolated schemas and verifies:
+
+- upgrade data preserved exactly;
+- `reserved_usd` initialized safely;
+- all settlement states installed in order;
+- money constraints reject invalid reservation/splits;
+- fresh install creates 17 tables and required indexes.
+
+The completed Phase 1 restore drill used a disposable PostgreSQL 16 database,
+custom-format dump, clean restore, and `restore:verify`. Exact tables, row counts,
+migration history, financial aggregates, outbox states, constraints, and indexes
+matched.
+
+## Local full gate
 
 ```bash
 npm run lint
 npm run build
-cd server
-npm run build
+npm audit --omit=dev --audit-level=high
+
+npm --prefix server run build
+npm --prefix server run db:check
+npm --prefix server run test:config
+npm --prefix server run test:auth
+npm --prefix server run test:ssrf
+npm --prefix server run test:http-security
+npm --prefix server run test:secrets
+npm --prefix server run test:admin-policy
+npm --prefix server run test:money-unit
+npm audit --prefix server --omit=dev --audit-level=high
+
+npm test --prefix contracts
+npm audit --prefix contracts --omit=dev --audit-level=high
+
+# disposable migrated Postgres
+npm --prefix server run db:migrate
+npm --prefix server run test:migrations
+npm --prefix server run test:money
 ```
 
-Vite memberi warning karena main application dan async Three.js scene chunks lebih
-besar dari default 500 kB threshold. Itu warning performance, bukan build failure.
-Route pages, 3D scene, dan MetaMask connection path memiliki async boundaries;
-performance budget formal tetap ada di roadmap.
+## Manual browser evidence
 
-## Browser release QA evidence — 2026-07-15
+Desktop product QA has covered canonical routes, no horizontal overflow, lazy
+surfaces, offline marketplace state, execution/settlement controls, and provider
+picker layout/deduplication. It did not grant a real extension permission or submit
+real target-chain value.
 
-Local Vite surface diuji pada desktop `1440 × 900` terhadap 10 route:
-`/`, `/index`, `/system`, `/proof`, `/economics`, `/marketplace`, `/docs`,
-`/builder`, `/dashboard`, dan `/admin`.
+## Remaining Phase 2 evidence
 
-Observed pass:
+- external audit and focused review are the final Phase 1 sign-off;
+- real MetaMask + one injected provider automation;
+- visual regression and accessibility automation;
+- one-hour API/worker/RPC outage timing;
+- RPC 429/failover and dense-event scan;
+- reorg rollback decision/drill;
+- concurrent signer/load/DB pool pressure;
+- managed PITR and timed restore;
+- alert delivery to an operator and 72-hour staging soak.
 
-- setiap route memiliki title/main surface, zero horizontal document overflow, dan
-  zero captured console error;
-- lazy page loading selesai pada direct navigation;
-- marketplace API-offline state berubah dari loading menjadi explicit alert tanpa
-  merusak filter/search layout;
-- execution tabs dan settlement proof controls mengubah selected/pressed state;
-- wallet dialog menampilkan tepat satu MetaMask recommended option dan satu generic
-  injected path saat tidak ada named provider;
-- picker berada penuh di viewport, memakai explicit labels, dan Escape menutupnya;
-- Crystal V README hero berhasil dirender, XML/viewBox valid, dan fixed card/mark
-  geometry tetap centered pada animation frames.
-
-Limitasi: QA ini sengaja tidak memberikan account permission atau memicu signature
-/transaction pada extension nyata. Real MetaMask + injected wallet E2E tetap ada di
-coverage gaps dan Phase 2 roadmap.
-
-## Production dependency audit
-
-Audit penuh 2026-07-15 (`npm audit --omit=dev`) menghasilkan:
-
-- backend: 0 vulnerabilities;
-- contract package: 0 vulnerabilities;
-- web: 6 moderate findings dari transitive `uuid` `<11.1.1` pada MetaMask
-  connector tree, dengan status `No fix available` dari npm.
-
-CI memakai `--audit-level=high`, jadi moderate finding tersebut tetap terlihat namun
-tidak menggagalkan job. Ini bukan alasan mengabaikannya: upstream monitoring dan
-exploitability/risk review tetap menjadi pre-production gate di `SECURITY.md`.
-
-## Auth crypto suite
-
-```bash
-cd server
-npm run test:auth
-```
-
-Tidak memerlukan DB atau network. Ia menggunakan generated real EVM private keys
-untuk membuktikan:
-
-1. signature wallet yang benar valid;
-2. signature/nonce tidak dapat dipakai ulang;
-3. attacker signature tidak valid untuk victim wallet;
-4. signature tanpa issued challenge gagal.
-
-Suite ini belum membuktikan multi-instance nonce behavior karena nonce current
-masih in-memory.
-
-## Contract E2E
-
-```bash
-cd contracts
-npm test
-```
-
-Test meng-compile source, menjalankan Ganache, deploy MockUSD 6-decimal dan escrow,
-lalu menguji deposit, minimum, builder init, 90/10, callId correlation, duplicate
-callId, owner access, claim, over-claim, withdrawal, fee cap, dan lifetime totals.
-
-Belum mencakup future role separation, pause, solvency invariant, reorg, atau audit.
-
-## Marketplace E2E
-
-Prerequisites: Postgres, Redis, backend, mock agent, dan admin private key whose
-address matches `ADMIN_WALLET`.
-
-```bash
-cd server
-node test/mock-agent/serve.mjs
-TEST_ADMIN_PK=0x... npm run test:platform
-```
-
-Di PowerShell:
-
-```powershell
-$env:TEST_ADMIN_PK='0x...'
-npm run test:platform
-```
-
-Test ini memakai state database nyata dan dapat membuat builder/agent/review baru.
-Gunakan database development disposable.
-
-## Money-loop dan reconciliation E2E
-
-Prerequisite: disposable Postgres database dengan schema current.
-
-```bash
-cd server
-npm run db:push -- --force
-npm run test:money
-```
-
-Suite secara otomatis:
-
-- compile contract artifacts;
-- start Ganache di port test;
-- deploy MockUSD dan VelostraEscrow;
-- start real Express backend dengan free tier dipaksa nol;
-- start HMAC-validating mock builder endpoint;
-- execute worker one-shot sebagai child process.
-
-Coverage:
-
-1. builder wallet login, register, dan onchain initialize;
-2. ERC-20 approve + deposit dan normal `/api/dashboard/topup` report;
-3. deposit hash replay rejection;
-4. paid call, HMAC verification, user debit, 90/10 DB/onchain credit;
-5. normal claim dan claim hash replay rejection;
-6. paid call yang onchain success lalu final DB transaction dipaksa rollback;
-7. durable exact call tetap `PROCESSING` dengan output dan correlation ID;
-8. confirmed deposit tanpa memanggil top-up API;
-9. confirmed claim tanpa memanggil claim API;
-10. platform revenue withdrawal event;
-11. worker backfill empat event, exact call recovery, user debit, builder credit,
-    transaction link, dan agent stats;
-12. persisted cursor dan zero per-contract drift;
-13. retroactive rescan yang tidak menggandakan ledger;
-14. live request dan worker bersamaan pada call yang sama; loser mendeteksi
-    conditional-update winner dan no-op;
-15. race menghasilkan tepat satu debit, satu builder credit, satu stats increment,
-    satu settlement transaction link, dan zero drift.
-
-Test memakai small block range agar multi-chunk catch-up ikut exercised.
-
-## Manual reconciliation commands
-
-```bash
-cd server
-npm run reconcile
-npm run reconcile -- --from-block=123456
-npm run reconcile -- --from-block=123456 --to-block=125000
-npm run reconcile:worker
-```
-
-Gunakan env yang menunjuk ke disposable/local deployment ketika testing. Untuk
-production build gunakan `node dist/jobs/reconcile.js ...`.
-
-## Browser/manual QA checklist
-
-Automated Playwright belum ada. Sebelum release, uji minimal:
-
-- desktop 1440/1280, tablet 768/820, mobile 390/320;
-- keyboard-only nav, skip link, Escape mobile menu, visible focus;
-- reduced-motion OS preference dan touch pointer;
-- direct refresh seluruh canonical route dan browser back/forward restoration;
-- marketplace search/filter query URL sync;
-- MetaMask extension/mobile dan minimal satu injected provider: option dedupe,
-  connect/disconnect, wrong-chain, rejected permission/signature/transaction;
-- approve→deposit, paid call, reconciliation-pending response, claim;
-- loading, empty, API error, slow RPC, and long content states.
-
-## Coverage gaps / next suites
-
-- real MetaMask/injected Playwright browser-wallet E2E dan visual regression;
-- SSRF adversarial endpoint suite;
-- versioned migration upgrade/rollback and DB restore tests;
-- Redis-backed multi-instance nonce test;
-- RPC disconnect/timeout setelah tx broadcast tetapi sebelum receipt, lalu late
-  confirmation harus direcover dari durable settlement attempt;
-- one-hour API/worker/RPC outage catch-up drill;
-- reorg simulation beyond fixed confirmations;
-- load/pool exhaustion and concurrent paid-call signer pressure;
-- RPC failover, 429 behavior, and large event-density scan;
-- contract roles/pause/solvency tests after redesign;
-- dependency/security pipeline.
-
-Release gates dan urutannya ada di [ROADMAP.md](./ROADMAP.md).
+Warnings from Ganache's optional native µWS fallback or Node test listener count do
+not represent a product test failure; assertions and process exit remain the gate.

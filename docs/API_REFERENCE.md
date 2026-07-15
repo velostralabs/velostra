@@ -1,82 +1,64 @@
 # API reference
 
-> Last verified against `server/src/routes/*`: 2026-07-15.
+> Last verified against `server/src/routes` and middleware: 2026-07-15.
+> Local base URL: `http://localhost:8787`.
 
-Base URL lokal: `http://localhost:8787`. Health check: `GET /health`.
+## Conventions
 
-MetaMask/injected provider selection berada sepenuhnya di frontend; auth dan
-financial API tetap menerima wallet address, signature, amount, dan transaction hash
-dengan contract yang sama.
+Authenticated routes accept the httpOnly `velostra_token` cookie or Bearer token.
+Financial JSON values are decimal numbers for clients; internal decisions use exact
+6-decimal strings/minor units.
 
-Semua body/response menggunakan JSON. Authenticated routes membaca JWT dari
-httpOnly cookie `velostra_token` atau `Authorization: Bearer <token>`. Error dasar
-berbentuk `{ "error": "message" }`; machine-readable error code belum tersedia.
-
-Money value pada API dinyatakan sebagai decimal USD number. Onchain contract
-menggunakan smallest token unit dan backend mengonversi memakai
-`SETTLEMENT_TOKEN_DECIMALS` (default 6).
-
-## Auth — `/api/auth`
-
-### `POST /api/auth/nonce`
-
-Body:
+Error responses include stable machine fields:
 
 ```json
-{ "walletAddress": "0x..." }
+{
+  "error": "human-readable message",
+  "code": "MACHINE_READABLE_CODE",
+  "request_id": "correlation-id"
+}
 ```
 
-Response: `{ "message": "...", "nonce": "..." }`. Wallet harus EVM-valid.
+Direct route responses include `error` and `code`; centralized errors also include
+`request_id` and optional safe `details`. Never branch client behavior on message
+text.
 
-### `POST /api/auth/login`
+## Health
 
-Body:
+`GET /health` returns process health and chain identity. It is not a deep DB/Redis/
+RPC readiness probe; deep readiness belongs to Phase 2.
 
-```json
-{ "walletAddress": "0x...", "signature": "0x..." }
-```
+## Auth - `/api/auth`
 
-Memverifikasi EIP-191 message dan single-use nonce. Response berisi `token` dan
-`user`, sekaligus memasang cookie 24 jam. Invalid/expired/reused challenge: `401`.
+| Method | Path | Behavior |
+|---|---|---|
+| POST | `/nonce` | body `{ walletAddress }`; returns bound EIP-191 message + nonce |
+| POST | `/login` | body `{ walletAddress, signature }`; atomic single-use verification, token/user |
+| POST | `/logout` | clears auth cookie |
+| GET | `/me` | `{ auth: session|null }` |
 
-### `POST /api/auth/logout`
+Important codes: `INVALID_WALLET_INPUT`, `INVALID_WALLET_ADDRESS`,
+`INVALID_LOGIN_INPUT`, `AUTH_VERIFICATION_FAILED`, `AUTH_REQUIRED`.
 
-Menghapus cookie. Response: `{ "ok": true }`.
-
-### `GET /api/auth/me`
-
-Response: `{ "auth": <session|null> }`.
-
-## Marketplace — `/api/agents`
+## Marketplace - `/api/agents`
 
 ### `GET /api/agents`
 
-Approved agents saja, maksimum 60 row.
-
-Optional query:
-
-- `q`: pencarian case-insensitive pada nama;
-- `category`: salah satu enum category;
-- `sort`: `featured` (default), `popular`, atau `price`.
-
-Response: `{ "agents": [...] }` dengan builder display name dan verified state.
+Approved agents, maximum 60. Query: `q`, category enum, and sort `featured`,
+`popular`, or `price`.
 
 ### `GET /api/agents/:slug`
 
-Detail approved agent, builder summary, tags, dan 10 review terbaru. Tidak ditemukan
-atau belum approved: `404`.
+Approved agent detail, builder, tags, and latest reviews. `AGENT_NOT_FOUND` on
+missing/non-approved listing.
 
-### `POST /api/agents/:slug/run` — auth
+### `POST /api/agents/:slug/run`
 
-Body:
+Auth required. Body:
 
 ```json
 { "input": "1-10000 characters" }
 ```
-
-Gateway mengecek global/user/agent rate limit, free tier atau balance, membuat
-durable `PROCESSING` call, memanggil endpoint builder dengan HMAC, dan melakukan
-onchain settlement untuk paid call.
 
 Success:
 
@@ -90,160 +72,98 @@ Success:
 }
 ```
 
-Important errors:
+Paid flow creates a durable reservation/outbox before builder HTTP. Important
+codes:
 
-- `400`: invalid input;
-- `402`: credit tidak cukup;
-- `404`: agent tidak ada/tidak approved;
-- `429`: rate limit;
-- `502`: upstream atau onchain settlement gagal, call tidak di-charge;
-- `503`: chain settlement confirmed tetapi final DB commit gagal. Response berisi
-  `call_id`, `settlement_tx_hash`, dan `reconciliation_pending: true`; worker akan
-  memperbaiki exact call.
+- `INVALID_INPUT`, `AGENT_NOT_FOUND`, `AGENT_SECRET_REVOKED`;
+- `GLOBAL_RATE_LIMITED`, `USER_RATE_LIMITED`, `AGENT_RATE_LIMITED`;
+- `INSUFFICIENT_CREDITS` (402);
+- `AGENT_ENDPOINT_FAILED` (502);
+- `SETTLEMENT_REVERTED` (502, reservation released);
+- `SETTLEMENT_AMBIGUOUS` or `RECONCILIATION_PENDING` (503, reservation retained and
+  worker owns recovery).
 
-### `POST /api/agents/:slug/review` — auth
+A 503 recovery response may have a known `settlement_tx_hash`; a lost broadcast
+response may not. `call_id` remains the durable support/reconciliation identity.
 
-Body: `{ "rating": 1, "comment": "optional, max 1000" }`, rating 1–5.
-Review unique per user + agent; submit ulang meng-update review yang sama dan
-menghitung ulang aggregate rating.
+### `POST /api/agents/:slug/review`
 
-## Builder — `/api/builder`
+Auth required. Body `{ rating: 1..5, comment?: max 1000 }`. Upserts the unique
+user+agent review and recalculates aggregate rating.
 
-### `POST /api/builder/register` — auth
+## Builder - `/api/builder`
 
-Body:
+| Method | Path | Behavior |
+|---|---|---|
+| POST | `/register` | create builder and earnings row; refresh builder session |
+| GET | `/me` | profile, earnings, owned agents |
+| POST | `/agents` | submit pending agent and return one plaintext secret |
+| POST | `/agents/:id/secret/rotate` | replace encrypted secret and return new plaintext once |
+| POST | `/agents/:id/secret/revoke` | disable gateway execution for the agent |
+| GET | `/earnings` | exact earnings + latest 20 claims |
+| POST | `/claim` | reconcile a wallet-submitted confirmed claim tx |
 
-```json
-{
-  "display_name": "2-60 chars",
-  "bio": "optional, max 500",
-  "website_url": "optional URL",
-  "twitter_url": "optional URL",
-  "github_url": "optional URL"
-}
-```
+Agent submit constraints: name 2-60, description 10-280, long description max
+4,000, category enum, endpoint URL passing SSRF policy, price minimum 0.08, optional
+logo/tags (max 8). Normal agent responses never expose encrypted secret storage.
 
-Membuat builder + earnings row dan reissue JWT dengan `is_builder: true`.
-Sudah terdaftar: `409`.
-
-### `GET /api/builder/me` — auth + builder
-
-Mengembalikan profile, earnings, dan seluruh submitted agents milik builder.
-
-### `POST /api/builder/agents` — auth + builder
-
-Body fields:
-
-- `name`: 2–60 chars;
-- `description`: 10–280 chars;
-- `long_description`: optional, max 4000;
-- `category`: enum category;
-- `endpoint_url`: URL;
-- `price_per_call`: minimum `0.08`;
-- `logo_url`: optional URL;
-- `tags`: optional, maksimum 8.
-
-Response berisi agent `PENDING` dan `secret_key`. Secret hanya diberikan pada
-response submit; simpan segera. Endpoint update/rotation belum tersedia.
-
-### `GET /api/builder/earnings` — auth + builder
-
-Mengembalikan earnings row dan 20 claim terbaru.
-
-### `POST /api/builder/claim` — auth + builder
-
-Builder harus lebih dulu memanggil `claimEarnings(amount)` dari wallet sendiri dan
-menunggu confirmation.
-
-Body:
+Claim body:
 
 ```json
 { "amount": 1.5, "tx_hash": "0x<64 hex>" }
 ```
 
-API memverifikasi receipt, escrow, sender, event, dan amount; lalu meng-update
-Postgres. Hash replay: `409`. Amount di atas offchain available: `400`. Jika API
-tidak pernah dipanggil, worker dapat backfill dari `Claimed` event.
+The API verifies escrow, sender, event, amount, receipt, and replay. Important
+codes include `BUILDER_NOT_FOUND`, `INVALID_AGENT_PRICE`, endpoint-policy codes,
+`INVALID_CLAIM_INPUT`, `INVALID_CLAIM_AMOUNT`, `CLAIM_VERIFICATION_FAILED`,
+`INSUFFICIENT_EARNINGS`, and `CLAIM_REPLAYED`.
 
-## Dashboard — `/api/dashboard`
+## Dashboard - `/api/dashboard`
 
-Seluruh route membutuhkan auth.
+Auth required.
 
-### `GET /api/dashboard`
+- `GET /`: spendable balance, free-tier status, 20 recent calls.
+- `POST /topup`: body `{ amount_usd, tx_hash }` after wallet deposit; minimum $1.
 
-Response:
+Top-up verifies receipt/escrow/sender/event/amount. Codes:
+`INVALID_TOPUP_AMOUNT`, `TOPUP_VERIFICATION_FAILED`, `TOPUP_REPLAYED`. Missing
+browser report is healed by the worker.
 
-```json
-{
-  "balance_usd": 0,
-  "free_tier": { "used": 0, "remaining": 10, "limit": 10, "hasRemaining": true },
-  "recent_calls": []
-}
-```
+## Admin - `/api/admin`
 
-Recent calls maksimum 20.
+Every route requires auth plus a DB permission.
 
-### `POST /api/dashboard/topup`
-
-User harus lebih dulu approve settlement token dan memanggil
-`depositCredits(amount)` dari wallet sendiri.
-
-Body:
-
-```json
-{ "amount_usd": 2, "tx_hash": "0x<64 hex>" }
-```
-
-Minimum $1. API memverifikasi receipt + event dan menambah Postgres credit. Hash
-replay: `409`. Missed API report dapat dibackfill worker dari `Deposit` event.
-
-## Admin — `/api/admin`
-
-Semua route membutuhkan auth dan wallet yang sama dengan `ADMIN_WALLET`.
-
-| Method | Path | Behavior |
+| Method | Path | Permission |
 |---|---|---|
-| `GET` | `/agents/pending` | Semua pending agent, oldest first. |
-| `POST` | `/agents/:id/decision` | Body `{ "decision": "APPROVE"|"REJECT" }`. |
-| `GET` | `/reports?status=PENDING` | Filter report berdasarkan status enum. |
-| `POST` | `/reports/:id/resolve` | Status `REVIEWED`, `WARNING_SENT`, `SUSPENDED`, atau `REMOVED`, optional `admin_note`. |
-| `GET` | `/stats` | User, builder, live agent, volume, revenue, dan call totals. |
+| GET | `/agents/pending` | `agent:read` |
+| POST | `/agents/:id/decision` | `agent:decide` |
+| GET | `/reports` | `report:read` |
+| POST | `/reports/:id/resolve` | `report:resolve` |
+| GET | `/stats` | `stats:read` |
+| GET | `/roles` | `rbac:manage` |
+| POST | `/roles/grant` | `rbac:manage` |
+| POST | `/roles/revoke` | `rbac:manage` |
+| GET | `/audit-log?limit=1..100` | `audit:read` |
 
-Resolve ke `SUSPENDED`/`REMOVED` juga mengubah status agent. User-facing endpoint
-untuk membuat report belum ada.
+Roles: `SUPER_ADMIN`, `AGENT_REVIEWER`, `REPORT_MODERATOR`, `FINANCE_VIEWER`,
+`AUDITOR`. The last active super admin cannot be revoked. Targets must have signed
+in before a role can be granted. Mutations are audited.
 
-## HMAC request ke builder endpoint
+## Builder HMAC protocol
 
-Ini outbound gateway protocol, bukan route publik Velostra.
-
-Body exact:
+Outbound body:
 
 ```json
 { "input": "...", "user_id": "...", "call_id": "..." }
 ```
 
-Headers:
+Headers: `X-Velostra-Agent-Id`, `X-Velostra-Timestamp`, and lowercase hex
+`X-Velostra-Signature`. Signature is HMAC-SHA256 over
+`timestamp + "." + exactRawBody` using the per-agent secret. Builder must enforce a
+fresh timestamp, timing-safe equality, and optional call ID replay cache.
 
-- `Content-Type: application/json`;
-- `X-Velostra-Agent-Id`;
-- `X-Velostra-Timestamp` (Unix seconds);
-- `X-Velostra-Signature`.
+## Current product API gaps
 
-Signature adalah lowercase hex HMAC-SHA256 atas
-`timestamp + "." + rawBody`, dengan per-agent secret. Builder harus memakai raw
-body yang sama, timing-safe compare, dan menolak timestamp lama. Default upstream
-timeout 30 detik, configurable lewat `AGENT_TIMEOUT_MS`.
-
-## Enum penting
-
-Agent category: `CRYPTO_DEFI`, `WALLET_ANALYSIS`, `TOKEN_RESEARCH`, `TRADING`,
-`WRITING`, `RESEARCH`, `PRODUCTIVITY`, `DATA_ANALYSIS`, `CODE`, `OTHER`.
-
-## API gaps
-
-- belum versioned (`/api/v1`);
-- belum ada cursor pagination;
-- belum ada stable machine-readable error codes;
-- belum ada builder edit, secret rotation, webhook, atau user report creation;
-- admin masih single-wallet, bukan RBAC;
-- callback verification helper ada tetapi belum dipakai route callback.
+Public `/api/v1` versioning, cursor pagination, agent edit/versioning, approval
+webhooks, user report creation, and public SDKs are later roadmap work. Error codes,
+secret rotation/revoke, and admin RBAC are implemented.

@@ -1,48 +1,52 @@
-# Quickstart lokal
+# Local quickstart
 
 > Last verified against package scripts and env templates: 2026-07-15.
 
-Run commands from the cloned repository root unless a section says otherwise.
+## Prerequisites
 
-## Prasyarat
-
-- Node.js 20+ dan npm;
+- Node.js 20+ and npm;
 - PostgreSQL 14+;
-- Redis 7 direkomendasikan, tetapi development tetap berjalan saat Redis down;
-- MetaMask extension/mobile atau EIP-6963/injected wallet (misalnya Rainbow atau
-  Coinbase) hanya diperlukan untuk manual wallet UI/write testing.
+- Redis 7 for the real shared-nonce/rate-limit path;
+- MetaMask or another EIP-6963/injected wallet only for manual wallet testing.
 
-## 1. Jalankan Postgres dan Redis
+Use disposable databases for integration tests.
 
-Contoh Docker:
+## Start dependencies
 
 ```powershell
 docker run -d --name velostra-pg -e POSTGRES_PASSWORD=velostra -e POSTGRES_DB=velostra -p 5432:5432 postgres:16
 docker run -d --name velostra-redis -p 6379:6379 redis:7
 ```
 
-Gunakan database disposable untuk `test:money`; test tersebut mengubah/menambah
-state dan tidak ditujukan ke database production.
-
-## 2. Konfigurasi dan jalankan API
+## API
 
 ```powershell
-cd server
-Copy-Item .env.example .env
-npm install
-npm run db:push
-npm run dev
+Copy-Item server/.env.example server/.env
+npm install --prefix server
+npm --prefix server run db:migrate
+npm --prefix server run dev
 ```
 
-Minimum `.env` untuk browsing/auth/free-tier local:
+Minimum local read/auth configuration:
 
 ```dotenv
-DATABASE_URL=postgresql://postgres:velostra@localhost:5432/velostra
-JWT_SECRET=replace-with-a-long-random-development-secret
-ADMIN_WALLET=0xYourAdminWallet
+NODE_ENV=development
+DATABASE_URL=postgresql://postgres:velostra@127.0.0.1:5432/velostra
+JWT_SECRET=a-long-local-development-secret-at-least-32-chars
+AUTH_PUBLIC_URI=http://localhost:5173
+AUTH_NONCE_STORE=redis
+ADMIN_BOOTSTRAP_WALLETS=0xYourWallet
+GATEWAY_HMAC_SECRET=a-long-local-gateway-secret-at-least-32-chars
+AGENT_SECRET_ENCRYPTION_KEY=<32-byte base64 or 64 hex>
+AGENT_SECRET_ENCRYPTION_KEY_ID=local
 WEB_ORIGIN=http://localhost:5173
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://127.0.0.1:6379
+REDIS_FAILURE_MODE=open
 ```
+
+Generate a local encryption key without printing any wallet key into source, for
+example with your password/secret manager tooling. Never put backend secrets in the
+root frontend `.env`.
 
 Check:
 
@@ -50,153 +54,101 @@ Check:
 Invoke-RestMethod http://localhost:8787/health
 ```
 
-Paid-call/top-up/claim/worker membutuhkan tambahan:
+Paid flow additionally needs a local/test escrow, settler key, RPC, chain ID,
+token decimals 6, and deployment block. `ONCHAIN_SETTLEMENT_MODE=disabled` is only
+for isolated UI work and does not prove a money loop; production rejects it.
 
-```dotenv
-VELOSTRA_ESCROW_ADDRESS=0x...
-BACKEND_SIGNER_PRIVATE_KEY=0x...
-SETTLEMENT_TOKEN_DECIMALS=6
-ROBINHOOD_RPC_URL=http://127.0.0.1:8545
-ROBINHOOD_CHAIN_ID=<local-chain-id>
-ONCHAIN_SETTLEMENT_MODE=required
-VELOSTRA_DEPLOYMENT_BLOCK=<deployment-block>
-```
-
-`ONCHAIN_SETTLEMENT_MODE=disabled` hanya untuk isolated local/test flow yang tidak
-membuktikan settlement. Jangan gunakan di production.
-
-## 3. Jalankan frontend
-
-Terminal baru:
+## Frontend
 
 ```powershell
-# from the cloned repository root
 Copy-Item .env.example .env
 npm install
 npm run dev
 ```
 
-Root `.env`:
+Public root env:
 
 ```dotenv
 VITE_API_URL=http://localhost:8787
-VITE_ESCROW_ADDRESS=
-VITE_SETTLEMENT_TOKEN=
+VITE_ESCROW_ADDRESS=0x...
+VITE_SETTLEMENT_TOKEN=0x...
 ```
 
-Buka `http://localhost:5173`. UI dan read-only/product preview dapat dilihat tanpa
-contract address. Top-up, builder initialize, dan claim membutuhkan contract/token
-address yang benar pada network wallet aktif.
+Open `http://localhost:5173`. Canonical routes include `/system`, `/proof`,
+`/economics`, `/marketplace`, `/agents/:slug`, `/dashboard`, `/builder`, `/admin`,
+and `/docs`. Legacy hash links are normalized to clean paths.
 
-Clean local URLs:
+`Connect Wallet` opens an explicit provider picker. MetaMask has a first-class
+connector; Rainbow, Coinbase, and other wallets may appear through EIP-6963/
+injected discovery. The app never asks for seed phrases or private keys.
 
-- `http://localhost:5173/system`
-- `http://localhost:5173/proof`
-- `http://localhost:5173/economics`
-- `http://localhost:5173/marketplace`
-- `http://localhost:5173/dashboard`
-- `http://localhost:5173/builder`
-- `http://localhost:5173/admin`
-- `http://localhost:5173/docs`
+## Local contract
 
-### Wallet provider check
-
-1. Klik `Connect Wallet`; picker harus menampilkan satu opsi MetaMask yang
-   direkomendasikan dan `Other browser wallet`/named injected provider bila ada.
-2. MetaMask memakai official connector untuk extension atau mobile handoff.
-3. Rainbow, Coinbase, dan provider lain ditemukan melalui EIP-6963/injected path;
-   urutan announcement browser tidak boleh memaksa koneksi otomatis.
-4. Setelah connect, Velostra meminta Robinhood Chain `4663`; gunakan `Switch
-   network` jika wallet berada di chain berbeda.
-5. Sign-in memakai EIP-191 tanpa gas. Top-up/claim tetap menampilkan confirmation
-   transaction di wallet dan hanya aktif jika contract/token address terisi.
-
-Velostra tidak meminta seed phrase/private key. Jangan pernah menaruh credential
-wallet di `.env` frontend atau paste ke browser UI.
-
-Refresh direct route memerlukan SPA fallback di production host; Vite dev server
-sudah menangani ini.
-
-## 4. Worker
-
-Jika contract/RPC sudah dikonfigurasi:
+The integration suite deploys its own contract automatically. For manual deploy,
+configure `contracts/.env` with distinct role addresses and run:
 
 ```powershell
-cd server
-npm run reconcile
-npm run reconcile -- --from-block=123456 --to-block=125000
-npm run reconcile:worker
+npm install --prefix contracts
+npm test --prefix contracts
 ```
 
-- `reconcile`: one-shot sampai safe head;
-- `--from-block/--to-block`: incident/retroactive range;
-- `reconcile:worker`: loop setiap `RECONCILE_INTERVAL_MS` (default 30s).
+Do not run `deploy:robinhood` until independent audit and Phase 2 gates are closed.
 
-Set `VELOSTRA_DEPLOYMENT_BLOCK` agar initial scan tidak dimulai dari genesis.
+## Reconciliation
 
-## 5. Verification suites
-
-Frontend:
+With escrow/RPC/deployment block configured:
 
 ```powershell
-# from the cloned repository root
+npm --prefix server run reconcile
+npm --prefix server run reconcile -- --from-block=123456 --to-block=125000
+npm --prefix server run reconcile:worker
+```
+
+Retroactive scans preserve the normal cursor unless the requested range begins at
+its exact next block.
+
+## Verification
+
+Isolated gates:
+
+```powershell
 npm run lint
 npm run build
+npm --prefix server run build
+npm --prefix server run db:check
+npm --prefix server run test:config
+npm --prefix server run test:auth
+npm --prefix server run test:ssrf
+npm --prefix server run test:http-security
+npm --prefix server run test:secrets
+npm --prefix server run test:admin-policy
+npm --prefix server run test:money-unit
+npm test --prefix contracts
 ```
 
-Backend auth/build:
+Disposable Postgres gates:
 
 ```powershell
-cd server
-npm run build
-npm run test:auth
+$env:DATABASE_URL='postgresql://postgres:velostra@127.0.0.1:5432/velostra_test'
+npm --prefix server run db:migrate
+npm --prefix server run test:migrations
+npm --prefix server run test:money
 ```
 
-Contract:
-
-```powershell
-cd contracts
-npm install
-npm test
-```
-
-Full money loop:
-
-```powershell
-cd server
-$env:DATABASE_URL='postgresql://postgres:velostra@localhost:5432/velostra_money_test'
-npm run db:push -- --force
-npm run test:money
-```
-
-Test memulai Ganache, deploy MockUSD + escrow, memulai API + HMAC mock agent,
-menjalankan worker, dan membersihkan child process. Hanya Postgres disposable yang
-harus tersedia dari luar.
-
-Older marketplace happy path membutuhkan API/Postgres/Redis dan mock agent yang
-sudah berjalan:
-
-```powershell
-cd server
-node test/mock-agent/serve.mjs
-$env:TEST_ADMIN_PK='0x...'
-npm run test:platform
-```
-
-Private key address harus sama dengan backend `ADMIN_WALLET`.
+The money-loop suite resets application state in that database. Never point it at
+staging or production.
 
 ## Troubleshooting
 
-- `ECONNREFUSED 5432`: Postgres/URL salah atau database belum dibuat.
-- Redis errors: expected fail-open, tetapi rate limit tidak aktif sampai Redis pulih.
-- Builder route `403`: session bukan builder; register lalu pakai cookie terbaru.
-- Paid call config error: signer, escrow, RPC, chain ID, atau owner tidak cocok.
-- Wallet write salah network: samakan wallet chain, frontend addresses, backend
-  chain/RPC, dan deployment.
-- MetaMask tidak terbuka: unlock/enable extension atau ulang mobile handoff; opsi
-  browser lain memerlukan provider injected/EIP-6963 yang aktif.
-- Worker scan genesis lambat: set exact `VELOSTRA_DEPLOYMENT_BLOCK`.
-- Direct route 404 setelah deploy: tambahkan rewrite seluruh route ke `index.html`.
+- `ECONNREFUSED 5432/6379`: start the dependency or fix the URL.
+- Auth fails across instances: ensure Redis is reachable and nonce mode is `redis`.
+- Agent endpoint rejected: inspect the machine code; loopback/private URLs are
+  intentionally blocked outside test mode.
+- Paid call 503 ambiguous: do not retry blindly; run/observe worker by `call_id`.
+- Worker starts from genesis: set exact `VELOSTRA_DEPLOYMENT_BLOCK`.
+- Direct route 404 after static deploy: configure SPA rewrite to `/index.html`.
+- Production startup fails: the message names the unsafe/missing guardrail; do not
+  bypass it.
 
-Coverage lengkap ada di [TESTING.md](./TESTING.md); production setup ada di
-[DEPLOYMENT.md](./DEPLOYMENT.md).
+See [TESTING.md](./TESTING.md), [DEPLOYMENT.md](./DEPLOYMENT.md), and
+[OPERATIONS.md](./OPERATIONS.md).

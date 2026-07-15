@@ -216,6 +216,14 @@ export async function persistAndDispatchAlerts(
            when operational_alerts.status = 'RESOLVED' then null
            else operational_alerts.last_notified_at
          end,
+         acknowledged_at = case
+           when operational_alerts.status = 'RESOLVED' then null
+           else operational_alerts.acknowledged_at
+         end,
+         acknowledged_by = case
+           when operational_alerts.status = 'RESOLVED' then null
+           else operational_alerts.acknowledged_by
+         end,
          resolved_at = null,
          updated_at = now()
        returning id, last_notified_at, status`,

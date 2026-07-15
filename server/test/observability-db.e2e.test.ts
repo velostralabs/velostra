@@ -101,6 +101,20 @@ try {
   assert.equal(resolved.rows[0]?.status, 'RESOLVED')
   assert.equal(resolved.rows[0]?.acknowledged_by, 'phase2-test-operator')
 
+  await persistAndDispatchAlerts(drifted)
+  const reopened = await pool.query<{
+    status: string
+    acknowledged_at: Date | null
+    acknowledged_by: string | null
+  }>(
+    'select status, acknowledged_at, acknowledged_by from operational_alerts where id = $1',
+    [open.rows[0]!.id]
+  )
+  assert.equal(reopened.rows[0]?.status, 'OPEN')
+  assert.equal(reopened.rows[0]?.acknowledged_at, null)
+  assert.equal(reopened.rows[0]?.acknowledged_by, null)
+  assert.equal(deliveries, 2, 'resolved alert reopens with a fresh notification lifecycle')
+
   await recordHeartbeat('backup-test', 'ok', { source: 'test' })
   const heartbeatAge = await heartbeatAgeSeconds('backup-test')
   assert(heartbeatAge !== undefined && heartbeatAge < 5)

@@ -101,11 +101,9 @@ export async function capturePhase3CanarySummary(): Promise<Record<string, unkno
     throw new Error('Phase 3 canary observation window is invalid')
   }
 
-  const identity = [
-    release,
-    manifest.integrity.manifestSha256,
-    manifest.policies.canary.sha256,
-  ]
+  // Exposure remains cumulative for a release-policy pair even if the exact
+  // manifest is reissued. Manifest rotation must never reset canary accounting.
+  const identity = [release, manifest.policies.canary.sha256]
   const admissionSql = [
     "select count(*)::int as total,",
     "count(*) filter (where status = 'SETTLED')::int as successful,",
@@ -113,17 +111,17 @@ export async function capturePhase3CanarySummary(): Promise<Record<string, unkno
     "coalesce(max(gross_amount), 0)::text as max_gross,",
     "coalesce(sum(gross_amount), 0)::text as gross_total",
     'from release_canary_admissions',
-    'where release = $1 and manifest_sha256 = $2 and policy_sha256 = $3',
+    'where release = $1 and policy_sha256 = $2',
   ].join(' ')
   const walletSql = [
     'select coalesce(max(wallet_total), 0)::text as maximum from (',
     'select sum(gross_amount) as wallet_total from release_canary_admissions',
-    'where release = $1 and manifest_sha256 = $2 and policy_sha256 = $3',
+    'where release = $1 and policy_sha256 = $2',
     'group by wallet_address) exposure',
   ].join(' ')
   const subjectSql = [
     'select wallet_address, agent_id, builder_address from release_canary_admissions',
-    'where release = $1 and manifest_sha256 = $2 and policy_sha256 = $3',
+    'where release = $1 and policy_sha256 = $2',
   ].join(' ')
   const flowSql = [
     'select event_type::text, count(*)::int as count from chain_events',
@@ -137,7 +135,7 @@ export async function capturePhase3CanarySummary(): Promise<Record<string, unkno
   const duplicateSql = [
     'select count(*)::int as count from (select t.agent_call_id from transactions t',
     'join release_canary_admissions a on a.agent_call_id = t.agent_call_id',
-    'where a.release = $1 and a.manifest_sha256 = $2 and a.policy_sha256 = $3',
+    'where a.release = $1 and a.policy_sha256 = $2',
     "and t.type = 'AGENT_CALL' group by t.agent_call_id having count(*) > 1) duplicated",
   ].join(' ')
 
@@ -173,7 +171,10 @@ export async function capturePhase3CanarySummary(): Promise<Record<string, unkno
   const flow = Object.fromEntries(
     chainFlows.rows.map((entry) => [entry.event_type, entry.count])
   )
-  const rolesMatch = Object.values(finalSnapshot.contract.roles).every(Boolean)
+  const rolesMatch = Object.entries(manifest.contract.constructor.roles).every(
+    ([role, expected]) =>
+      finalSnapshot.contract.roles[role]?.toLowerCase() === expected.toLowerCase()
+  )
   const feeMatches =
     finalSnapshot.contract.platformFeeBps === manifest.contract.constructor.platformFeeBps
   const outboxAge = finalSnapshot.outbox.oldestRecoverableAgeSeconds

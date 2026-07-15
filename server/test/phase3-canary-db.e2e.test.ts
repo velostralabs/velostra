@@ -23,6 +23,7 @@ const agentId = 'p3-agent-' + suffix
 const firstCallId = 'p3-call-a-' + suffix
 const secondCallId = 'p3-call-b-' + suffix
 const rollbackCallId = 'p3-call-rollback-' + suffix
+const rotatedManifestCallId = 'p3-call-rotated-manifest-' + suffix
 const wallet = '0x6000000000000000000000000000000000000006'
 const builderWallet = '0x7000000000000000000000000000000000000007'
 
@@ -125,6 +126,14 @@ try {
       status: 'PROCESSING',
       is_free_tier: false,
     },
+    {
+      id: rotatedManifestCallId,
+      agent_id: agentId,
+      user_id: callerUserId,
+      input: 'manifest rotation must not reset canary capacity',
+      status: 'PROCESSING',
+      is_free_tier: false,
+    },
   ])
 
   const outcomes = await Promise.allSettled([
@@ -142,6 +151,16 @@ try {
   assert.equal(rows.length, 1)
   assert.equal(rows[0].gross_amount, '0.500000')
   console.log('PASS: concurrent database transactions admit only one call at the exact cap')
+
+  const rotatedManifestAdmission = admission()
+  rotatedManifestAdmission.manifestSha256 = 'd'.repeat(64)
+  await assert.rejects(
+    db.transaction((tx) =>
+      persistPhase3CanaryAdmission(tx, rotatedManifestCallId, rotatedManifestAdmission)
+    ),
+    /canary call cap has been reached/
+  )
+  console.log('PASS: reissuing a manifest cannot reset release-policy canary capacity')
 
   const rollbackAdmission = admission()
   rollbackAdmission.policy = {

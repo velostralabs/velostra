@@ -25,6 +25,17 @@ interface Phase3CanaryPolicy {
     maxGrossPerWalletMinor: string
     maxGrossTotalMinor: string
   }
+  thresholds: {
+    maxUnexplainedDriftMinor: string
+    maxCursorLagBlocks: number
+    maxRecoverableOutboxAgeSeconds: number
+    maxErrorRate: number
+    maxWorkerAgeSeconds: number
+    maxBackupAgeSeconds: number
+    minSignerBalanceWei: string
+    maxUnacknowledgedCriticalAlerts: number
+    maxPendingChainEvents: number
+  }
   requiredFlow: string[]
   stopActions: string[]
   rollback: {
@@ -230,8 +241,8 @@ function validateCanaryPolicy(
       throw new Error('Production Phase 3 canary ' + name + ' allowlist is empty or invalid')
     }
   }
-  if (policy.allowlists.wallets.some((entry) => !ADDRESS.test(entry)) ||
-      policy.allowlists.builders.some((entry) => !ADDRESS.test(entry))) {
+  if (policy.allowlists.wallets.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry)) ||
+      policy.allowlists.builders.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry))) {
     throw new Error('Production Phase 3 canary address allowlist is invalid')
   }
   asPositiveInteger(policy.limits?.durationSeconds, 'durationSeconds')
@@ -242,14 +253,53 @@ function validateCanaryPolicy(
   if (perCall > perWallet || perWallet > total) {
     throw new Error('Production Phase 3 canary monetary limits are not monotonic')
   }
+  const thresholds = policy.thresholds
+  if (
+    thresholds?.maxUnexplainedDriftMinor !== '0' ||
+    !Number.isInteger(thresholds?.maxCursorLagBlocks) ||
+    thresholds.maxCursorLagBlocks < 0 ||
+    !Number.isInteger(thresholds?.maxRecoverableOutboxAgeSeconds) ||
+    thresholds.maxRecoverableOutboxAgeSeconds <= 0 ||
+    typeof thresholds?.maxErrorRate !== 'number' ||
+    thresholds.maxErrorRate < 0 ||
+    thresholds.maxErrorRate > 1 ||
+    !Number.isInteger(thresholds?.maxWorkerAgeSeconds) ||
+    thresholds.maxWorkerAgeSeconds <= 0 ||
+    !Number.isInteger(thresholds?.maxBackupAgeSeconds) ||
+    thresholds.maxBackupAgeSeconds <= 0 ||
+    !/^\d+$/.test(thresholds?.minSignerBalanceWei ?? '') ||
+    thresholds?.maxUnacknowledgedCriticalAlerts !== 0 ||
+    thresholds?.maxPendingChainEvents !== 0
+  ) {
+    throw new Error('Production Phase 3 canary safety thresholds are invalid')
+  }
+  for (const flow of [
+    'deposit',
+    'paid-call',
+    'earnings-credit',
+    'reconciliation',
+    'builder-claim',
+    'platform-revenue',
+    'zero-drift',
+  ]) {
+    if (!policy.requiredFlow?.includes(flow)) {
+      throw new Error('Production Phase 3 canary required flow is missing: ' + flow)
+    }
+  }
   if (
     policy.rollback?.destructiveDatabaseRollbackAllowed !== false ||
+    policy.rollback?.strategy !== 'pause-new-risk-and-forward-repair' ||
     policy.rollback?.preserveClaims !== true ||
     policy.rollback?.preserveReconciliation !== true
   ) {
     throw new Error('Production Phase 3 canary rollback must preserve claims and reconciliation')
   }
-  for (const action of ['disable-paid-writes', 'preserve-builder-claims', 'keep-reconciliation-running']) {
+  for (const action of [
+    'disable-paid-writes',
+    'preserve-builder-claims',
+    'keep-reconciliation-running',
+    'page-incident-owner',
+  ]) {
     if (!policy.stopActions?.includes(action)) {
       throw new Error('Production Phase 3 canary stop actions omit ' + action)
     }

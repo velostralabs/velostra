@@ -21,9 +21,10 @@ export async function persistPhase3CanaryAdmission(
   // Concurrent requests therefore cannot both observe capacity below the same cap.
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${lockKey}))`)
 
+  // Capacity belongs to the release-policy pair. Reissuing an otherwise valid
+  // manifest must not reset accumulated exposure.
   const identity = and(
     eq(releaseCanaryAdmissions.release, admission.release),
-    eq(releaseCanaryAdmissions.manifest_sha256, admission.manifestSha256),
     eq(releaseCanaryAdmissions.policy_sha256, admission.policySha256)
   )
   const [totalUsage] = await tx

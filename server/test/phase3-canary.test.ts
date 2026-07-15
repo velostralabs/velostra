@@ -67,12 +67,31 @@ try {
       maxGrossPerWalletMinor: '1500000',
       maxGrossTotalMinor: '2000000',
     },
-    thresholds: {},
-    requiredFlow: ['paid-call', 'zero-drift'],
+    thresholds: {
+      maxUnexplainedDriftMinor: '0',
+      maxCursorLagBlocks: 12,
+      maxRecoverableOutboxAgeSeconds: 120,
+      maxErrorRate: 0.01,
+      maxWorkerAgeSeconds: 90,
+      maxBackupAgeSeconds: 90000,
+      minSignerBalanceWei: '10000000000000000',
+      maxUnacknowledgedCriticalAlerts: 0,
+      maxPendingChainEvents: 0,
+    },
+    requiredFlow: [
+      'deposit',
+      'paid-call',
+      'earnings-credit',
+      'reconciliation',
+      'builder-claim',
+      'platform-revenue',
+      'zero-drift',
+    ],
     stopActions: [
       'disable-paid-writes',
       'preserve-builder-claims',
       'keep-reconciliation-running',
+      'page-incident-owner',
     ],
     rollback: {
       destructiveDatabaseRollbackAllowed: false,
@@ -146,6 +165,50 @@ try {
   assert.equal(admission.grossMinor, 500000n)
   assert.equal(moneyToMinor('17.000001'), 17000001n)
   console.log('PASS: immutable manifest and policy authorize only the intended canary subject')
+
+  const incompletePolicy = {
+    ...policy,
+    requiredFlow: policy.requiredFlow.filter((flow) => flow !== 'platform-revenue'),
+  }
+  const incompletePolicyRaw = Buffer.from(JSON.stringify(incompletePolicy, null, 2) + '\n')
+  const incompletePolicySha256 = sha256(incompletePolicyRaw)
+  const incompletePolicyPath = path.join(directory, 'incomplete-canary-policy.json')
+  writeFileSync(incompletePolicyPath, incompletePolicyRaw)
+  const incompleteManifestBody = {
+    ...manifestBody,
+    policies: {
+      canary: {
+        path: 'config/incomplete-canary.json',
+        sha256: incompletePolicySha256,
+      },
+    },
+  }
+  const incompleteManifestSha256 = sha256(canonicalJson(incompleteManifestBody))
+  const incompleteManifestPath = path.join(directory, 'incomplete-release-manifest.json')
+  writeFileSync(
+    incompleteManifestPath,
+    JSON.stringify({
+      ...incompleteManifestBody,
+      integrity: { algorithm: 'sha256', manifestSha256: incompleteManifestSha256 },
+    }, null, 2) + '\n'
+  )
+  Object.assign(process.env, {
+    PHASE3_RELEASE_MANIFEST: incompleteManifestPath,
+    PHASE3_RELEASE_MANIFEST_SHA256: incompleteManifestSha256,
+    PHASE3_CANARY_POLICY_PATH: incompletePolicyPath,
+    PHASE3_CANARY_POLICY_SHA256: incompletePolicySha256,
+  })
+  assert.throws(
+    () => assertPhase3RuntimeConfiguration('api', environment, release),
+    /required flow is missing: platform-revenue/
+  )
+  Object.assign(process.env, {
+    PHASE3_RELEASE_MANIFEST: manifestPath,
+    PHASE3_RELEASE_MANIFEST_SHA256: manifestSha256,
+    PHASE3_CANARY_POLICY_PATH: policyPath,
+    PHASE3_CANARY_POLICY_SHA256: policySha256,
+  })
+  console.log('PASS: incomplete canary safety policy blocks startup')
 
   assert.throws(
     () => resolvePhase3PaidCallAdmission({

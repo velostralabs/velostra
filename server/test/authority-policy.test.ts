@@ -24,6 +24,10 @@ const valid = {
 }
 
 assert.equal(validateAuthorityPolicy(valid).roles.length, 5)
+assert.equal(
+  validateAuthorityPolicy({ ...valid, environment: 'robinhood-mainnet' }).environment,
+  'robinhood-mainnet'
+)
 assert.throws(
   () => validateAuthorityPolicy({ ...valid, roles: roles.slice(1) }),
   /exactly 5 element|every required role/
@@ -47,6 +51,16 @@ assert.throws(
       ),
     }),
   /SETTLER must use/
+)
+assert.throws(
+  () =>
+    validateAuthorityPolicy({
+      ...valid,
+      roles: roles.map((entry) =>
+        entry.role === 'SETTLER' ? { ...entry, approval_threshold: 2 } : entry
+      ),
+    }),
+  /SETTLER approval_threshold must be exactly 1/
 )
 
 console.log('AUTHORITY OWNERSHIP POLICY VERIFIED')

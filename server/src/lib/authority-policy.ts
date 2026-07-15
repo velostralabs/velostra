@@ -15,7 +15,9 @@ const requiredRoles = [
 
 const authorityPolicySchema = z.object({
   policy_version: z.literal(1),
-  environment: z.literal('staging'),
+  environment: z
+    .string()
+    .regex(/^[a-z0-9][a-z0-9-]{1,31}$/),
   change_ticket: z.string().min(3).max(128),
   roles: z
     .array(
@@ -42,6 +44,9 @@ export function validateAuthorityPolicy(input: unknown): AuthorityPolicy {
   for (const entry of policy.roles) {
     if (entry.role === 'SETTLER' && entry.principal_type !== 'restricted-signer') {
       throw new Error('SETTLER must use a restricted-signer principal')
+    }
+    if (entry.role === 'SETTLER' && entry.approval_threshold !== 1) {
+      throw new Error('SETTLER approval_threshold must be exactly 1')
     }
     if (entry.role !== 'SETTLER' && entry.principal_type !== 'multisig') {
       throw new Error(entry.role + ' must use a multisig principal')

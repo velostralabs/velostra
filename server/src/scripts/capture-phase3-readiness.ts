@@ -16,6 +16,7 @@ import { getRemoteSettlementSignerAddress } from '../lib/gateway/signer.js'
 import { moneyToMinor } from '../lib/money.js'
 import { collectOperationalSnapshot } from '../lib/observability/operations.js'
 import { closeRedis } from '../lib/redis.js'
+import { loadPhase3ReleaseBinding } from '../lib/phase3-canary.js'
 
 interface ReleaseManifest {
   release: string
@@ -145,13 +146,14 @@ export async function capturePhase3ReadinessSnapshot(): Promise<Record<string, u
   if (process.env.NODE_ENV !== 'production') {
     throw new Error('Phase 3 readiness snapshot requires NODE_ENV=production')
   }
-  const manifest = JSON.parse(
-    await fs.readFile(
-      path.resolve(process.cwd(), required('PHASE3_RELEASE_MANIFEST')),
-      'utf8'
-    )
-  ) as ReleaseManifest
-  if (manifest.stage !== 'deployed') {
+  const environment = required('VELOSTRA_ENVIRONMENT')
+  const release = required('VELOSTRA_RELEASE')
+  const manifest = loadPhase3ReleaseBinding(
+    'api',
+    environment,
+    release
+  ) as ReleaseManifest | null
+  if (!manifest || manifest.stage !== 'deployed') {
     throw new Error('Phase 3 readiness snapshot requires a deployed manifest')
   }
 

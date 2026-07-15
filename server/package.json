@@ -35,6 +35,7 @@
     "test:admin-policy": "tsx test/admin-policy.test.ts",
     "test:money-unit": "tsx test/money.test.ts",
     "test:migrations": "tsx test/migrations.e2e.test.ts",
+    "restore:verify": "tsx scripts/verify-restore.ts",
     "test:platform": "tsx test/platform.e2e.test.mjs",
     "test:money": "npm --prefix ../contracts run build && tsx test/money-loop.e2e.test.mjs",
     "secrets:reencrypt": "tsx scripts/reencrypt-agent-secrets.ts",

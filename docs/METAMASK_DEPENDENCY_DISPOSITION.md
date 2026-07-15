@@ -1,8 +1,11 @@
 # MetaMask dependency advisory disposition
 
-Date: 2026-07-15  
-Owner: Velostra Security  
-Review expiry: 2026-10-15  
+Date: 2026-07-15
+
+Owner: Velostra Security
+
+Review expiry: 2026-10-15
+
 Advisory: `GHSA-w5hq-g745-h8pq`
 
 ## Decision

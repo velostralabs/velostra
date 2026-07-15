@@ -176,7 +176,8 @@ and timed drill remain environment-specific Phase 2 work.
 - Agent envelope rotation: add the old key to
   `AGENT_SECRET_DECRYPTION_KEYS`, set the new current key/id, run
   `npm --prefix server run secrets:reencrypt`, verify, then remove the old key after
-  the rollback window.
+  the rollback window. Envelope re-encryption preserves the logical HMAC secret,
+  its secret version, and its builder-rotation timestamp.
 - Admin bootstrap wallets are only a bootstrap mechanism; production authorization
   lives in `admin_role_assignments`.
 

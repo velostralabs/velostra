@@ -30,8 +30,7 @@ async function main(): Promise<void> {
       .update(agents)
       .set({
         secret_key_ciphertext: encrypted,
-        secret_version: 1,
-        secret_rotated_at: new Date(),
+        updated_at: new Date(),
       })
       .where(eq(agents.id, row.id))
     migrated += 1

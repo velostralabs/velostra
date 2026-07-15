@@ -1,0 +1,47 @@
+{
+  "policy_version": 1,
+  "environment": "staging",
+  "change_ticket": "synthetic-phase2-policy",
+  "roles": [
+    {
+      "role": "DEFAULT_ADMIN",
+      "principal_type": "multisig",
+      "principal": "0x1111111111111111111111111111111111111111",
+      "owner": "staging-governance-team",
+      "approval_threshold": 2,
+      "escalation": "staging-security-on-call"
+    },
+    {
+      "role": "PAUSER",
+      "principal_type": "multisig",
+      "principal": "0x2222222222222222222222222222222222222222",
+      "owner": "staging-security-team",
+      "approval_threshold": 2,
+      "escalation": "staging-incident-commander"
+    },
+    {
+      "role": "FEE_MANAGER",
+      "principal_type": "multisig",
+      "principal": "0x3333333333333333333333333333333333333333",
+      "owner": "staging-finance-team",
+      "approval_threshold": 2,
+      "escalation": "staging-governance-on-call"
+    },
+    {
+      "role": "SETTLER",
+      "principal_type": "restricted-signer",
+      "principal": "0x4444444444444444444444444444444444444444",
+      "owner": "staging-settlement-service",
+      "approval_threshold": 1,
+      "escalation": "staging-platform-on-call"
+    },
+    {
+      "role": "TREASURY",
+      "principal_type": "multisig",
+      "principal": "0x5555555555555555555555555555555555555555",
+      "owner": "staging-treasury-team",
+      "approval_threshold": 2,
+      "escalation": "staging-finance-on-call"
+    }
+  ]
+}

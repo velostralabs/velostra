@@ -2,6 +2,7 @@ import {
   createPublicClient,
   createWalletClient,
   decodeEventLog,
+  encodeFunctionData,
   defineChain,
   getAddress,
   http,
@@ -23,6 +24,7 @@ import {
   type Money,
   type MoneyInput,
 } from '../money.js'
+import { settlementSignerMode, submitRemoteSettlement } from './signer.js'
 
 export const velostraEscrowAbi = [
   {
@@ -297,9 +299,25 @@ async function submitBuilderCredit(
     throw new Error('Onchain settlement is disabled')
   }
 
+  const address = getVelostraEscrowAddress()
+  const args = [getAddress(builder), moneyToTokenUnits(grossAmount), callId] as const
+  if (settlementSignerMode() === 'remote') {
+    const data = encodeFunctionData({
+      abi: velostraEscrowAbi,
+      functionName: 'creditBuilderEarnings',
+      args,
+    })
+    return submitRemoteSettlement({
+      chainId: velostraChainId,
+      to: address,
+      data,
+      idempotencyKey: callId,
+    })
+  }
+
   const privateKey = process.env.BACKEND_SIGNER_PRIVATE_KEY
   if (!privateKey || !/^0x[0-9a-fA-F]{64}$/.test(privateKey)) {
-    throw new Error('BACKEND_SIGNER_PRIVATE_KEY is required for paid calls')
+    throw new Error('BACKEND_SIGNER_PRIVATE_KEY is required for local paid calls')
   }
 
   const account = privateKeyToAccount(privateKey as Hash)
@@ -309,10 +327,10 @@ async function submitBuilderCredit(
     transport: http(velostraRpcUrl, { timeout: velostraRpcTimeoutMs }),
   })
   return walletClient.writeContract({
-    address: getVelostraEscrowAddress(),
+    address,
     abi: velostraEscrowAbi,
     functionName: 'creditBuilderEarnings',
-    args: [getAddress(builder), moneyToTokenUnits(grossAmount), callId],
+    args,
   })
 }
 

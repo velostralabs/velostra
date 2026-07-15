@@ -3,6 +3,7 @@ import { assertProductionConfiguration } from '../src/lib/config.js'
 
 const validProductionEnv: Record<string, string> = {
   NODE_ENV: 'production',
+  VELOSTRA_SECRET_PROVIDER: 'managed-injection',
   VELOSTRA_ENVIRONMENT: 'staging',
   VELOSTRA_RELEASE: '1aab94d',
   DATABASE_URL: 'postgresql://velostra:secret@db.internal:5432/velostra?sslmode=require',
@@ -18,7 +19,11 @@ const validProductionEnv: Record<string, string> = {
   AGENT_SECRET_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString('base64'),
   AGENT_SECRET_ENCRYPTION_KEY_ID: 'primary',
   VELOSTRA_ESCROW_ADDRESS: '0x1111111111111111111111111111111111111111',
-  BACKEND_SIGNER_PRIVATE_KEY: `0x${'22'.repeat(32)}`,
+  SETTLEMENT_SIGNER_MODE: 'remote',
+  SETTLEMENT_SIGNER_URL: 'https://signer.staging.internal/v1/transactions',
+  SETTLEMENT_SIGNER_AUTH_TOKEN: 's'.repeat(32),
+  SETTLEMENT_SIGNER_ADDRESS: '0x4444444444444444444444444444444444444444',
+  SETTLEMENT_SIGNER_TIMEOUT_MS: '10000',
   ONCHAIN_SETTLEMENT_MODE: 'required',
   ROBINHOOD_CHAIN_ID: '4663',
   SETTLEMENT_TOKEN_DECIMALS: '6',
@@ -31,6 +36,7 @@ const validProductionEnv: Record<string, string> = {
 const managedKeys = new Set([
   ...Object.keys(validProductionEnv),
   'AGENT_SECRET_DECRYPTION_KEYS',
+  'BACKEND_SIGNER_PRIVATE_KEY',
   'PHASE2_ALLOW_MAINNET',
 ])
 const original = new Map<string, string | undefined>()
@@ -60,6 +66,7 @@ try {
     /DATABASE_URL must enforce TLS/
   )
   rejects({ DATABASE_POOL_MAX: '0' }, /DATABASE_POOL_MAX/)
+  rejects({ VELOSTRA_SECRET_PROVIDER: 'environment' }, /VELOSTRA_SECRET_PROVIDER/)
   rejects({ JWT_SECRET: 'weak' }, /JWT_SECRET/)
   rejects({ GATEWAY_HMAC_SECRET: 'weak' }, /GATEWAY_HMAC_SECRET/)
   rejects(
@@ -74,7 +81,11 @@ try {
     { VELOSTRA_ESCROW_ADDRESS: '0x0000000000000000000000000000000000000000' },
     /VELOSTRA_ESCROW_ADDRESS/
   )
-  rejects({ BACKEND_SIGNER_PRIVATE_KEY: 'bad-key' }, /BACKEND_SIGNER_PRIVATE_KEY/)
+  rejects({ BACKEND_SIGNER_PRIVATE_KEY: '0x' + '22'.repeat(32) }, /must not receive/)
+  rejects({ SETTLEMENT_SIGNER_MODE: 'local' }, /SETTLEMENT_SIGNER_MODE/)
+  rejects({ SETTLEMENT_SIGNER_URL: 'http://signer.internal' }, /SETTLEMENT_SIGNER_URL/)
+  rejects({ SETTLEMENT_SIGNER_AUTH_TOKEN: 'weak' }, /SETTLEMENT_SIGNER_AUTH_TOKEN/)
+  rejects({ SETTLEMENT_SIGNER_ADDRESS: '0x0000000000000000000000000000000000000000' }, /SETTLEMENT_SIGNER_ADDRESS/)
   rejects({ ONCHAIN_SETTLEMENT_MODE: 'disabled' }, /ONCHAIN_SETTLEMENT_MODE/)
   rejects({ ROBINHOOD_CHAIN_ID: '1' }, /ROBINHOOD_CHAIN_ID/)
   rejects({ SETTLEMENT_TOKEN_DECIMALS: '18' }, /SETTLEMENT_TOKEN_DECIMALS/)

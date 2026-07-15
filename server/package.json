@@ -42,7 +42,10 @@
     "secrets:reencrypt": "tsx scripts/reencrypt-agent-secrets.ts",
     "reconcile": "tsx src/jobs/reconcile.ts --once",
     "reconcile:worker": "tsx src/jobs/reconcile.ts --watch",
-    "db:migrate:runtime": "node dist/scripts/migrate.js"
+    "db:migrate:runtime": "node dist/scripts/migrate.js",
+    "test:signer": "tsx test/remote-signer.test.ts",
+    "test:authority": "tsx test/authority-policy.test.ts",
+    "authority:validate": "tsx src/scripts/validate-authority-policy.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

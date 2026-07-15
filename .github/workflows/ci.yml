@@ -50,6 +50,9 @@ jobs:
       - run: npm run test:ssrf
       - run: npm run test:http-security
       - run: npm run test:secrets
+      - run: npm run test:signer
+      - run: npm run test:authority
+      - run: npm run authority:validate -- ../deploy/staging/authority-policy.example.json
       - run: npm run test:admin-policy
       - run: npm run test:money-unit
 

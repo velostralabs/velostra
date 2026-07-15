@@ -1,8 +1,6 @@
 import type { CookieOptions } from 'express'
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
-const PRIVATE_KEY = /^0x[0-9a-fA-F]{64}$/
-const SECP256K1_ORDER = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141')
 
 function requireProductionEnv(name: string): string {
   const value = process.env[name]?.trim()
@@ -79,6 +77,10 @@ export function assertProductionConfiguration(): void {
   const origins = webOrigins()
   if (!isProduction()) return
 
+  if (requireProductionEnv('VELOSTRA_SECRET_PROVIDER') !== 'managed-injection') {
+    throw new Error('Production VELOSTRA_SECRET_PROVIDER must be managed-injection')
+  }
+
   const databaseUrl = new URL(requireProductionEnv('DATABASE_URL'))
   if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
     throw new Error('Production DATABASE_URL must use postgres or postgresql')
@@ -134,11 +136,28 @@ export function assertProductionConfiguration(): void {
   if (!EVM_ADDRESS.test(escrowAddress) || /^0x0{40}$/i.test(escrowAddress)) {
     throw new Error('Production VELOSTRA_ESCROW_ADDRESS must be a non-zero EVM address')
   }
-  const signerKey = requireProductionEnv('BACKEND_SIGNER_PRIVATE_KEY')
-  const signerValue = PRIVATE_KEY.test(signerKey) ? BigInt(signerKey) : 0n
-  if (signerValue <= 0n || signerValue >= SECP256K1_ORDER) {
-    throw new Error('Production BACKEND_SIGNER_PRIVATE_KEY must be a valid secp256k1 private key')
+  if ((process.env.BACKEND_SIGNER_PRIVATE_KEY ?? '').trim()) {
+    throw new Error('Production must not receive BACKEND_SIGNER_PRIVATE_KEY')
   }
+  if (requireProductionEnv('SETTLEMENT_SIGNER_MODE') !== 'remote') {
+    throw new Error('Production SETTLEMENT_SIGNER_MODE must be remote')
+  }
+  const signerUrl = new URL(requireProductionEnv('SETTLEMENT_SIGNER_URL'))
+  if (signerUrl.protocol !== 'https:' || signerUrl.username || signerUrl.password) {
+    throw new Error('Production SETTLEMENT_SIGNER_URL must use HTTPS without embedded credentials')
+  }
+  const signerToken = requireProductionEnv('SETTLEMENT_SIGNER_AUTH_TOKEN')
+  if (signerToken.length < 32) {
+    throw new Error('Production SETTLEMENT_SIGNER_AUTH_TOKEN must be at least 32 characters')
+  }
+  const signerAddress = requireProductionEnv('SETTLEMENT_SIGNER_ADDRESS')
+  if (!EVM_ADDRESS.test(signerAddress) || /^0x0{40}$/i.test(signerAddress)) {
+    throw new Error('Production SETTLEMENT_SIGNER_ADDRESS must be a non-zero EVM address')
+  }
+  positiveInteger(
+    'SETTLEMENT_SIGNER_TIMEOUT_MS',
+    process.env.SETTLEMENT_SIGNER_TIMEOUT_MS ?? '10000'
+  )
   if (process.env.ONCHAIN_SETTLEMENT_MODE !== 'required') {
     throw new Error('Production ONCHAIN_SETTLEMENT_MODE must be required')
   }

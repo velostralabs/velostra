@@ -38,11 +38,11 @@ export const durableIdempotency: RequestHandler = async (req, res, next) => {
   const operation = req.method + ':' + req.baseUrl + req.path
   const hash = requestHash(req)
   const now = new Date()
-  const id = createId()
+  const recordId = createId()
   const [inserted] = await db
     .insert(apiIdempotencyRecords)
     .values({
-      id,
+      id: recordId,
       user_id: req.auth.id,
       operation,
       idempotency_key: key,
@@ -70,6 +70,13 @@ export const durableIdempotency: RequestHandler = async (req, res, next) => {
       return next(new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Idempotency-Key was already used for a different request'))
     }
     if (existing.status === 'PROCESSING') {
+      if (existing.locked_until <= now) {
+        return next(new AppError(
+          409,
+          'IDEMPOTENCY_INDETERMINATE',
+          'The original request outcome is indeterminate; inspect current resource state before using a new key'
+        ))
+      }
       res.setHeader('Retry-After', '2')
       return next(new AppError(409, 'IDEMPOTENCY_IN_PROGRESS', 'The original request is still processing'))
     }
@@ -91,7 +98,7 @@ export const durableIdempotency: RequestHandler = async (req, res, next) => {
         response_body: body,
         updated_at: new Date(),
       })
-      .where(eq(apiIdempotencyRecords.id, id))
+      .where(eq(apiIdempotencyRecords.id, recordId))
       .then(() => originalJson(body))
       .catch(next)
     return res

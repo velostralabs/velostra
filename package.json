@@ -53,6 +53,8 @@
     "test:sdk:javascript": "npm test --prefix sdk/javascript",
     "test:sdk:python": "python -m unittest discover -s sdk/python/tests -v",
     "test:phase4-sdk": "npm run test:sdk:javascript && npm run test:sdk:python",
+    "test:phase4-unit": "npm run test:phase4-sdk && npm --prefix server run test:phase4-platform && npm --prefix server run test:admin-policy",
+    "test:phase4-db": "npm --prefix server run test:phase4-e2e",
     "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {

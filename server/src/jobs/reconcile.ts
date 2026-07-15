@@ -24,6 +24,7 @@ import {
   tokenUnitsToMoney,
   velostraChainId,
   velostraEscrowAbi,
+  verifyBuilderCreditReceipt,
 } from '../lib/gateway/onchain.js'
 import { compareMoney, money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
 import {
@@ -547,16 +548,6 @@ export async function recoverSettlementAttempts(limit = 500): Promise<number> {
       continue
     }
 
-    if (attempt.status === 'CONFIRMED' && attempt.tx_hash) {
-      await finalizeSettlement({
-        callId: attempt.agent_call_id,
-        txHash: attempt.tx_hash as Hash,
-        blockNumber: attempt.block_number ?? undefined,
-        confirmedAt: attempt.confirmed_at ?? new Date(),
-      })
-      recovered += 1
-      continue
-    }
 
     if (!attempt.tx_hash) {
       if (attempt.updated_at.getTime() > staleBefore) continue
@@ -613,16 +604,39 @@ export async function recoverSettlementAttempts(limit = 500): Promise<number> {
       continue
     }
 
+    let confirmedSplit
+    try {
+      confirmedSplit = verifyBuilderCreditReceipt(
+        receipt,
+        getAddress(attempt.builder_address),
+        attempt.onchain_call_id as Hash,
+        attempt.gross_amount
+      )
+    } catch (error) {
+      await markSettlementAmbiguous(attempt.agent_call_id, error, attempt.tx_hash as Hash)
+      console.warn('[reconcile] confirmed transaction has no matching settlement event', {
+        attemptId: attempt.id,
+        callId: attempt.agent_call_id,
+        txHash: attempt.tx_hash,
+        error,
+      })
+      continue
+    }
+
     await markSettlementConfirmed(
       attempt.agent_call_id,
       attempt.tx_hash as Hash,
-      receipt.blockNumber
+      receipt.blockNumber,
+      confirmedSplit.builderAmount,
+      confirmedSplit.platformAmount
     )
     await finalizeSettlement({
       callId: attempt.agent_call_id,
       txHash: attempt.tx_hash as Hash,
       blockNumber: receipt.blockNumber,
       confirmedAt: new Date(),
+      builderAmount: confirmedSplit.builderAmount,
+      platformAmount: confirmedSplit.platformAmount,
     })
     recovered += 1
   }

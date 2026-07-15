@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { and, desc, asc, eq, ilike, avg, count, gte, sql } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
-import type { Hash } from 'viem'
+import type { Address, Hash } from 'viem'
 import { db } from '../db/client.js'
 import {
   agents,
@@ -28,6 +28,7 @@ import {
   getVelostraEscrowAddress,
   hashAgentCallId,
   velostraChainId,
+  verifyBuilderCreditReceipt,
 } from '../lib/gateway/onchain.js'
 import { money, moneyToNumber, splitFee } from '../lib/money.js'
 import {
@@ -347,6 +348,7 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
     await markSettlementSubmitted(callId, settlementTxHash)
 
     let receipt
+    let confirmedSplit: ReturnType<typeof verifyBuilderCreditReceipt>
     try {
       if (
         process.env.NODE_ENV === 'test' &&
@@ -355,6 +357,12 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
         throw new Error('Injected ambiguous receipt lookup')
       }
       receipt = await waitForBuilderCredit(settlementTxHash)
+      confirmedSplit = verifyBuilderCreditReceipt(
+        receipt,
+        builder.wallet_address as Address,
+        onchainCallId!,
+        split.gross
+      )
     } catch (error) {
       if (error instanceof OnchainSettlementRevertedError) {
         await failUnsettledCall(callId, error)
@@ -381,7 +389,13 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
       })
     }
 
-    await markSettlementConfirmed(callId, settlementTxHash, receipt.blockNumber)
+    await markSettlementConfirmed(
+      callId,
+      settlementTxHash,
+      receipt.blockNumber,
+      confirmedSplit.builderAmount,
+      confirmedSplit.platformAmount
+    )
 
     if (
       process.env.NODE_ENV === 'test' &&
@@ -406,6 +420,8 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
       txHash: settlementTxHash,
       blockNumber: receipt.blockNumber,
       confirmedAt: new Date(),
+      builderAmount: confirmedSplit.builderAmount,
+      platformAmount: confirmedSplit.platformAmount,
     })
 
     return res.json({

@@ -110,7 +110,9 @@ funds.
 
 ### `setPlatformFeeBps(uint16 value)`
 
-`FEE_MANAGER_ROLE` only; maximum 50%.
+FEE_MANAGER_ROLE only; maximum 50%. The backend treats the confirmed
+EarningsCredited builder/platform amounts as authoritative, so an authorized
+fee update cannot leave the offchain split stale.
 
 ### `pause()` / `unpause()`
 

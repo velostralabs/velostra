@@ -142,6 +142,9 @@ race is exercised by concurrent live-request/worker E2E.
 - A recovery rebroadcast and original transaction cannot both succeed because the
   contract rejects reused call IDs. If the candidate hash differs, the exact
   correlated successful event may replace it after builder and amounts match.
+- The builder/platform split decoded from the confirmed EarningsCredited event is
+  authoritative. It replaces the anticipated split in the outbox before financial
+  effects, so an authorized contract fee update cannot desynchronize Postgres.
 
 ## Top-up and claim
 

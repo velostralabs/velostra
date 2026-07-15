@@ -51,7 +51,12 @@ Express API and HMAC-validating builder, and invokes the real worker. It proves:
 8. receipt timeout with durable hash: AMBIGUOUS to APPLIED;
 9. lost broadcast response with no DB hash: correlated event supplies the
    authoritative hash and applies exactly once;
-10. zero drift after every recovery and one reservation release/application.
+10. late callbacks cannot regress terminal outbox state;
+11. an authorized fee update uses the exact confirmed event split rather than the
+    anticipated 90/10 split;
+12. a claim waits while earlier earnings remain unresolved instead of silently
+    clamping available earnings;
+13. zero drift after every normal recovery and one reservation release/application.
 
 The suite intentionally uses tiny block ranges so multi-chunk behavior executes.
 

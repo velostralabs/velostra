@@ -14,7 +14,15 @@ import {
   type TransactionReceipt,
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
-import { money, moneyFromMinor, moneyToMinor, type Money, type MoneyInput } from '../money.js'
+import {
+  addMoney,
+  compareMoney,
+  money,
+  moneyFromMinor,
+  moneyToMinor,
+  type Money,
+  type MoneyInput,
+} from '../money.js'
 
 export const velostraEscrowAbi = [
   {
@@ -126,6 +134,67 @@ export function moneyToTokenUnits(amount: MoneyInput): bigint {
     throw new OnchainVerificationError('Amount must be positive')
   }
   return parseUnits(money(amount), settlementTokenDecimals)
+}
+
+export interface VerifiedBuilderCredit {
+  builderAmount: Money
+  platformAmount: Money
+}
+
+export function verifyBuilderCreditReceipt(
+  receipt: TransactionReceipt,
+  builder: Address,
+  callId: Hash,
+  grossAmount: MoneyInput
+): VerifiedBuilderCredit {
+  const escrowAddress = getVelostraEscrowAddress()
+  if (receipt.status !== 'success') throw new OnchainSettlementRevertedError()
+  if (!receipt.to || getAddress(receipt.to) !== escrowAddress) {
+    throw new OnchainVerificationError('Settlement transaction was not sent to VelostraEscrow')
+  }
+
+  const expectedBuilder = getAddress(builder)
+  for (const log of receipt.logs) {
+    if (getAddress(log.address) !== escrowAddress) continue
+
+    let decoded: ReturnType<typeof decodeEventLog>
+    try {
+      decoded = decodeEventLog({
+        abi: velostraEscrowAbi,
+        data: log.data,
+        topics: log.topics,
+        strict: true,
+      })
+    } catch {
+      continue
+    }
+    if (decoded.eventName !== 'EarningsCredited') continue
+
+    const args = decoded.args as unknown as Record<string, unknown>
+    if (
+      typeof args.builder !== 'string' ||
+      getAddress(args.builder) !== expectedBuilder ||
+      typeof args.callId !== 'string' ||
+      args.callId.toLowerCase() !== callId.toLowerCase() ||
+      typeof args.amount !== 'bigint' ||
+      typeof args.platformCut !== 'bigint'
+    ) {
+      continue
+    }
+
+    const builderAmount = tokenUnitsToMoney(args.amount)
+    const platformAmount = tokenUnitsToMoney(args.platformCut)
+    if (compareMoney(addMoney(builderAmount, platformAmount), grossAmount) !== 0) {
+      throw new OnchainVerificationError(
+        'EarningsCredited split does not equal the durable gross amount'
+      )
+    }
+    return { builderAmount, platformAmount }
+  }
+
+  throw new OnchainVerificationError(
+    'EarningsCredited event does not match the expected builder and callId'
+  )
 }
 
 async function verifyEscrowEvent({

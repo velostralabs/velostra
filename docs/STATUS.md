@@ -58,6 +58,8 @@ not been performed. No mainnet contract deployment is recorded.
 ### Money and recovery
 
 - Canonical six-decimal integer arithmetic mirrors Solidity fee rounding.
+- Confirmed EarningsCredited amounts override the anticipated DB split, keeping
+  authorized contract fee changes synchronized.
 - `credit_balances.reserved_usd` plus database nonnegative/within-balance checks.
 - Call + reservation + outbox commit before builder/RPC side effects.
 - Builder HTTP and chain waits occur without an open SQL transaction/row lock.

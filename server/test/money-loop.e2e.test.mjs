@@ -943,6 +943,45 @@ async function main() {
       'late ambiguous/confirmed callbacks cannot regress an APPLIED settlement'
     )
 
+    const earningsBeforeDynamicFee = await builderClient('/api/builder/earnings')
+    const feeChangeHash = await adminWallet.writeContract({
+      address: escrowAddress,
+      abi: escrowArtifact.abi,
+      functionName: 'setPlatformFeeBps',
+      args: [1250],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: feeChangeHash })
+    const dynamicFeeRun = await userClient('/api/agents/' + submission.body.agent.slug + '/run', {
+      method: 'POST',
+      body: JSON.stringify({ input: 'use the confirmed dynamic fee split' }),
+    })
+    assert(dynamicFeeRun.status === 200, 'paid call survives an authorized contract fee change')
+
+    const dynamicFeeRow = await unknownDb.query(
+      'select ac.builder_earned, ac.platform_earned, sa.builder_amount, sa.platform_amount from agent_calls ac join settlement_attempts sa on sa.agent_call_id = ac.id where ac.id = $1',
+      [dynamicFeeRun.body.call_id]
+    )
+    const earningsAfterDynamicFee = await builderClient('/api/builder/earnings')
+    assert(
+      dynamicFeeRow.rows[0]?.builder_earned === '0.262500' &&
+        dynamicFeeRow.rows[0]?.platform_earned === '0.037500' &&
+        dynamicFeeRow.rows[0]?.builder_amount === '0.262500' &&
+        dynamicFeeRow.rows[0]?.platform_amount === '0.037500' &&
+        Math.abs(
+          earningsAfterDynamicFee.body.earnings.available -
+            earningsBeforeDynamicFee.body.earnings.available -
+            0.2625
+        ) < 1e-9,
+      'DB and outbox use the authoritative EarningsCredited split instead of stale 90/10'
+    )
+    const feeResetHash = await adminWallet.writeContract({
+      address: escrowAddress,
+      abi: escrowArtifact.abi,
+      functionName: 'setPlatformFeeBps',
+      args: [1000],
+    })
+    await publicClient.waitForTransactionReceipt({ hash: feeResetHash })
+
     try {
       const quarantinedClaimHash = '0x' + 'ab'.repeat(32)
     const quarantineBlock = await publicClient.getBlockNumber({ cacheTime: 0 })

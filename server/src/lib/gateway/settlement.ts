@@ -9,7 +9,7 @@ import {
   settlementAttempts,
   transactions,
 } from '../../db/schema.js'
-import { compareMoney } from '../money.js'
+import { addMoney, compareMoney, money } from '../money.js'
 
 export interface FinalizeSettlementInput {
   callId: string
@@ -37,11 +37,36 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
     if (hashMismatch && !input.authoritativeEvent) {
       throw new Error('Settlement transaction hash does not match durable attempt')
     }
-    if (
-      (input.builderAmount && compareMoney(input.builderAmount, attempt.builder_amount) !== 0) ||
-      (input.platformAmount && compareMoney(input.platformAmount, attempt.platform_amount) !== 0)
-    ) {
-      throw new Error('Onchain settlement amounts do not match durable attempt')
+    const hasBuilderAmount = input.builderAmount !== undefined
+    const hasPlatformAmount = input.platformAmount !== undefined
+    if (hasBuilderAmount !== hasPlatformAmount) {
+      throw new Error('Onchain settlement must provide both builder and platform amounts')
+    }
+
+    let builderAmount = attempt.builder_amount
+    let platformAmount = attempt.platform_amount
+    if (hasBuilderAmount && hasPlatformAmount) {
+      builderAmount = money(input.builderAmount!)
+      platformAmount = money(input.platformAmount!)
+      if (
+        compareMoney(builderAmount, 0) < 0 ||
+        compareMoney(platformAmount, 0) < 0 ||
+        compareMoney(addMoney(builderAmount, platformAmount), attempt.gross_amount) !== 0
+      ) {
+        throw new Error('Onchain settlement split does not match the durable gross amount')
+      }
+      if (
+        compareMoney(builderAmount, attempt.builder_amount) !== 0 ||
+        compareMoney(platformAmount, attempt.platform_amount) !== 0
+      ) {
+        console.warn('[settlement] onchain fee split replaced the anticipated split', {
+          callId: input.callId,
+          anticipatedBuilderAmount: attempt.builder_amount,
+          anticipatedPlatformAmount: attempt.platform_amount,
+          confirmedBuilderAmount: builderAmount,
+          confirmedPlatformAmount: platformAmount,
+        })
+      }
     }
     if (hashMismatch) {
       console.warn('[settlement] authoritative correlated event replaced an ambiguous tx hash', {
@@ -57,6 +82,8 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
         agent_id: agentCalls.agent_id,
         user_id: agentCalls.user_id,
         status: agentCalls.status,
+        builder_earned: agentCalls.builder_earned,
+        platform_earned: agentCalls.platform_earned,
       })
       .from(agentCalls)
       .where(eq(agentCalls.id, input.callId))
@@ -76,8 +103,8 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
       .set({
         status: 'SUCCESS',
         price_charged: attempt.gross_amount,
-        builder_earned: attempt.builder_amount,
-        platform_earned: attempt.platform_amount,
+        builder_earned: builderAmount,
+        platform_earned: platformAmount,
         error_message: null,
         completed_at: confirmedAt,
       })
@@ -86,12 +113,22 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
 
     if (!won) {
       const [current] = await tx
-        .select({ status: agentCalls.status })
+        .select({
+          status: agentCalls.status,
+          builder_earned: agentCalls.builder_earned,
+          platform_earned: agentCalls.platform_earned,
+        })
         .from(agentCalls)
         .where(eq(agentCalls.id, input.callId))
         .limit(1)
       if (current?.status !== 'SUCCESS') {
         throw new Error('Settlement call cannot transition from ' + (current?.status ?? 'missing'))
+      }
+      if (
+        compareMoney(current.builder_earned, builderAmount) !== 0 ||
+        compareMoney(current.platform_earned, platformAmount) !== 0
+      ) {
+        throw new Error('Settled call financial split conflicts with the confirmed onchain event')
       }
       console.info('[settlement] conditional finalization already owned; guarded no-op', {
         callId: input.callId,
@@ -102,6 +139,8 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
         .set({
           status: 'APPLIED',
           tx_hash: input.txHash,
+          builder_amount: builderAmount,
+          platform_amount: platformAmount,
           block_number: input.blockNumber ?? attempt.block_number,
           confirmed_at: attempt.confirmed_at ?? confirmedAt,
           applied_at: attempt.applied_at ?? confirmedAt,
@@ -163,8 +202,8 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
     const [credited] = await tx
       .update(builderEarnings)
       .set({
-        available: sql`${builderEarnings.available} + ${attempt.builder_amount}`,
-        total_earned: sql`${builderEarnings.total_earned} + ${attempt.builder_amount}`,
+        available: sql`${builderEarnings.available} + ${builderAmount}`,
+        total_earned: sql`${builderEarnings.total_earned} + ${builderAmount}`,
         updated_at: new Date(),
       })
       .where(eq(builderEarnings.builder_id, callAgent.builder_id))
@@ -185,6 +224,8 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
       .set({
         status: 'APPLIED',
         tx_hash: input.txHash,
+        builder_amount: builderAmount,
+        platform_amount: platformAmount,
         block_number: input.blockNumber ?? attempt.block_number,
         confirmed_at: attempt.confirmed_at ?? confirmedAt,
         applied_at: confirmedAt,
@@ -239,14 +280,25 @@ export async function markSettlementSubmitted(
 export async function markSettlementConfirmed(
   callId: string,
   txHash: Hash,
-  blockNumber: bigint
+  blockNumber: bigint,
+  builderAmount?: string,
+  platformAmount?: string
 ): Promise<void> {
+  if ((builderAmount === undefined) !== (platformAmount === undefined)) {
+    throw new Error('Confirmed settlement split must include both amounts')
+  }
   await db
     .update(settlementAttempts)
     .set({
       status: 'CONFIRMED',
       tx_hash: txHash,
       block_number: blockNumber,
+      ...(builderAmount !== undefined
+        ? {
+            builder_amount: money(builderAmount),
+            platform_amount: money(platformAmount!),
+          }
+        : {}),
       confirmed_at: new Date(),
       last_error: null,
       updated_at: new Date(),

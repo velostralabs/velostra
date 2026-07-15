@@ -47,6 +47,9 @@ function keyring(): Map<string, Buffer> {
     if (!/^[a-zA-Z0-9_-]{1,32}$/.test(id) || typeof value !== 'string') {
       throw new Error('AGENT_SECRET_DECRYPTION_KEYS contains an invalid key entry')
     }
+    if (keys.has(id)) {
+      throw new Error('AGENT_SECRET_DECRYPTION_KEYS cannot redefine the active key id')
+    }
     keys.set(id, decodeKey(value, `AGENT_SECRET_DECRYPTION_KEYS.${id}`))
   }
   return keys
@@ -58,6 +61,12 @@ export function generateAgentSecret(): string {
 
 export function isEncryptedAgentSecret(value: string): boolean {
   return value.startsWith(`${FORMAT_VERSION}.`)
+}
+
+export function agentSecretNeedsReencryption(value: string): boolean {
+  if (!isEncryptedAgentSecret(value)) return true
+  const [version, keyId] = value.split('.', 3)
+  return version !== FORMAT_VERSION || keyId !== currentKeyId()
 }
 
 export function encryptAgentSecret(plaintext: string): string {

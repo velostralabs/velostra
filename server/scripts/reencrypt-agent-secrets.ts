@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { db, pool } from '../src/db/client.js'
 import { agents } from '../src/db/schema.js'
 import {
+  agentSecretNeedsReencryption,
   decryptAgentSecret,
   encryptAgentSecret,
   isEncryptedAgentSecret,
@@ -16,12 +17,15 @@ async function main(): Promise<void> {
   let verified = 0
 
   for (const row of rows) {
-    if (isEncryptedAgentSecret(row.secret)) {
-      decryptAgentSecret(row.secret)
+    const plaintext = isEncryptedAgentSecret(row.secret)
+      ? decryptAgentSecret(row.secret)
+      : row.secret
+    if (!agentSecretNeedsReencryption(row.secret)) {
       verified += 1
       continue
     }
-    const encrypted = encryptAgentSecret(row.secret)
+
+    const encrypted = encryptAgentSecret(plaintext)
     await db
       .update(agents)
       .set({

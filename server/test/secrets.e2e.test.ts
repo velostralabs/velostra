@@ -1,5 +1,6 @@
 import {
   AgentSecretError,
+  agentSecretNeedsReencryption,
   decryptAgentSecret,
   encryptAgentSecret,
   generateAgentSecret,
@@ -50,10 +51,27 @@ async function main(): Promise<void> {
   process.env.AGENT_SECRET_ENCRYPTION_KEY_ID = 'primary'
   process.env.AGENT_SECRET_ENCRYPTION_KEY = '33'.repeat(32)
   process.env.AGENT_SECRET_DECRYPTION_KEYS = JSON.stringify({ old: '22'.repeat(32) })
+  const oldPlaintext = decryptAgentSecret(oldEnvelope)
   assert(
-    decryptAgentSecret(oldEnvelope) === 'old-secret-material-that-is-long-enough',
+    oldPlaintext === 'old-secret-material-that-is-long-enough',
     'previous master key remains available during rotation'
   )
+  assert(agentSecretNeedsReencryption(oldEnvelope), 'historical envelope is selected for re-encryption')
+  const rotatedEnvelope = encryptAgentSecret(oldPlaintext)
+  assert(!agentSecretNeedsReencryption(rotatedEnvelope), 're-encryption moves the envelope to the active key id')
+  assert(decryptAgentSecret(rotatedEnvelope) === oldPlaintext, 're-encryption preserves the exact secret')
+
+  process.env.AGENT_SECRET_DECRYPTION_KEYS = JSON.stringify({ primary: '44'.repeat(32) })
+  let duplicateRejected = false
+  try {
+    encryptAgentSecret('duplicate-key-id-must-never-shadow-current-key')
+  } catch (error) {
+    duplicateRejected =
+      error instanceof Error &&
+      error.message.includes('cannot redefine the active key id')
+  }
+  assert(duplicateRejected, 'historical keyring cannot shadow the active encryption key')
+
   delete process.env.AGENT_SECRET_DECRYPTION_KEYS
   assertThrows(
     () => decryptAgentSecret(oldEnvelope),

@@ -1,0 +1,42 @@
+name: Staging artifact verification
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: velostra-staging-artifacts-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  containers:
+    name: Reproducible staging containers
+    runs-on: ubuntu-latest
+    env:
+      VELOSTRA_SERVER_IMAGE: velostra/server:verification
+      VELOSTRA_WEB_IMAGE: velostra/web:verification
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate staging topology
+        run: |
+          cp deploy/staging/server.env.example deploy/staging/server.env
+          docker compose -f deploy/staging/compose.yaml config --quiet
+      - name: Build API and worker image
+        run: docker build -f server/Dockerfile -t "$VELOSTRA_SERVER_IMAGE" server
+      - name: Build web image
+        run: >-
+          docker build -f Dockerfile -t "$VELOSTRA_WEB_IMAGE"
+          --build-arg PUBLIC_API_URL=https://api.staging.example.invalid
+          --build-arg PUBLIC_ESCROW_ADDRESS=0x0000000000000000000000000000000000000001
+          --build-arg PUBLIC_SETTLEMENT_TOKEN_ADDRESS=0x0000000000000000000000000000000000000002
+          .
+      - name: Verify non-root runtime and migration assets
+        run: |
+          test "$(docker image inspect "$VELOSTRA_SERVER_IMAGE" --format '{{.Config.User}}')" = "velostra"
+          test -n "$(docker image inspect "$VELOSTRA_WEB_IMAGE" --format '{{.Config.User}}')"
+          docker run --rm --entrypoint node "$VELOSTRA_SERVER_IMAGE" -e +            "const fs=require('fs'); process.exit(fs.existsSync('/app/dist/scripts/migrate.js') && fs.existsSync('/app/drizzle/meta/_journal.json') ? 0 : 1)"

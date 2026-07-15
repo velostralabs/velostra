@@ -83,6 +83,17 @@ export function assertProductionConfiguration(): void {
   if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
     throw new Error('Production DATABASE_URL must use postgres or postgresql')
   }
+  const sslMode = databaseUrl.searchParams.get('sslmode')
+  if (!sslMode || !['require', 'verify-ca', 'verify-full'].includes(sslMode)) {
+    throw new Error(
+      'Production DATABASE_URL must enforce TLS with sslmode=require, verify-ca, or verify-full'
+    )
+  }
+  positiveInteger('DATABASE_POOL_MAX', process.env.DATABASE_POOL_MAX ?? '10')
+  positiveInteger(
+    'DATABASE_CONNECTION_TIMEOUT_MS',
+    process.env.DATABASE_CONNECTION_TIMEOUT_MS ?? '5000'
+  )
 
   const jwtSecret = requireProductionEnv('JWT_SECRET')
   if (jwtSecret.length < 32 || jwtSecret === 'dev-secret-change-me') {
@@ -102,8 +113,8 @@ export function assertProductionConfiguration(): void {
   }
 
   const redisUrl = new URL(requireProductionEnv('REDIS_URL'))
-  if (!['redis:', 'rediss:'].includes(redisUrl.protocol)) {
-    throw new Error('Production REDIS_URL must use redis or rediss')
+  if (redisUrl.protocol !== 'rediss:') {
+    throw new Error('Production REDIS_URL must use rediss TLS')
   }
   if (process.env.REDIS_FAILURE_MODE === 'open') {
     throw new Error('Production REDIS_FAILURE_MODE cannot be open')
@@ -144,5 +155,17 @@ export function assertProductionConfiguration(): void {
   const rpcUrl = new URL(requireProductionEnv('ROBINHOOD_RPC_URL'))
   if (rpcUrl.protocol !== 'https:') {
     throw new Error('Production ROBINHOOD_RPC_URL must use HTTPS')
+  }
+
+  const environment = requireProductionEnv('VELOSTRA_ENVIRONMENT')
+  if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(environment)) {
+    throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase environment identifier')
+  }
+  if (environment === 'production' && process.env.PHASE2_ALLOW_MAINNET !== 'explicitly-approved') {
+    throw new Error('Phase 2 blocks production environment startup without explicit release approval')
+  }
+  const release = requireProductionEnv('VELOSTRA_RELEASE')
+  if (release.length < 7 || release.length > 128 || /\s/.test(release)) {
+    throw new Error('Production VELOSTRA_RELEASE must identify an immutable build')
   }
 }

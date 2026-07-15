@@ -1,0 +1,81 @@
+name: velostra-staging
+
+x-server-common: &server-common
+  image: ${VELOSTRA_SERVER_IMAGE:?set VELOSTRA_SERVER_IMAGE to an immutable image reference}
+  restart: unless-stopped
+  init: true
+  env_file:
+    - path: ./server.env
+      required: true
+  networks:
+    - backend
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  read_only: true
+  tmpfs:
+    - /tmp:size=32m,mode=1777
+  deploy:
+    resources:
+      limits:
+        cpus: "1.00"
+        memory: 768M
+      reservations:
+        cpus: "0.25"
+        memory: 256M
+
+services:
+  web:
+    image: ${VELOSTRA_WEB_IMAGE:?set VELOSTRA_WEB_IMAGE to an immutable image reference}
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${WEB_BIND_ADDRESS:-127.0.0.1}:${WEB_PORT:-8080}:8080"
+    networks:
+      - edge
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+      - /var/cache/nginx:size=16m,mode=0755
+      - /var/run:size=1m,mode=0755
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 128M
+
+  migration:
+    <<: *server-common
+    profiles: ["release"]
+    restart: "no"
+    command: ["node", "dist/scripts/migrate.js"]
+    healthcheck:
+      disable: true
+
+  api:
+    <<: *server-common
+    command: ["node", "dist/index.js"]
+    ports:
+      - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8787}:8787"
+    networks:
+      - edge
+      - backend
+    stop_grace_period: 30s
+
+  reconciliation-worker:
+    <<: *server-common
+    command: ["node", "dist/jobs/reconcile.js", "--watch"]
+    healthcheck:
+      disable: true
+    stop_grace_period: 60s
+
+networks:
+  edge:
+    internal: false
+  backend:
+    internal: true

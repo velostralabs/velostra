@@ -41,7 +41,8 @@
     "test:money": "npm --prefix ../contracts run build && tsx test/money-loop.e2e.test.mjs",
     "secrets:reencrypt": "tsx scripts/reencrypt-agent-secrets.ts",
     "reconcile": "tsx src/jobs/reconcile.ts --once",
-    "reconcile:worker": "tsx src/jobs/reconcile.ts --watch"
+    "reconcile:worker": "tsx src/jobs/reconcile.ts --watch",
+    "db:migrate:runtime": "node dist/scripts/migrate.js"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

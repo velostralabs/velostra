@@ -1,7 +1,7 @@
 # Database schema and recovery
 
 > Last verified against `server/src/db/schema.ts` and `server/drizzle`: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -24,6 +24,7 @@ erDiagram
     AGENTS ||--o{ AGENT_CALLS : executes
     USERS ||--o{ AGENT_CALLS : requests
     AGENT_CALLS ||--|| SETTLEMENT_ATTEMPTS : recovers
+    AGENT_CALLS ||--o| RELEASE_CANARY_ADMISSIONS : bounds
     AGENT_CALLS ||--o| TRANSACTIONS : settles
     CHAIN_SYNC_STATE ||--o{ CHAIN_EVENTS : indexes
 ```
@@ -44,6 +45,7 @@ erDiagram
 | `agent_calls` | durable input/output/status, correlation, exact split |
 | `transactions` | top-up/call/platform ledger; unique tx hash/call link |
 | `settlement_attempts` | reservation/outbox state and candidate hash |
+| `release_canary_admissions` | manifest/policy-bound canary subject, exposure, and terminal status |
 | `reviews` | unique agent+user review |
 | `reports` | moderation record |
 | `platform_stats` | future daily rollup shape |
@@ -52,7 +54,7 @@ erDiagram
 | `operational_heartbeats` | durable worker/monitor/backup liveness and metadata |
 | `operational_alerts` | deduplicated alert lifecycle, acknowledgement, notification, resolution |
 
-There are 19 public application tables.
+There are 20 public application tables.
 
 ## Money invariants
 
@@ -96,6 +98,7 @@ can supply the authoritative successful hash if an ambiguous candidate differs.
 - unique `agent_calls.onchain_call_id`;
 - unique optional `transactions.agent_call_id`;
 - one `settlement_attempts` row per call;
+- at most one `release_canary_admissions` row per call; concurrent cap checks use a transaction-scoped advisory lock;
 - conditional `PROCESSING -> SUCCESS` owns all financial side effects.
 
 ## Cursor behavior
@@ -115,6 +118,7 @@ an unscanned gap.
 0004_transaction_indexes.sql
 0005_earnings_invariants.sql
 0006_dark_darkstar.sql  # operational heartbeats and alerts
+0007_phase3_canary_admissions.sql  # bounded rollout admission ledger
 ```
 
 Use:
@@ -127,7 +131,7 @@ npm --prefix server run test:migrations
 
 `test:migrations` proves both fresh install and upgrade path, exact balance
 preservation, reservation initialization, state enum order, non-negative earnings and
-positive-claim constraints, 19
+positive-claim and canary constraints, 20
 tables, and operational indexes. `db:push` is local prototyping only and must not
 be used on persistent staging/production data.
 
@@ -142,7 +146,7 @@ chain-specific ledger queries.
 
 The current disposable drill uses `pg_dump --format=custom`, restores into a clean
 database, and runs `npm --prefix server run restore:verify`. Verification compares all
-19 tables, seven migrations, every row count, exact financial/outbox aggregates,
+20 tables, eight migrations, every row count, exact financial/outbox aggregates,
 constraints, and indexes. With the restore timing environment variables, it writes a
 redacted evidence JSON; the measured local full-data drill completed in 1,542 ms.
 

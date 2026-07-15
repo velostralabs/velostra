@@ -1,7 +1,8 @@
 # Velostra roadmap
 
 > Updated after final internal audit clearance: 2026-07-16.
-> Baseline: Phase 0-2 repository scopes are complete and internally cleared.
+> Baseline: Phase 0-3 repository preparation is complete and internally cleared;
+> controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
 > not blockers for continued development.
 
@@ -212,16 +213,63 @@ approved. Every unchecked external item remains a mainnet release prerequisite a
 must be satisfied before real value is authorized.
 
 
-## Phase 3 - Controlled mainnet release preparation (NEXT; DEPLOYMENT GATED)
+## Phase 3 - Controlled mainnet release preparation (REPOSITORY DONE; EXECUTION GATED)
 
-1. pin the release manifest and prepare deployment, verification, migration, and
-   rollback automation without sending a mainnet transaction;
-2. produce a dry-run plan for the exact deployment block and API/worker start state;
-3. codify worker catch-up, zero-drift, alert, and ownership readiness checks;
-4. prepare a low-value allowlisted canary and its stop/rollback criteria;
-5. after every mainnet prerequisite is closed, deploy/verify the audited frozen
-   contract and execute the canary under explicit operator authorization;
-6. expand only after the canary exit gate and incident owner approval.
+Status: **repository implementation and local gates DONE**. No mainnet broadcast,
+deployment, canary, or expansion is claimed. The unchecked execution items require
+external evidence and accountable operator authorization.
+
+### 3.1 Immutable release identity (DONE)
+
+- [x] Canonical SHA-256 manifest binds full commit, clean tree, contract/artifact,
+  ABI/bytecode, migration journal and migrations, lockfiles, policies, image digests,
+  chain/roles, reconciliation limits, evidence, ticket, and distinct approvals.
+- [x] Preparation, broadcast-approved, and deployed stages validate separately.
+- [x] Tamper, dirty-tree, path escape, cross-release evidence, missing digest,
+  duplicate approver, and malformed authorization tests fail closed.
+
+### 3.2 Guarded deployment and readiness (DONE)
+
+- [x] Offline plan reports `broadcastPerformed: false` by default.
+- [x] Broadcast requires `--broadcast`, explicit sentinel, and exact manifest hash,
+  release, ticket, deployer, constructor, chain, and artifact match.
+- [x] Finalize exact transaction/address/block into a deployed manifest.
+- [x] Verify receipt, runtime bytecode/immutables, token, fee, pause, solvency,
+  successor, and all authorities.
+- [x] Collect live database/RPC/contract/signer/worker/backup/outbox/drift/alert
+  readiness evidence.
+- [x] Emit deterministic GO/NO-GO and one-hour catch-up PASS/FAIL artifacts without
+  mutating traffic state.
+
+### 3.3 Bounded canary and safe stop (DONE)
+
+- [x] Mainnet-like startup requires explicit Phase 3 approval and exact deployed
+  manifest; the legacy Phase 2 bypass is removed.
+- [x] Paid writes default disabled and canary policy is hash/release bound.
+- [x] Enforce subject allowlists, duration, per-call, call-count, per-wallet, and
+  total-gross limits.
+- [x] Serialize concurrent admission with a transaction-scoped Postgres lock and
+  persist it with reservation/outbox creation.
+- [x] Mark admission through the conditional exactly-once settlement state machine;
+  claims and reconciliation remain available during stop.
+- [x] Build automatic summary, deterministic stop plan, and
+  `PASS_AWAITING_OPERATOR` with `expansionAuthorized: false`.
+- [x] Require hash-bound passing exit evidence plus explicit operator approval before
+  public paid-write mode.
+- [x] Gate release tooling, config, Postgres cap races, migrations, and container
+  assets in CI.
+
+### 3.4 Controlled execution (MAINNET PREREQUISITE)
+
+- [ ] Close independent contract/backend review and every managed Phase 2 evidence gate.
+- [ ] Freeze image digests and create the two-person `broadcast-approved` manifest.
+- [ ] Execute backup/migration, deploy once, verify, and store deployed evidence.
+- [ ] Capture readiness `GO` while paid writes remain disabled.
+- [ ] Execute only the low-value allowlisted canary; stop on any failed threshold.
+- [ ] Obtain incident-owner approval, then enable public paid writes.
+- [ ] Observe stable operation before declaring the operational Phase 3 exit.
+
+Repository exit: **PASS**. Operational/mainnet exit: **NOT RUN / GATED**.
 
 ## Phase 4 - Closed beta and builder platform (LATER)
 
@@ -242,9 +290,9 @@ must be satisfied before real value is authorized.
 
 ## Immediate ordered flow
 
-1. begin Phase 3 preparation: release-manifest, deployment-verification, canary,
-   rollback, and zero-drift go/no-go automation, without sending mainnet value;
-2. continue independent review and managed-staging evidence in parallel;
-3. freeze a release candidate only after all mainnet prerequisites close;
-4. execute the low-value canary only with explicit operator authorization;
-5. start Phase 4 product work after the controlled release is operationally stable.
+1. close independent review and every managed Phase 2 release prerequisite;
+2. freeze commit, image digests, policies, constructor, and approvals;
+3. run plan/readiness with paid writes disabled;
+4. broadcast only through the guarded command under the approved ticket;
+5. run bounded canary and expand only after separate operator approval;
+6. begin Phase 4 only after controlled release is operationally stable.

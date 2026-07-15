@@ -1,19 +1,19 @@
 # Deployment and operations
 
 > Last verified against build/deploy scripts: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > No production or mainnet deployment is recorded.
 
 ## Release gates
 
-Phase 1 and Phase 2 repository scopes are complete and have passed internal
-engineering/CI audit; continued development and Phase 3 preparation are clear.
-Independent contract/backend review and the managed-staging evidence packet remain
-mainnet release gates. Provision only isolated non-mainnet-value staging, execute the
-real-wallet/alert/outage/PITR/72-hour drills, and pass the signed evidence validator.
-Do not deploy mainnet value before both external gates close.
+Phase 0-3 repository preparation is complete and has passed internal engineering/CI
+audit. This is not deployment authorization. Independent contract/backend review,
+the managed-staging evidence packet, an immutable approved release manifest, and an
+explicit operator broadcast remain mainnet release gates. Provision only isolated
+non-mainnet-value staging, execute the real-wallet/alert/outage/PITR/72-hour drills,
+and pass every signed validator. Do not deploy mainnet value until all gates close.
 
 ## Target topology
 
@@ -87,6 +87,10 @@ Both processes run strict production configuration validation.
 | `ROBINHOOD_RPC_URL` | dedicated primary HTTPS endpoint |
 | `ROBINHOOD_RPC_FALLBACK_URLS` | optional comma-separated credential-free HTTPS fallbacks |
 | `VELOSTRA_DEPLOYMENT_BLOCK` | positive exact deployment block |
+| `PHASE3_MAINNET_STARTUP_APPROVAL` | exactly `explicitly-approved` for mainnet-like processes |
+| `PHASE3_RELEASE_MANIFEST` | mounted deployed manifest path |
+| `PHASE3_RELEASE_MANIFEST_SHA256` | exact lowercase canonical manifest hash |
+| `PHASE3_PAID_WRITES_MODE` | `disabled` initially; `canary` only after readiness; `public` only after exit approval |
 
 Operational tuning is documented in `server/.env.example`: HTTP size/proxy, Redis
 timeout, agent egress caps, RPC timeout, reconciliation interval/range/
@@ -95,27 +99,70 @@ confirmations/retries/backoff/drift, and outbox grace.
 Before traffic, production startup also verifies there are no plaintext agent
 secrets and at least one active/bootstrappable super admin.
 
-## Contract deployment
+## Phase 3 preparation and contract deployment
+
+Preparation is safe to run repeatedly and cannot broadcast:
 
 ```bash
+npm ci
 npm ci --prefix contracts
-npm test --prefix contracts
-npm --prefix contracts run deploy:robinhood
+npm run test:phase3
+npm run release:prepare
+npm run release:validate
+npm run release:plan
 ```
 
-Inputs:
+For a real release, replace the preparation input with reviewed image digests,
+Phase 2 and independent-review evidence, enabled bounded canary policy, accountable
+ticket, and two distinct approvals. Recreate and validate the
+`broadcast-approved` manifest from a clean frozen commit.
 
-- `DEPLOYER_PRIVATE_KEY`: funded deployment-only wallet;
-- `SETTLEMENT_TOKEN`: independently reviewed 6-decimal token;
-- `PLATFORM_FEE_BPS`: final fee;
-- `ADMIN_ADDRESS`: deployed governance multisig contract;
-- `SETTLER_ADDRESS`, `TREASURY_ADDRESS`, `PAUSE_GUARDIAN_ADDRESS`: distinct roles;
-- `ROBINHOOD_RPC_URL`: chain 4663 RPC.
+The contract command is inert without every guard:
 
-The script verifies chain ID, token decimals, role separation, admin bytecode, and
-writes local `contracts/deployment.json` (ignored; publish only reviewed public
-metadata). Record source verification, bytecode, compiler/optimizer, constructor
-args, transaction hash, block, and role grants.
+```bash
+PHASE3_MAINNET_BROADCAST=explicitly-approved PHASE3_RELEASE_MANIFEST=artifacts/phase3/release-manifest.json PHASE3_RELEASE_MANIFEST_SHA256=<canonical-sha256> PHASE3_RELEASE_APPROVAL_TICKET=<approved-ticket> VELOSTRA_RELEASE=<full-commit> npm --prefix contracts run deploy:robinhood -- --broadcast
+```
+
+It verifies chain 4663, manifest/ticket/release, deployer, exact constructor, token
+decimals, role separation, admin code, and reproducible artifact before sending.
+After confirmation:
+
+```bash
+npm run release:finalize
+npm --prefix contracts run verify:robinhood
+```
+
+Store the deployed manifest and verification artifact in the evidence mount. The
+verification command checks receipt, runtime code with immutable slots, settlement
+token, fee, pause/solvency/successor, and role ownership. Local
+`contracts/deployment.json` remains ignored and is never sufficient release evidence.
+
+## Readiness and bounded canary
+
+Keep `PHASE3_PAID_WRITES_MODE=disabled` while collecting the final pre-canary
+snapshot:
+
+```bash
+npm --prefix server run phase3:snapshot
+npm run release:readiness
+```
+
+Only a `GO` permits an operator to change mode to `canary`. Supply the exact enabled
+policy hash and start timestamp. The API then enforces immutable subjects and
+duration/call/wallet/total exposure inside the reservation transaction.
+
+At the end of the bounded window:
+
+```bash
+npm --prefix server run phase3:canary-summary
+npm run release:canary
+```
+
+Any failed check returns `STOP`: disable new paid writes, preserve claims, keep
+reconciliation running, page the owner, and forward-repair. A pass returns
+`PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`. Public mode additionally
+requires the exact passing decision file/hash and
+`PHASE3_CANARY_EXIT_APPROVAL=explicitly-approved`.
 
 ## Frontend deployment
 

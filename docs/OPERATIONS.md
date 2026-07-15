@@ -1,7 +1,7 @@
 # Operations and incident runbook
 
 > Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > No mainnet deployment is recorded in this repository.
@@ -77,6 +77,29 @@ configured `ROBINHOOD_RPC_FALLBACK_URLS`, then iteration-level retry/backoff app
 endpoint remains unavailable, the watch loop resumes from the unchanged cursor. Local
 load/reorg evidence proves correctness, but only the pending managed-staging one-hour
 drill may freeze the catch-up SLO.
+
+## Phase 3 readiness, canary, and stop procedure
+
+1. Mount immutable manifest/policy inputs read-only and evidence output separately.
+2. Start migration/API/worker/monitor with the exact deployed manifest. Leave
+   `PHASE3_PAID_WRITES_MODE=disabled`.
+3. Capture `phase3:snapshot` and require `release:readiness` = `GO`.
+4. Set the reviewed canary policy hash, RFC3339 start, and mode `canary`.
+5. Run only allowlisted low-value deposit, paid-call, reconciliation, claim, and
+   platform-revenue flows. The API rejects unlisted or over-cap calls before builder
+   execution and serializes global capacity in Postgres.
+6. Capture the final readiness snapshot and `phase3:canary-summary`, then run
+   `release:canary`.
+7. On `STOP`, immediately set paid mode `disabled`, preserve claims, keep the worker
+   and monitor live, capture evidence, and forward-repair. Never roll back financial
+   migrations or delete admission/event/outbox rows.
+8. On `PASS_AWAITING_OPERATOR`, keep canary/disabled mode until the incident owner
+   approves the hash-bound decision. The evaluator never expands traffic itself.
+
+A process restart after the canary duration fails closed. Failed calls still consume
+the bounded canary budget conservatively. An admission rolls back if reservation or
+outbox creation fails; confirmed ambiguous calls remain admitted until reconciliation
+settles them.
 
 ## Required alerts
 
@@ -168,7 +191,7 @@ pg_restore --no-owner --no-privileges --dbname="$RESTORED_DATABASE_URL" velostra
 SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restore:verify
 ```
 
-`restore:verify` compares all 19 public tables, seven migrations, exact transaction/
+`restore:verify` compares all 20 public tables, eight migrations, exact transaction/
 claim/credit/earnings/call/outbox aggregates, critical constraints, and indexes. When
 `RESTORE_DRILL_STARTED_AT`, `BACKUP_CAPTURED_AT`, and `RESTORE_EVIDENCE_PATH` are set,
 it writes a redacted RPO/RTO evidence artifact. The disposable timed drill passed; the

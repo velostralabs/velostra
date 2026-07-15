@@ -1,7 +1,7 @@
 # Smart contract - VelostraEscrow
 
 > Last verified against `contracts/VelostraEscrow.sol`: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > Status: Phase 1 implementation baseline published, local and Linux-CI EVM tested;
@@ -159,6 +159,20 @@ Ten Phase 1 groups cover:
 8. settler rotation and revocation;
 9. successor declaration, exact unencumbered migration, and predecessor exits;
 10. lifetime accounting consistency.
+
+## Guarded Phase 3 deployment
+
+`deploy:robinhood` is no longer a plain environment-driven broadcast. It first
+rebuilds the reproducible artifact and is inert unless `--broadcast` is supplied.
+A broadcast additionally requires the explicit mainnet sentinel, exact
+`broadcast-approved` manifest/hash/release/ticket, matching deployer and constructor,
+chain 4663, reviewed 6-decimal token, and role separation.
+
+After confirmation, `release:finalize` creates the `deployed` manifest and
+`verify:robinhood` checks receipt, runtime bytecode with immutable references,
+constructor token/fee, pause, solvency, successor, and all authority assignments.
+Neither a local deployment JSON nor a successful transaction alone authorizes API
+startup or paid traffic.
 
 ## Remaining release gate
 

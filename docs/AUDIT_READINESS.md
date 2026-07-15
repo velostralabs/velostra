@@ -10,6 +10,12 @@
 > must pin the final immutable release commit; the historical Phase 1 SHA below is not
 > sufficient to approve the current release candidate.
 
+>
+> Phase 3 note: the external review must also cover immutable manifest/deployment
+> tooling, mainnet startup binding, canary admission serialization/caps, automatic
+> evidence collection, and public-expansion approval. Repository-side preparation is
+> implemented; no mainnet execution is claimed.
+
 ## Review objective
 
 Give an external contract auditor and focused backend security reviewer a bounded,
@@ -73,6 +79,8 @@ addresses must be explicit and distinct; token decimals must be 6.
 - `server/src/lib/rpc.ts`, `chain-policy.ts`, remote signer, observability, and
   operational-readiness modules;
 - `server/src/db/schema.ts` and `server/drizzle/*.sql`;
+- `scripts/lib/phase3-*.mjs`, Phase 3 release/deployment/gate CLIs, and contract verify script;
+- `server/src/lib/phase3-canary*.ts` and Phase 3 evidence collectors;
 - guarded Phase 2 load/soak/evidence runners and their fail-closed validators;
 - security, resilience, observability, browser, migration, money, and restore suites.
 

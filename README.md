@@ -33,6 +33,7 @@ repair the exact database row after process, RPC, or database failure.
 | **Gateway** | Bound EIP-191 auth, HMAC-signed agent requests, SSRF-safe egress, quotas, rate limits, and receipt verification. |
 | **Settlement** | Role-separated 6-decimal ERC-20 escrow with collateral guards, deterministic fee routing, pause, rotation, and successor controls. |
 | **Recovery** | Credit reservation, durable outbox, four-event indexer, persistent cursor, idempotent backfill, ambiguity recovery, and drift warnings. |
+| **Release safety** | Immutable release identity, inert deployment planning, deployment verification, deterministic readiness, serialized low-value canary, and non-destructive stop controls. |
 
 <p align="center">
   <img src="./docs/assets/settlement-flow.svg" width="100%" alt="Animated Velostra settlement and reconciliation flow" />
@@ -211,6 +212,29 @@ The load and soak commands require their documented approval sentinels. The fina
 validator hashes every required artifact and fails closed if evidence is missing,
 tampered, cross-release, or unsigned.
 
+## Controlled release tooling
+
+Phase 3 repository preparation is complete but mainnet execution is gated:
+
+```bash
+# creates/verifies immutable preparation evidence; never broadcasts
+npm run release:prepare
+npm run release:validate
+npm run release:plan
+
+# after an authorized deployment, collect and evaluate evidence
+npm --prefix server run phase3:snapshot
+npm run release:readiness
+npm --prefix server run phase3:canary-summary
+npm run release:canary
+```
+
+Mainnet-like startup requires the exact deployed manifest. Paid writes default to
+`disabled`. Canary admission is bounded and serialized in Postgres; the passing
+decision still cannot authorize expansion without a separate operator approval.
+Contract broadcast additionally requires `--broadcast` and the explicit release
+sentinel. See [Deployment](./docs/DEPLOYMENT.md).
+
 ## Documentation
 
 | Read | Purpose |
@@ -229,19 +253,15 @@ tampered, cross-release, or unsigned.
 
 ## Status
 
-Phase 1 and Phase 2 repository scopes are complete and have passed the internal
-engineering/CI audit: isolated topology, restricted signing, durable observability,
-browser/wallet gates, RPC failover/finality, load/reorg/restore drills, and the
-guarded soak/evidence pipeline are implemented and verified. The project is
-**clear for continued non-mainnet development and Phase 3 preparation**.
+Phase 0-3 repository preparation is implemented and locally verified: product,
+security, exactly-once recovery, staging/observability, immutable release identity,
+guarded deployment/verification, readiness/catch-up decisions, and a bounded
+transaction-safe canary control plane.
 
-The contract is **not independently audited and not deployed to mainnet**. External
-contract/backend review plus managed-staging signer, alert, MetaMask, outage, PITR,
-and 72-hour-soak evidence remain mandatory before real-value/mainnet release. They
-are release prerequisites, not blockers for continued product development.
-
-Do not put real value behind this repository until a reviewed release explicitly
-closes those prerequisites.
+No mainnet deployment or real-value authorization is recorded. Independent review,
+managed MetaMask/alert/outage/PITR/72-hour evidence, accountable approvals, actual
+deployment verification, and the low-value canary remain mandatory. A passing canary
+returns `PASS_AWAITING_OPERATOR` and never expands traffic by itself.
 
 ## Security
 

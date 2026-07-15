@@ -1,10 +1,10 @@
 # Velostra threat model
 
 > Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> Scope: verified Phase 1 baseline plus Phase 2 pre-mainnet operational proof.
+> Scope: verified Phase 1-2 foundation plus Phase 3 controlled-release preparation.
 
 ## Security objective
 
@@ -23,7 +23,8 @@ governance, or treasury authority.
 6. wallet-auth sessions and one-time challenges;
 7. per-agent HMAC secrets;
 8. durable call output, settlement attempts, event ledger, and sync cursor;
-9. operator audit evidence, backups, and migration history.
+9. operator audit evidence, backups, and migration history;
+10. immutable release manifest, approval packet, image digests, and canary exposure ledger.
 
 Raw agent input/output may contain user-sensitive data. It is an application asset,
 but it is not required for chain accounting after a result has been durably linked
@@ -74,6 +75,9 @@ to its call.
 - A correlated `EarningsCredited` event with exact builder and amounts may replace
   an ambiguous candidate hash. The successful contract event is authoritative.
 - Manual retroactive scans never jump the persistent normal catch-up cursor.
+- Mainnet paid writes default disabled and every canary admission is bound to the exact release, manifest, policy, subject, and amount.
+- Canary capacity read/check/insert is serialized in the same transaction as call/reservation/outbox creation.
+- Claims and reconciliation remain live during a canary stop; rollback is forward repair, never destructive database rollback.
 
 ### Authentication and secrets
 
@@ -105,6 +109,9 @@ to its call.
 | RPC rate limit | primary/fallback endpoints, bounded chunks, adaptive split, retry/backoff, cursor commit per range | failure across every provider extends catch-up time |
 | Manual cursor misuse | retroactive scans preserve cursor unless starting exactly at next block | production RBAC around job execution still needed |
 | Backup corruption | versioned migrations, pg_dump/restore comparison of exact aggregates and invariants | managed PITR must be configured and drilled |
+| Release manifest tamper/cross-release replay | canonical self-hash, clean commit, file/image/policy/evidence hashes, stage-specific validation | operator custody of approved artifacts remains external |
+| Canary cap race | transaction-scoped advisory lock plus durable unique admission row before reservation | initial design intentionally serializes one release/policy admission stream |
+| Unsafe canary expansion | disabled default, bounded window/subjects/exposure, automatic STOP, hash-bound PASS evidence, separate approval | human approval and real operator response remain external |
 
 ## Abuse and privacy
 
@@ -126,9 +133,9 @@ to its call.
 
 ## Review status
 
-Phase 1 and repository-side Phase 2 controls/adversarial tests have passed internal
+Phase 0-3 repository controls/adversarial tests have passed internal
 engineering/CI review. This document is still an internal threat model, not an
 independent audit. Managed-staging evidence and independent contract/focused-backend
 review remain mandatory before real-value/mainnet release, but do not block continued
-development or Phase 3 preparation; see [STATUS.md](./STATUS.md) and
+development; Phase 3 execution remains gated; see [STATUS.md](./STATUS.md) and
 [AUDIT_READINESS.md](./AUDIT_READINESS.md).

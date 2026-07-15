@@ -1,7 +1,8 @@
 # Server test quick reference
 
-> Last verified: 2026-07-15. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
-> Evidence state: Phase 2 repository automation is complete; managed-staging exit evidence is pending.
+> Last verified: 2026-07-16. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
+> Evidence state: Phase 3 repository automation is complete; controlled mainnet
+> execution and managed external evidence remain gated.
 
 Run from repository root:
 
@@ -19,6 +20,7 @@ npm --prefix server run test:resilience
 npm --prefix server run test:observability
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
+npm --prefix server run test:phase3-canary
 npm test --prefix contracts
 ```
 
@@ -29,6 +31,7 @@ export DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/velostra_test
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
+npm --prefix server run test:phase3-canary-db
 npm --prefix server run test:money
 ```
 

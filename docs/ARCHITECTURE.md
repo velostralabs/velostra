@@ -1,7 +1,7 @@
 # Arsitektur Velostra
 
 > Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -185,6 +185,43 @@ exponential retry, adaptive splitting, and range-level cursor commits bound each
 Sustained failure across every endpoint can extend catch-up indefinitely; it cannot
 skip failed work. Local catch-up/failover invariants pass; the timed managed-staging
 one-hour SLO remains an external gate.
+
+## Phase 3 release control plane
+
+```mermaid
+flowchart LR
+    INPUT["Reviewed input + evidence"] --> MANIFEST["Immutable release manifest"]
+    MANIFEST --> PLAN["Inert deployment plan"]
+    PLAN --> BROADCAST["Explicit guarded broadcast"]
+    BROADCAST --> VERIFY["Deployed manifest + verification"]
+    VERIFY --> READY["Operational GO / NO-GO"]
+    READY --> MODE["Paid writes disabled / canary"]
+    MODE --> ADMIT["Serialized Postgres admission"]
+    ADMIT --> SETTLE["Existing exactly-once settlement"]
+    SETTLE --> SUMMARY["Automatic canary summary"]
+    SUMMARY --> STOP["STOP + forward repair"]
+    SUMMARY --> PASS["PASS_AWAITING_OPERATOR"]
+```
+
+The manifest is a separate release authority boundary. It binds the clean full
+commit, reproducible contract output, migration graph, lockfiles, policies, external
+evidence, images, roles, chain, and approvals. Preparation cannot be used as a
+broadcast manifest; broadcast-approved cannot masquerade as deployed.
+
+Mainnet-like API/worker/monitor startup validates the exact deployed manifest.
+Paid-call mode defaults to `disabled`. In `canary` mode the API checks immutable
+allowlists/window/per-call caps, then acquires a transaction-scoped advisory lock.
+Within that same transaction it rechecks global and wallet exposure, inserts
+`release_canary_admissions`, reserves funds, and creates the outbox. This makes the
+cap linearizable under concurrent requests. Free calls, builder claims, and
+reconciliation are outside the paid-write stop boundary.
+
+Settlement changes admission status only inside the existing conditional
+`PROCESSING -> SUCCESS` winner transaction (or conditional failure transaction).
+The collector derives the canary summary from the admission/event/heartbeat ledgers
+and final readiness snapshot. Failure produces a forward-repair stop plan that
+disables new paid risk while preserving claims and reconciliation. A passing result
+still requires a separate operator approval before public mode.
 
 ## Failure model
 

@@ -1,7 +1,7 @@
 # Staging secrets and authority runbook
 
-This runbook is for the isolated Phase 2 environment. It does not authorize a
-production or mainnet rollout.
+This runbook is for isolated managed staging and Phase 3 release preparation. It
+does not authorize a production or mainnet rollout.
 
 ## Secret delivery
 
@@ -59,3 +59,18 @@ Record timestamps, operators, transaction hashes, alert evidence, and rollback:
 
 Never mark a drill complete from unit tests alone. Mainnet release evidence requires
 that the same procedure pass against managed staging services and a staging contract.
+
+## Phase 3 binding
+
+Every release process must receive the same canonical manifest SHA-256, full Git
+commit, chain ID, contract address, image digests, approval ticket, and distinct
+approver identities. Mainnet-like API, worker, monitor, and migration startup fails
+closed on a missing or mismatched binding. The immutable input directory is
+read-only; collectors write readiness and canary snapshots only to the evidence
+directory.
+
+Canary mode additionally requires a manifest-bound policy, explicit wallet/agent
+allowlists, monotonic call/value/time ceilings, and non-destructive STOP actions.
+Claims and reconciliation remain live when paid-call admission stops. Public mode is
+not an automatic canary outcome: it requires a separate explicit exit approval and a
+passing decision file bound to the same manifest and policy hashes.

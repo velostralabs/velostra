@@ -1,7 +1,7 @@
 # Testing and release evidence
 
 > Last verified against test files and scripts: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -13,6 +13,8 @@
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
+| Phase 3 release | `npm run test:phase3-release` | contract dependencies | manifest/deployment/readiness/catch-up/canary tamper and failure gates |
+| Phase 3 aggregate | `npm run test:phase3` | root/server/contract installs | release gates, server compile/config, canary guard, migration consistency |
 | API build | `npm --prefix server run build` | none | strict server compile |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
@@ -30,14 +32,17 @@
 | Contract E2E | `npm test --prefix contracts` | in-process Ganache | 10 Phase 1 authority/solvency/migration groups |
 | Migration E2E | `npm --prefix server run test:migrations` | disposable Postgres | fresh + upgrade + invariants + indexes |
 | Money-loop E2E | `npm --prefix server run test:money` | disposable Postgres | real API/EVM/worker recovery and races |
+| Canary unit | `npm --prefix server run test:phase3-canary` | none | manifest/policy binding, disabled/public modes, allowlist/window/exposure caps |
+| Canary DB race | `npm --prefix server run test:phase3-canary-db` | migrated Postgres | simultaneous requests cannot exceed cap; rollback removes admission |
 | Restore verify | `npm --prefix server run restore:verify` | source + restored DB | exact restore integrity |
 | Legacy platform smoke | `npm --prefix server run test:platform` | running local stack | older marketplace happy path |
 
 ## CI
 
-`.github/workflows/ci.yml` has five jobs:
+`.github/workflows/ci.yml` has six jobs:
 
 - web: lockfile install, production audit, MetaMask reachability, evidence-validator, lint, build;
+- phase3-release: immutable manifest, deployment plan, readiness, catch-up, and canary gates;
 - browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
 - server: lockfile install, production audit, build, migration check, resilience and all isolated
   security/unit suites;
@@ -90,7 +95,7 @@ planBlockRanges separately proves larger bounded ranges are contiguous and gap-f
 - all settlement states installed in order;
 - money constraints reject invalid reservation/splits, negative earnings, and
   non-positive claims;
-- fresh install creates 19 tables and required indexes.
+- fresh install creates 20 tables and required indexes.
 
 The completed Phase 1 restore drill used a disposable PostgreSQL 16 database,
 custom-format dump, clean restore, and `restore:verify`. Exact tables, row counts,

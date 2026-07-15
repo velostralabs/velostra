@@ -1,7 +1,7 @@
 # Local quickstart
 
 > Last verified against package scripts and env templates: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -152,6 +152,23 @@ npm --prefix server run test:money
 
 The money-loop suite resets application state in that database. Never point it at
 staging or production.
+
+## Phase 3 release preparation
+
+These local commands test and plan; they do not broadcast:
+
+```powershell
+npm run test:phase3
+npm run release:prepare
+npm run release:validate
+npm run release:plan
+```
+
+Preparation uses the synthetic disabled policy and no image/evidence authorization.
+A real `broadcast-approved` manifest must be created separately from a clean reviewed
+commit with immutable image digests, external evidence, enabled bounded canary policy,
+ticket, and two distinct approvals. Do not set the mainnet broadcast sentinel for a
+local preview.
 
 ## Troubleshooting
 

@@ -3,10 +3,10 @@
 > Last verified against the workspace: 2026-07-16.
 
 Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and the historical
-[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 1 and Phase 2 repository scopes are
-complete and have passed internal engineering/CI audit, so continued non-mainnet
-development is clear. Independent review and managed-staging evidence remain
-mainnet release prerequisites; no mainnet deployment is recorded.
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 0-3 repository preparation is
+complete and has passed internal engineering/CI audit. Phase 3 execution remains
+deliberately gated on independent review, managed-staging evidence, immutable release
+approval, and explicit operator broadcast; no mainnet deployment is recorded.
 
 | Document | Purpose |
 |---|---|
@@ -19,7 +19,7 @@ mainnet release prerequisites; no mainnet deployment is recorded.
 | [OPERATIONS.md](./OPERATIONS.md) | Worker, incidents, one-hour catch-up, backups, secrets, successor. |
 | [SECURITY.md](./SECURITY.md) | Implemented controls and remaining production gates. |
 | [SMART_CONTRACT.md](./SMART_CONTRACT.md) | Roles, ABI behavior, solvency, migration, and test evidence. |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 19 tables, money/outbox invariants, migrations, indexes, restore. |
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 20 tables, money/outbox invariants, migrations, indexes, restore. |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Current HTTP routes, RBAC, errors, and HMAC protocol. |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production topology, configuration, release order, and gates. |
 | [TESTING.md](./TESTING.md) | Automated/CI matrix, money-loop, migration, and restore evidence. |
@@ -33,8 +33,9 @@ mainnet release prerequisites; no mainnet deployment is recorded.
 2. `server/src/db/schema.ts` and `server/drizzle` for persisted invariants;
 3. `server/src/lib/gateway/settlement.ts` and `server/src/routes` for live effects;
 4. `server/src/jobs/reconcile.ts` for chain repair/cursor/drift;
-5. frontend source for wallet/provider and product behavior;
-6. docs for reviewed explanation and operating policy.
+5. `scripts/lib/phase3-*` plus guarded deployment/canary runtime for release authority;
+6. frontend source for wallet/provider and product behavior;
+7. docs for reviewed explanation and operating policy.
 
 Behavior changes require matching tests and updates to status/domain docs. Priority
 or sequencing changes require a roadmap update.
@@ -42,8 +43,8 @@ or sequencing changes require a roadmap update.
 ## Scope statement
 
 The repository has passed its automated and internal engineering audit, which closes
-Phase 1-2 repository work and clears continued non-mainnet development. This is not a
+Phase 0-3 repository preparation and clears continued non-mainnet development. This is not a
 claim that an independent third-party audit or production approval has occurred.
 Managed infrastructure, signer custody, operator alerts, real-wallet staging,
 load/outage/PITR drills, and a 72-hour soak remain mainnet release prerequisites;
-they do not block continued product development or Phase 3 preparation.
+they do not block continued product development Phase 3 execution remains gated.

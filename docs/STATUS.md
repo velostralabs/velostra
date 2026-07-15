@@ -1,50 +1,57 @@
 # Velostra status
 
 > Last verified against the workspace: 2026-07-16.
-> Repository decision: Phase 1-2 scope is complete, internally audited, and CLEAR.
-> Continued non-mainnet development is approved. Independent review and managed
-> staging remain mainnet release prerequisites.
+> Repository decision: Phase 0-3 repository preparation is complete and internally
+> verified. Controlled mainnet execution remains explicitly gated.
+> No mainnet deployment or real-value authorization is recorded.
 
 ## Executive status
 
-Velostra now has the complete repository-side Phase 2 foundation: isolated staging
-topology, managed-secret/remote-signer guardrails, operational metrics and durable
-alerts, browser/wallet/accessibility/performance gates, multi-RPC recovery, load and
-reorg drills, timed restore evidence, a guarded 72-hour soak runner, and a hashed
-release-evidence validator. The expanded local money loop ends with zero financial
-drift and exact source/restore parity.
+Velostra now includes the complete repository-side Phase 3 release control plane on
+top of the cleared Phase 1-2 product and resilience foundation. A canonical
+SHA-256 release manifest binds the full commit, contract artifact/ABI/bytecode,
+migration journal, every migration, lockfiles, authority/canary policy, image
+digests, evidence, approvals, chain 4663, constructor roles, reconciliation limits,
+and deployment record.
 
-The repository decision is **CLEAR / PASS**: Phase 1 and Phase 2 implementation,
-automated security gates, internal engineering review, financial recovery tests,
-container builds, and GitHub CI all pass. Continued non-mainnet development and
-Phase 3 preparation may proceed.
+The deployment path is inert by default, requires two distinct approvals plus an
+accountable change ticket, and produces independently verifiable deployment
+evidence. Mainnet-like processes refuse startup without the exact deployed manifest.
+Paid writes start disabled; canary mode permits only manifest-bound wallet/agent/
+builder subjects and uses a transaction-scoped Postgres advisory lock plus a durable
+admission ledger to enforce duration, call, per-call, per-wallet, and total exposure
+caps under concurrency. Claims and reconciliation stay available during a stop.
 
-Velostra is still **not mainnet-ready** and no mainnet contract deployment is
-recorded. Independent contract/backend review plus real-MetaMask, operator-alert,
-one-hour outage, managed-PITR, frozen-staging performance, 72-hour soak, and
-operator-signoff evidence remain prerequisites only for real-value/mainnet release.
+Repository implementation and local verification are **CLEAR / PASS**. This is not
+mainnet authorization. Independent review, managed-staging evidence, an actual
+one-hour outage/PITR/72-hour soak, real operator alert delivery, mainnet deployment
+verification, and a low-value canary still require external infrastructure and human
+approval.
 
 ## Audit decision
 
-- **Internal engineering audit:** PASS.
-- **Automated security, financial, browser, contract, container, and CI gates:** PASS.
-- **Phase 1-2 repository scope:** COMPLETE and CLEAR for continued development.
-- **Independent third-party audit:** not claimed or fabricated; required before
-  real-value/mainnet release.
-- **Deployment state:** no mainnet contract or mainnet value.
+- **Internal engineering audit:** PASS for Phase 0-3 repository preparation.
+- **Automated security, financial, release, canary, browser, contract, container,
+  migration, and CI gates:** PASS locally.
+- **Database:** eight reviewed migrations and 20 application tables.
+- **Independent third-party audit:** not claimed or fabricated.
+- **Deployment state:** no mainnet contract, transaction, or mainnet value.
+- **Expansion state:** impossible from repository automation alone; a passing canary
+  still returns `PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`.
 
 | Area | Repository state | External state |
 |---|---|---|
-| Product frontend | lint/build plus 16 browser checks pass; visual, a11y, routing, wallet, and performance budgets are gated | real MetaMask and managed-staging performance evidence pending |
-| Contract | role-separated, solvent, pausable, correlated `callId`, local-EVM suite | independent audit and mainnet deployment pending |
-| Financial recovery | exactly-once reservations/outbox/reconciliation, known/unknown ambiguity, live/worker race, reorg confirmation policy | one-hour managed outage evidence pending |
-| Database | seven migrations, 19 tables, constraints/indexes, timed exact restore evidence | provider-native managed PITR/RPO/RTO evidence pending |
-| Staging topology | reproducible non-root API/web/worker/monitor/migration topology and least-privilege env scopes | managed services have not been provisioned in this repository |
-| Signer/secrets | production rejects raw signer keys; restricted remote signer and authority policy are tested | managed KMS/secret rotations and operator drills pending |
-| Observability | structured logs, metrics, deep readiness, heartbeats, alerts, dashboard/rules, dedupe/ack/resolve | real delivery/acknowledgement and error-tracker destination pending |
-| Resilience | RPC 429 failover, gap-free planner, concurrent settlement, dense catch-up, reorg replacement, restore tooling | managed DB/Redis/RPC fault injection pending |
-| Soak/release | guarded 72-hour runner and SHA-256-bound fail-closed evidence packet | elapsed soak and accountable sign-off pending |
-| CI | full local matrix and documentation checks pass | Product verification and staging artifact verification pass on pushed commit 289c9e3 |
+| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, and performance budgets | real MetaMask and managed-staging performance evidence pending |
+| Contract | role-separated, solvent, pausable, correlated `callId`, guarded build/deploy/verify tooling | independent audit and mainnet deployment pending |
+| Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | timed managed one-hour outage evidence pending |
+| Database | eight migrations, 20 tables, canary admission constraints/indexes, exact restore checks | provider-native managed PITR/RPO/RTO evidence pending |
+| Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
+| Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
+| Staging topology | non-root API/web/worker/monitor/migration topology with separate immutable-input and evidence mounts | managed services not provisioned here |
+| Signer/secrets | raw production key rejected; remote signer/authority policy tested | managed KMS/secret rotations and drills pending |
+| Observability | metrics, deep readiness, heartbeats, durable alerts, evidence collectors | real delivery/acknowledgement pending |
+| Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
+| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | pushed run for these local Phase 3 commits pending |
 
 ## Phase 2 implementation delivered
 
@@ -96,7 +103,7 @@ operator-signoff evidence remain prerequisites only for real-value/mainnet relea
   ended at zero drift.
 - The final local money loop had 16 successful paid calls, no PROCESSING residue,
   no reservation residue, 34 reconciled chain events, and 32 financial transactions.
-- PostgreSQL custom dump/clean restore matched all 19 tables, seven migrations, every
+- PostgreSQL custom dump/clean restore matched all 20 tables, eight migrations, every
   row count, financial aggregate, outbox state, constraint, and index. The measured
   disposable restore path completed in 1,542 ms with zero synthetic RPO.
 - Final second-pass review also bounded staging load requests, rebuilt both non-root
@@ -107,6 +114,31 @@ operator-signoff evidence remain prerequisites only for real-value/mainnet relea
 These local numbers are correctness references, not managed-staging SLO claims.
 Candidate objectives live in `config/phase2-slos.json` and remain unfrozen until the
 real one-hour outage and managed PITR drills pass.
+
+## Phase 3 repository implementation delivered
+
+- `release:prepare` creates a canonical preparation manifest and fails on dirty,
+  cross-release, unreviewed, or malformed inputs.
+- `release:plan` emits an ordered backup/migrate/deploy/verify/start/readiness/canary
+  plan and never broadcasts by default.
+- Contract deployment requires `--broadcast` plus an explicit mainnet sentinel,
+  matching manifest hash, ticket, release, chain, token, deployer, roles, and artifact.
+- `release:finalize` records the exact transaction/address/block and deployment
+  verification checks runtime bytecode, receipt, roles, token, fee, pause, solvency,
+  and successor state.
+- `phase3:snapshot` collects independent RPC, safe-head/cursor, contract, role,
+  database, image, signer, worker, backup, outbox, drift, and alert evidence.
+- `release:readiness` emits deterministic `GO` or `NO_GO` without enabling writes.
+- `release_canary_admissions` binds each canary call to release/manifest/policy and
+  records `ADMITTED`, `SETTLED`, or `FAILED`.
+- Concurrent admission is serialized in the transaction that creates the call,
+  reserves credit, and creates the outbox. Later failure rolls admission back.
+- `phase3:canary-summary` derives evidence from Postgres, chain events, worker
+  heartbeat, and final readiness.
+- `release:canary` emits a non-destructive `STOP` plan or
+  `PASS_AWAITING_OPERATOR` with public expansion still unauthorized.
+- Public mode additionally requires hash-bound passing evidence and separate
+  explicit operator approval.
 
 ## Mainnet release prerequisites
 
@@ -142,7 +174,8 @@ pending staging outage artifact.
 
 ## Next action
 
-Proceed with Phase 3 preparation and the next product-development scope. In parallel,
-instantiate managed staging and engage independent reviewers using
-[ROADMAP.md](./ROADMAP.md) and [AUDIT_READINESS.md](./AUDIT_READINESS.md). Do not add
-mainnet value until every mainnet release prerequisite is evidenced and approved.
+Repository-side Phase 3 preparation is complete. Close the independent-review and
+managed Phase 2 evidence prerequisites, freeze a clean release candidate, generate a
+`broadcast-approved` manifest, and execute guarded deployment/readiness/canary with
+named operators. Do not start Phase 4 broad beta work or put real value at risk until
+the canary is operationally stable and explicit exit approval is recorded.

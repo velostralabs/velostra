@@ -1,9 +1,8 @@
 # Design system
 
 > Last verified against frontend source: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
+> Phase state: Phase 0-3 repository preparation has passed internal engineering/CI
+> audit. The visual system remains current while mainnet execution stays gated.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display
@@ -192,9 +191,9 @@ Implemented baseline:
 - pointer effects disabled/simplified pada touch/coarse pointer;
 - decorative motion `aria-hidden`.
 
-Still required before release: automated axe/Playwright checks, screen-reader pass,
-zoom 200/400%, contrast audit seluruh states, and keyboard test seluruh wallet
-modals/third-party UI.
+Automated axe/Playwright coverage is part of CI. Still required before real-value
+release: a manual screen-reader pass, zoom 200/400%, contrast review across every
+state, and keyboard testing of wallet/third-party UI.
 
 ## Component conventions
 

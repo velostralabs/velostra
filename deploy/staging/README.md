@@ -1,6 +1,6 @@
 # Isolated staging topology
 
-This directory is the reviewable deployment contract for Phase 2. It connects the
+This directory is the reviewable managed-staging and Phase 3 release topology. It connects the
 Velostra containers to externally managed PostgreSQL, Redis, RPC, TLS ingress, and
 secret storage. It deliberately does not provision or embed those vendor-specific
 resources.
@@ -16,7 +16,9 @@ resources.
   has a single active logical signer writer;
 - image references are immutable tags or digests generated from a reviewed commit;
 - role-specific common/api/worker/monitor env files are materialized from separate
-  secret scopes and never committed.
+  secret scopes and never committed;
+- the immutable Phase 3 input packet is mounted read-only, while readiness/canary
+  evidence is written only to the dedicated evidence volume.
 
 ## Deployment sequence
 
@@ -30,8 +32,12 @@ resources.
 4. Build immutable web/server images and scan them before publishing.
 5. Set `VELOSTRA_WEB_IMAGE` and `VELOSTRA_SERVER_IMAGE`, then validate with
    `docker compose --env-file deployment.env -f deploy/staging/compose.yaml config`.
-6. Start API and worker, verify `/health`, then run the Phase 2 deep-readiness and
+6. Validate the immutable Phase 3 release manifest and deployment plan against the
+   exact full commit and image digests.
+7. Start API and worker, verify /health, then run the Phase 2 deep-readiness and
    synthetic smoke gates before exposing staging to testers.
+8. Capture Phase 3 readiness, one-hour catch-up, and bounded canary evidence into the
+   writable evidence mount. Never write back into the immutable input packet.
 
 ## Phase 2 evidence run
 
@@ -64,7 +70,8 @@ operator sign-off, and run:
 npm run phase2:evidence -- --manifest=artifacts/phase2/evidence-manifest.json
 ```
 
-Passing local tests or starting the compose topology does not close Phase 2. The
+Passing local tests or starting the compose topology does not authorize Phase 3
+mainnet execution. The
 managed outage/PITR, real-wallet, alert-delivery, restart, 72-hour soak, findings,
 configuration, dashboard, dependency, and sign-off records must all be present.
 

@@ -1,9 +1,9 @@
 # Builder guide
 
 > Last verified against builder routes, egress policy, and HMAC code: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
+> Phase state: Phase 0-3 repository preparation has passed internal engineering/CI
+> audit. Mainnet deployment remains gated; builder behavior documented here is the
+> current application contract.
 
 Velostra accepts framework-agnostic HTTP agents. The platform owns discovery,
 access, metering, reservation, settlement, and recovery; the builder owns execution

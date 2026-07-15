@@ -1,7 +1,7 @@
 # API reference
 
 > Last verified against `server/src/routes` and middleware: 2026-07-16.
-> Phase state: Phase 2 repository scope is complete and has passed internal
+> Phase state: Phase 0-3 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > Local base URL: `http://localhost:8787`.
@@ -81,6 +81,10 @@ codes:
 - `INVALID_INPUT`, `AGENT_NOT_FOUND`, `AGENT_SECRET_REVOKED`;
 - `GLOBAL_RATE_LIMITED`, `USER_RATE_LIMITED`, `AGENT_RATE_LIMITED`;
 - `INSUFFICIENT_CREDITS` (402);
+- `PHASE3_PAID_WRITES_DISABLED` (503);
+- `PHASE3_CANARY_CONFIGURATION_INVALID` (503);
+- `PHASE3_CANARY_SUBJECT_NOT_ALLOWED` (403);
+- `PHASE3_CANARY_PER_CALL_CAP`, `PHASE3_CANARY_CALL_CAP`, `PHASE3_CANARY_WALLET_CAP`, or `PHASE3_CANARY_TOTAL_CAP` (429);
 - `AGENT_ENDPOINT_FAILED` (502);
 - `SETTLEMENT_REVERTED` (502, reservation released);
 - `SETTLEMENT_AMBIGUOUS` or `RECONCILIATION_PENDING` (503, reservation retained and

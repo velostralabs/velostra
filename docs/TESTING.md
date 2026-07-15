@@ -53,7 +53,10 @@
 CI has read-only repository permission and cancels superseded runs. The canonical
 Phase 1 handoff run is [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476):
 all four jobs passed against implementation baseline
-`ea1b61de20613edd3727f90efb86766918152b07`. CI uses Node.js 22 with
+`ea1b61de20613edd3727f90efb86766918152b07`. The complete Phase 3 handoff is
+verified by [Product verification run 29453186373](https://github.com/velostralabs/velostra/actions/runs/29453186373)
+and [staging artifact run 29453186416](https://github.com/velostralabs/velostra/actions/runs/29453186416);
+both passed on `c10c0ed3746529ddc2d4686356c46be0fe414954`. CI uses Node.js 22 with
 `actions/checkout@v6` and `actions/setup-node@v6`.
 
 ## Money-loop coverage

@@ -121,7 +121,8 @@ they must never be inferred from local tests.
   role-specific env scopes, health checks, resource limits, and network boundaries.
 - [x] Make versioned migration, configured deployment block, synthetic-only data,
   deep readiness, and reproducible configuration part of the deployment contract.
-- [x] Block production/mainnet startup unless the later release approval is explicit.
+- [x] Require a full 40-character frozen release SHA and block production or any
+  mainnet-like startup unless the later release approval is explicit.
 - [ ] Instantiate managed Postgres with PITR, managed Redis, dedicated primary and
   fallback RPCs, TLS ingress, registry, and secret store in an isolated account.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
@@ -130,8 +131,9 @@ they must never be inferred from local tests.
 ### 2.2 Secrets, signer, and authority operations
 
 - [x] Require managed secret injection and reject plaintext production signer keys.
-- [x] Use a restricted remote signer with correlated idempotency keys and one logical
-  nonce writer; validate signer/role authority policy and rotation runbooks.
+- [x] Use a restricted remote signer with correlated idempotency keys, one logical
+  nonce writer, signer-identity verification, and a bounded response payload;
+  validate signer/role authority policy and rotation runbooks.
 - [x] Cover remote signer authorization, timeout, malformed response, mismatch,
   idempotency, authority ownership, and unsafe configuration with automated tests.
 - [ ] Execute managed JWT/HMAC/envelope/signer rotations, agent revoke, pause/unpause,
@@ -141,8 +143,8 @@ they must never be inferred from local tests.
 ### 2.3 Observability and operator readiness
 
 - [x] Emit structured logs, Prometheus metrics, request timing, deep readiness,
-  worker/backup heartbeat, durable alerts, dedupe, acknowledgement, resolution, and
-  webhook delivery metadata.
+  worker/backup heartbeat, durable alerts, dedupe, acknowledgement, resolution,
+  clean acknowledgement reset on reopen, and webhook delivery metadata.
 - [x] Track dependency health/latency, DB pool, Redis, signer gas, RPC, cursor lag,
   pending events, outbox age/state, drift, solvency, and backup freshness.
 - [x] Commit dashboard, alert rules, monitor worker, and alert lifecycle tests.
@@ -173,8 +175,9 @@ they must never be inferred from local tests.
   canonical replacement on local Postgres/Redis/EVM.
 - [x] Add deterministic primary-429 to secondary-RPC failover and gap-free range
   planning tests; production accepts multiple credential-free HTTPS RPC endpoints.
-- [x] Add guarded staging load runner, candidate SLOs, timed dump/restore evidence,
-  and CI artifact upload. Local reference: 12 concurrent requests produced ten
+- [x] Add guarded staging load runner with bounded request deadlines, candidate SLOs,
+  timed dump/restore evidence, and CI artifact upload. Local reference: 12 concurrent
+  requests produced ten
   successful settlements plus two intentional limits; 27-block catch-up completed
   with zero drift.
 - [ ] Hold API/worker down for a real hour in managed staging, inject DB/Redis/RPC

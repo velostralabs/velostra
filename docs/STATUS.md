@@ -40,9 +40,11 @@ Phase 3 also remains blocked on independent contract and backend review.
 - Role-specific environment scopes, network boundaries, health checks, resource
   caps, immutable image inputs, and an isolated-staging deployment runbook.
 - Production startup requires managed secret injection, TLS Postgres/Redis/RPC,
-  non-mainnet Phase 2 environment, a restricted remote signer, and no raw private key.
-- Signer calls use the correlated `bytes32 callId` as an idempotency key and preserve
-  one logical nonce writer.
+  a full 40-character frozen commit SHA, explicit approval for production or any
+  mainnet-like environment, a restricted remote signer, and no raw private key.
+- Signer calls use the correlated `bytes32 callId` as an idempotency key, preserve
+  one logical nonce writer, verify signer identity, and reject responses above the
+  configured 16 KiB boundary.
 - Authority ownership/policy validation and secret/signer/role rotation runbooks are
   committed and tested.
 
@@ -52,7 +54,8 @@ Phase 3 also remains blocked on independent contract and backend review.
   signer balance, cursor/safe-head lag, outbox state/age, pending events, drift,
   solvency, and backup/worker heartbeat metrics.
 - Durable alert lifecycle with fingerprint dedupe, repeat window, acknowledgement,
-  resolution, webhook metadata, severity, and runbook links.
+  resolution, clean ownership reset on reopen, webhook metadata, severity, and
+  runbook links.
 - Chromium gates cover eight critical-route accessibility scans, keyboard-contained
   wallet focus, desktop collision/overflow assertions, approved visual baselines,
   canonical URL/history behavior, injected-wallet money/recovery flow, and three
@@ -81,6 +84,10 @@ Phase 3 also remains blocked on independent contract and backend review.
 - PostgreSQL custom dump/clean restore matched all 19 tables, seven migrations, every
   row count, financial aggregate, outbox state, constraint, and index. The measured
   disposable restore path completed in 1,542 ms with zero synthetic RPO.
+- Final second-pass review also bounded staging load requests, rebuilt both non-root
+  release images, reran the browser suite (16 passed, one guarded real-MetaMask
+  scenario skipped), and repeated the full money loop on fresh disposable databases
+  without financial drift.
 
 These local numbers are correctness references, not managed-staging SLO claims.
 Candidate objectives live in `config/phase2-slos.json` and remain unfrozen until the

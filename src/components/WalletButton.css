@@ -98,6 +98,10 @@
   animation: wallet-picker-in 260ms var(--ease-premium) both;
 }
 
+.wallet-picker[hidden] {
+  display: none;
+}
+
 .wallet-picker::before {
   content: '';
   position: absolute;

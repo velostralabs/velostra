@@ -155,79 +155,78 @@ export default function WalletButton() {
         )}
       </button>
 
-      {pickerOpen && (
-        <section
-          ref={pickerRef}
-          id={pickerId}
-          className="wallet-picker"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Choose a wallet"
-        >
-          <div className="wallet-picker__header">
-            <div>
-              <span className="wallet-picker__eyebrow mono">SECURE CONNECTION</span>
-              <h2>Choose your wallet</h2>
-            </div>
-            <button
-              type="button"
-              className="wallet-picker__close"
-              aria-label="Close wallet picker"
-              onClick={() => {
-                restoreFocusRef.current = true
-                setPickerOpen(false)
-              }}
-            >
-              <X size={15} />
-            </button>
+      <section
+        ref={pickerRef}
+        id={pickerId}
+        className="wallet-picker"
+        hidden={!pickerOpen}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Choose a wallet"
+      >
+        <div className="wallet-picker__header">
+          <div>
+            <span className="wallet-picker__eyebrow mono">SECURE CONNECTION</span>
+            <h2>Choose your wallet</h2>
           </div>
+          <button
+            type="button"
+            className="wallet-picker__close"
+            aria-label="Close wallet picker"
+            onClick={() => {
+              restoreFocusRef.current = true
+              setPickerOpen(false)
+            }}
+          >
+            <X size={15} />
+          </button>
+        </div>
 
-          <div className="wallet-picker__options">
-            {walletOptions.map((connector) => {
-              const metaMaskConnector = isMetaMask(connector.name)
-              const pending = isPending && pendingConnectorUid === connector.uid
-              return (
-                <button
-                  type="button"
-                  className={metaMaskConnector ? 'wallet-option wallet-option--featured' : 'wallet-option'}
-                  disabled={isPending}
-                  key={connector.uid}
-                  onClick={() => {
-                    reset()
-                    setPendingConnectorUid(connector.uid)
-                    connect({ connector, chainId: robinhoodChain.id })
-                  }}
+        <div className="wallet-picker__options">
+          {walletOptions.map((connector) => {
+            const metaMaskConnector = isMetaMask(connector.name)
+            const pending = isPending && pendingConnectorUid === connector.uid
+            return (
+              <button
+                type="button"
+                className={metaMaskConnector ? 'wallet-option wallet-option--featured' : 'wallet-option'}
+                disabled={isPending}
+                key={connector.uid}
+                onClick={() => {
+                  reset()
+                  setPendingConnectorUid(connector.uid)
+                  connect({ connector, chainId: robinhoodChain.id })
+                }}
+              >
+                <span
+                  className={metaMaskConnector
+                    ? 'wallet-option__icon wallet-option__icon--metamask'
+                    : 'wallet-option__icon'}
+                  aria-hidden="true"
                 >
-                  <span
-                    className={metaMaskConnector
-                      ? 'wallet-option__icon wallet-option__icon--metamask'
-                      : 'wallet-option__icon'}
-                    aria-hidden="true"
-                  >
-                    {connector.icon
-                      ? <img src={connector.icon} alt="" />
-                      : <WalletCards size={18} strokeWidth={1.5} />}
-                  </span>
-                  <span className="wallet-option__copy">
-                    <strong>{walletLabel(connector.name)}</strong>
-                    <small>{metaMaskConnector ? 'Extension or MetaMask mobile' : 'Rainbow, Coinbase, or injected wallet'}</small>
-                  </span>
-                  <span className="wallet-option__status mono">
-                    {pending ? 'OPENING…' : metaMaskConnector ? 'RECOMMENDED' : 'CONNECT'}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+                  {connector.icon
+                    ? <img src={connector.icon} alt="" />
+                    : <WalletCards size={18} strokeWidth={1.5} />}
+                </span>
+                <span className="wallet-option__copy">
+                  <strong>{walletLabel(connector.name)}</strong>
+                  <small>{metaMaskConnector ? 'Extension or MetaMask mobile' : 'Rainbow, Coinbase, or injected wallet'}</small>
+                </span>
+                <span className="wallet-option__status mono">
+                  {pending ? 'OPENING…' : metaMaskConnector ? 'RECOMMENDED' : 'CONNECT'}
+                </span>
+              </button>
+            )
+          })}
+        </div>
 
-          {error && <p className="wallet-picker__error" role="alert">{error.message}</p>}
+        {error && <p className="wallet-picker__error" role="alert">{error.message}</p>}
 
-          <div className="wallet-picker__footer">
-            <ShieldCheck size={13} strokeWidth={1.5} />
-            <span>Velostra never stores your wallet keys.</span>
-          </div>
-        </section>
-      )}
+        <div className="wallet-picker__footer">
+          <ShieldCheck size={13} strokeWidth={1.5} />
+          <span>Velostra never stores your wallet keys.</span>
+        </div>
+      </section>
     </div>
   )
 }

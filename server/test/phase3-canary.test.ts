@@ -196,16 +196,22 @@ try {
   process.env.PHASE3_CANARY_STARTED_AT = new Date(
     Date.now() - policy.limits.durationSeconds * 1_000 - 1
   ).toISOString()
-  assert.throws(
-    () => resolvePhase3PaidCallAdmission({
-      walletAddress: wallet,
-      agentId: 'phase3-synthetic-agent',
-      builderAddress: builder,
-      gross: '0.500000',
-    }),
-    (error) => error instanceof Phase3AdmissionError &&
-      error.code === 'PHASE3_CANARY_CONFIGURATION_INVALID'
-  )
+  const expectedErrorLogger = console.error
+  console.error = () => undefined
+  try {
+    assert.throws(
+      () => resolvePhase3PaidCallAdmission({
+        walletAddress: wallet,
+        agentId: 'phase3-synthetic-agent',
+        builderAddress: builder,
+        gross: '0.500000',
+      }),
+      (error) => error instanceof Phase3AdmissionError &&
+        error.code === 'PHASE3_CANARY_CONFIGURATION_INVALID'
+    )
+  } finally {
+    console.error = expectedErrorLogger
+  }
   process.env.PHASE3_CANARY_STARTED_AT = new Date().toISOString()
   console.log('PASS: expired canary windows reject new paid calls')
 

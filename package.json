@@ -49,6 +49,7 @@
     "release:readiness": "node scripts/evaluate-phase3-readiness.mjs",
     "release:canary": "node scripts/evaluate-phase3-canary.mjs",
     "test:phase3-release": "npm run build --prefix contracts && node scripts/test-phase3-release.mjs && node scripts/test-phase3-deployment.mjs && node scripts/test-phase3-gates.mjs",
+    "test:phase3": "npm run test:phase3-release && npm --prefix server run build && npm --prefix server run test:config && npm --prefix server run test:phase3-canary && npm --prefix server run db:check",
     "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {

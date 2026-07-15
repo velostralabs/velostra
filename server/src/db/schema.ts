@@ -752,7 +752,7 @@ export const telemetryFieldRegistry = pgTable(
     created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [
+  () => [
     check('telemetry_retention_nonnegative', sql.raw('retention_days >= 0')),
     check(
       'telemetry_prohibited_disabled',

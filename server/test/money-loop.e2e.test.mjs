@@ -260,6 +260,7 @@ async function main() {
       RECONCILE_TEST_FAIL_AFTER_SETTLEMENT_INPUT: 'force post-settlement rollback',
       RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_INPUT: 'race live request and worker',
       RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_MS: '2500',
+      RECONCILE_TEST_AMBIGUOUS_RECEIPT_INPUT: 'force ambiguous receipt recovery',
     }
     backend = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
       cwd: new URL('..', import.meta.url),
@@ -641,8 +642,10 @@ async function main() {
     ])
     assert(raceRun.status === 200, 'live paid-call path completes during worker race')
     assert(
-      raceWorkerOutput.includes('correlated call already finalized; no-op'),
-      'losing reconciliation path detects the conditional-update winner and no-ops'
+      (raceWorkerOutput + backendLogs.join('')).includes(
+        'conditional finalization already owned; guarded no-op'
+      ),
+      'losing path detects the conditional-update winner and no-ops'
     )
     assert(
       raceWorkerOutput.includes('drift clean'),
@@ -696,8 +699,99 @@ async function main() {
       'race increments agent call count and revenue exactly once'
     )
 
+    const balanceBeforeAmbiguous = await userClient('/api/dashboard')
+    const earningsBeforeAmbiguous = await builderClient('/api/builder/earnings')
+    const ambiguousRun = await userClient('/api/agents/' + submission.body.agent.slug + '/run', {
+      method: 'POST',
+      body: JSON.stringify({ input: 'force ambiguous receipt recovery' }),
+    })
+    assert(
+      ambiguousRun.status === 503 &&
+        ambiguousRun.body.code === 'SETTLEMENT_AMBIGUOUS' &&
+        Boolean(ambiguousRun.body.settlement_tx_hash),
+      'receipt timeout returns a durable ambiguous settlement response'
+    )
+
+    const ambiguousReceipt = await publicClient.waitForTransactionReceipt({
+      hash: ambiguousRun.body.settlement_tx_hash,
+    })
+    const ambiguousDb = new Client({ connectionString: process.env.DATABASE_URL })
+    await ambiguousDb.connect()
+    const ambiguousBefore = await ambiguousDb.query(
+      `select ac.status as call_status,
+              sa.status as attempt_status,
+              sa.tx_hash,
+              cb.reserved_usd,
+              count(t.id)::int as transaction_count
+         from agent_calls ac
+         join settlement_attempts sa on sa.agent_call_id = ac.id
+         join credit_balances cb on cb.user_id = ac.user_id
+         left join transactions t on t.agent_call_id = ac.id
+        where ac.id = $1
+        group by ac.status, sa.status, sa.tx_hash, cb.reserved_usd`,
+      [ambiguousRun.body.call_id]
+    )
+    assert(
+      ambiguousBefore.rows[0]?.call_status === 'PROCESSING' &&
+        ambiguousBefore.rows[0].attempt_status === 'AMBIGUOUS' &&
+        ambiguousBefore.rows[0].tx_hash === ambiguousRun.body.settlement_tx_hash &&
+        Math.abs(Number(ambiguousBefore.rows[0].reserved_usd) - 0.3) < 1e-9 &&
+        ambiguousBefore.rows[0].transaction_count === 0,
+      'ambiguous receipt keeps one durable hash and reserves funds without applying the ledger'
+    )
+
+    const ambiguousWorkerOutput = await runReconcile(
+      runtimeEnv,
+      ambiguousReceipt.blockNumber,
+      ambiguousReceipt.blockNumber
+    )
+    assert(
+      ambiguousWorkerOutput.includes('drift clean'),
+      'worker reconciles the ambiguous receipt without ledger drift'
+    )
+
+    const balanceAfterAmbiguous = await userClient('/api/dashboard')
+    const earningsAfterAmbiguous = await builderClient('/api/builder/earnings')
+    assert(
+      Math.abs(
+        balanceBeforeAmbiguous.body.balance_usd -
+          balanceAfterAmbiguous.body.balance_usd -
+          0.3
+      ) < 1e-9,
+      'ambiguous recovery debits the reserved user amount exactly once'
+    )
+    assert(
+      Math.abs(
+        earningsAfterAmbiguous.body.earnings.available -
+          earningsBeforeAmbiguous.body.earnings.available -
+          0.27
+      ) < 1e-9,
+      'ambiguous recovery credits the builder exactly once'
+    )
+
+    const ambiguousAfter = await ambiguousDb.query(
+      `select ac.status as call_status,
+              sa.status as attempt_status,
+              cb.reserved_usd,
+              count(t.id)::int as transaction_count
+         from agent_calls ac
+         join settlement_attempts sa on sa.agent_call_id = ac.id
+         join credit_balances cb on cb.user_id = ac.user_id
+         left join transactions t on t.agent_call_id = ac.id
+        where ac.id = $1
+        group by ac.status, sa.status, cb.reserved_usd`,
+      [ambiguousRun.body.call_id]
+    )
+    await ambiguousDb.end()
+    assert(
+      ambiguousAfter.rows[0]?.call_status === 'SUCCESS' &&
+        ambiguousAfter.rows[0].attempt_status === 'APPLIED' &&
+        Math.abs(Number(ambiguousAfter.rows[0].reserved_usd)) < 1e-9 &&
+        ambiguousAfter.rows[0].transaction_count === 1,
+      'worker closes AMBIGUOUS to APPLIED, releases reservation, and inserts one ledger row'
+    )
     console.log(
-      'MONEY LOOP VERIFIED: recovery + idempotent rescan + concurrent live/worker finalization'
+      'MONEY LOOP VERIFIED: outbox recovery + idempotent rescan + concurrent live/worker finalization'
     )
   } finally {
     await stopChild(backend)

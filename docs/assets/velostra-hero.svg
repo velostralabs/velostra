@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="title desc">
   <title id="title">Velostra verified AI execution market</title>
-  <desc id="desc">An animated execution artifact connecting request, builder, ledger, and receipt.</desc>
+  <desc id="desc">An animated, precisely aligned Crystal V execution object representing correlated settlement and recovery.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop stop-color="#050609"/>
@@ -10,6 +10,16 @@
     <linearGradient id="signal" x1="0" y1="0" x2="1" y2="0">
       <stop stop-color="#c9ff5f"/>
       <stop offset="1" stop-color="#8fe9dc"/>
+    </linearGradient>
+    <linearGradient id="markLeft" x1="10" y1="10" x2="30" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e8ff91"/>
+      <stop offset=".46" stop-color="#aef13b"/>
+      <stop offset="1" stop-color="#4f8508"/>
+    </linearGradient>
+    <linearGradient id="markRight" x1="54" y1="10" x2="34" y2="54" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f3ffa8"/>
+      <stop offset=".46" stop-color="#c4ff52"/>
+      <stop offset="1" stop-color="#669e10"/>
     </linearGradient>
     <radialGradient id="glow">
       <stop stop-color="#c9ff5f" stop-opacity=".24"/>
@@ -23,14 +33,14 @@
     <style>
       .dash{stroke-dasharray:8 12;animation:flow 5s linear infinite}
       .pulse{animation:pulse 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
-      .float{animation:float 5.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
       .scan{animation:scan 4.4s ease-in-out infinite}
       .fade{animation:fade 3.2s ease-in-out infinite}
+      .ridge{animation:ridge 3.8s ease-in-out infinite}
       @keyframes flow{to{stroke-dashoffset:-80}}
       @keyframes pulse{0%,100%{opacity:.42;transform:scale(.96)}50%{opacity:1;transform:scale(1.04)}}
-      @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
       @keyframes scan{0%{transform:translateY(-120px);opacity:0}18%,78%{opacity:.75}100%{transform:translateY(120px);opacity:0}}
       @keyframes fade{0%,100%{opacity:.35}50%{opacity:1}}
+      @keyframes ridge{0%,100%{opacity:.58}50%{opacity:.96}}
       @media (prefers-reduced-motion:reduce){*{animation:none!important}}
     </style>
   </defs>
@@ -39,7 +49,7 @@
   <circle cx="878" cy="208" r="210" fill="url(#glow)" filter="url(#soft)"/>
   <path d="M32 1h1136a31 31 0 0 1 31 31v376a31 31 0 0 1-31 31H32A31 31 0 0 1 1 408V32A31 31 0 0 1 32 1Z" fill="none" stroke="#f1f3ed" stroke-opacity=".12"/>
 
-  <g transform="translate(72 66)">
+  <g transform="translate(72 56)">
     <text fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="12" letter-spacing="3">VERIFIED EXECUTION / RHC 4663</text>
     <text y="82" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-4">Intelligence,</text>
     <text y="146" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="67" font-weight="650" letter-spacing="-4">priced at the</text>
@@ -54,14 +64,23 @@
     </g>
   </g>
 
-  <!-- Keep layout positioning outside the animated group. CSS transforms replace
-       SVG transform attributes in GitHub's renderer, which previously moved this
-       card back to the origin and covered the headline. -->
+  <!-- Keep the card and connectors on fixed geometry. Motion stays inside the
+       scan, pulse, and facet layers so every GitHub render remains aligned. -->
   <g transform="translate(823 64)">
-    <g class="float">
+    <g>
       <rect x="0" y="0" width="292" height="312" rx="20" fill="#080c12" stroke="#f1f3ed" stroke-opacity=".13"/>
       <rect x="18" y="18" width="256" height="276" rx="14" fill="#0f151d" stroke="#8fe9dc" stroke-opacity=".14"/>
-      <path d="M76 86 130 224 185 86" fill="none" stroke="url(#signal)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="translate(61.2 67.5) scale(2.65)" stroke-linejoin="round">
+        <path d="M10 10 25 22.5 30.5 35v19L21 44.5 14.5 28Z" fill="url(#markLeft)" stroke="#edffc0" stroke-width=".7"/>
+        <path d="m54 10-15 12.5L33.5 35v19l9.5-9.5L49.5 28Z" fill="url(#markRight)" stroke="#f3ffca" stroke-width=".7"/>
+        <path d="m22.7 29.6 7.8 5.4v19L21 44.5Z" fill="#102302" fill-opacity=".48"/>
+        <path d="m41.3 29.6-7.8 5.4v19l9.5-9.5Z" fill="#193504" fill-opacity=".4"/>
+        <g class="ridge" fill="none" stroke="#fbffe8" stroke-opacity=".82" stroke-width=".64" stroke-linecap="round">
+          <path d="m10 10 12.7 19.6L30.5 54M25 22.5 14.5 28"/>
+          <path d="m54 10-12.7 19.6L33.5 54M39 22.5 49.5 28"/>
+        </g>
+        <ellipse cx="32" cy="56.8" rx="8.5" ry="1.1" fill="#c9ff5f" fill-opacity=".38"/>
+      </g>
       <path d="M34 62h224M34 250h224" stroke="#f1f3ed" stroke-opacity=".08"/>
       <g transform="translate(0 156)"><g class="scan"><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".7"/><path d="M36 0h220" stroke="#c9ff5f" stroke-opacity=".28" stroke-width="10" filter="url(#small)"/></g></g>
       <circle class="pulse" cx="146" cy="156" r="94" fill="none" stroke="#c9ff5f" stroke-opacity=".22" stroke-dasharray="3 9"/>

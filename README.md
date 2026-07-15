@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="./docs/assets/velostra-hero.svg" width="100%" alt="Velostra — Verified AI Execution Market" />
+  <a href="./docs/ARCHITECTURE.md">
+    <img src="./docs/assets/velostra-hero.svg" width="100%" alt="Velostra — Verified AI Execution Market" />
+  </a>
 </p>
 
 <h1 align="center">Velostra</h1>

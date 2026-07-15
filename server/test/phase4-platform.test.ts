@@ -6,6 +6,8 @@ import { cursorScope, decodeCursor, encodeCursor } from '../src/lib/platform/cur
 import { apiV1Headers, legacyApiHeaders } from '../src/lib/platform/http.js'
 import { generateRequestSignature } from '../src/lib/gateway/hmac.js'
 import { signWebhookBody } from '../src/lib/platform/webhooks.js'
+import { sanitizeProductTelemetry } from '../src/lib/platform/telemetry.js'
+import { PRIVACY_RETENTION_POLICY } from '../src/lib/platform/privacy.js'
 
 process.env.PLATFORM_CURSOR_SECRET = 'phase4-test-cursor-secret-with-more-than-32-characters'
 
@@ -21,6 +23,15 @@ assert.equal(
   hmacFixture.webhook_signature
 )
 console.log('PASS: backend and both SDKs share one byte-for-byte HMAC fixture')
+
+assert.deepEqual(
+  sanitizeProductTelemetry({ request_id: 'request_01', route: '/api/v1/agents', status_code: 200 }),
+  { request_id: 'request_01', route: '/api/v1/agents', status_code: 200 }
+)
+assert.throws(() => sanitizeProductTelemetry({ raw_prompt: 'private' }), /prohibited/)
+assert.throws(() => sanitizeProductTelemetry({ experimental_field: 1 }), /not classified/)
+assert(PRIVACY_RETENTION_POLICY.retained.some((entry) => entry.includes('financial ledger')))
+console.log('PASS: telemetry is allowlisted and privacy policy preserves financial evidence')
 const scope = cursorScope({ resource: 'agents', category: 'TRADING', q: null })
 const boundary = { createdAt: new Date('2026-07-16T00:00:00.000Z'), id: 'agent_01' }
 const encoded = encodeCursor(boundary, scope)

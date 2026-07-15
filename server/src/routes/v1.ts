@@ -11,6 +11,9 @@ import { authRouter } from './auth.js'
 import { platformBuilderRouter } from './platform-builder.js'
 import { platformWebhooksRouter } from './platform-webhooks.js'
 import { platformAdminRouter } from './platform-admin.js'
+import { platformTrustRouter } from './platform-trust.js'
+import { platformPrivacyRouter } from './platform-privacy.js'
+import { platformGovernanceAdminRouter } from './platform-governance-admin.js'
 import { cursorScope, decodeCursor, encodeCursor } from '../lib/platform/cursor.js'
 import { sendPage } from '../lib/platform/http.js'
 import { moneyToNumber } from '../lib/money.js'
@@ -89,5 +92,8 @@ v1Router.use('/builder', platformBuilderRouter)
 v1Router.use('/builder', platformWebhooksRouter)
 v1Router.use('/builder', builderRouter)
 v1Router.use('/dashboard', dashboardRouter)
+v1Router.use('/trust', platformTrustRouter)
+v1Router.use('/privacy', platformPrivacyRouter)
+v1Router.use('/admin', platformGovernanceAdminRouter)
 v1Router.use('/admin', platformAdminRouter)
 v1Router.use('/admin', adminRouter)

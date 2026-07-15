@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
+import { readFile } from 'node:fs/promises'
 import express from 'express'
 import { cursorScope, decodeCursor, encodeCursor } from '../src/lib/platform/cursor.js'
 import { apiV1Headers, legacyApiHeaders } from '../src/lib/platform/http.js'
+import { generateRequestSignature } from '../src/lib/gateway/hmac.js'
 
 process.env.PLATFORM_CURSOR_SECRET = 'phase4-test-cursor-secret-with-more-than-32-characters'
 
+const hmacFixture = JSON.parse(
+  await readFile(new URL('../../sdk/fixtures/hmac-v1.json', import.meta.url), 'utf8')
+)
+assert.equal(
+  generateRequestSignature(hmacFixture.body, hmacFixture.timestamp, hmacFixture.secret),
+  hmacFixture.gateway_signature
+)
+console.log('PASS: backend and both SDKs share one byte-for-byte HMAC fixture')
 const scope = cursorScope({ resource: 'agents', category: 'TRADING', q: null })
 const boundary = { createdAt: new Date('2026-07-16T00:00:00.000Z'), id: 'agent_01' }
 const encoded = encodeCursor(boundary, scope)

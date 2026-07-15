@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "secret": "velostra_fixture_secret_0123456789",
+  "timestamp": "1784160000",
+  "event_id": "evt_01",
+  "body": "{\"input\":\"hello\",\"call_id\":\"call_01\"}",
+  "gateway_signature": "6339379a9773a099d530af9a652a666349421ab4a9236a62070d4e610fe0bc2a",
+  "webhook_signature": "a9b3304bd8e368fbb4b34c2c1053aa32266b338a65c4ed2f191043b172dd32bf"
+}

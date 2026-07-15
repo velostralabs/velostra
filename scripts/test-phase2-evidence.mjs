@@ -127,11 +127,28 @@ try {
   assert.equal(valid.status, 0, valid.error?.stack || valid.stderr || valid.stdout)
   assert.match(valid.stdout, /"passed": true/)
 
+  const restorePath = path.join(fixtureRoot, artifacts.restore.path)
+  const restoreEvidence = JSON.parse(await fs.readFile(restorePath, 'utf8'))
+  restoreEvidence.rpoMs = -1
+  let restoreBytes = Buffer.from(JSON.stringify(restoreEvidence, null, 2) + '\n')
+  await fs.writeFile(restorePath, restoreBytes)
+  manifest.artifacts.restore.sha256 = crypto.createHash('sha256').update(restoreBytes).digest('hex')
+  await fs.writeFile(path.join(fixtureRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
+  const negativeRpo = runValidator()
+  assert.notEqual(negativeRpo.status, 0)
+  assert.match(negativeRpo.stderr, /restore RPO cannot be negative/)
+
+  restoreEvidence.rpoMs = 0
+  restoreBytes = Buffer.from(JSON.stringify(restoreEvidence, null, 2) + '\n')
+  await fs.writeFile(restorePath, restoreBytes)
+  manifest.artifacts.restore.sha256 = crypto.createHash('sha256').update(restoreBytes).digest('hex')
+  await fs.writeFile(path.join(fixtureRoot, 'manifest.json'), JSON.stringify(manifest, null, 2))
+
   await fs.appendFile(path.join(fixtureRoot, artifacts.load.path), 'tamper')
   const tampered = runValidator()
   assert.notEqual(tampered.status, 0)
   assert.match(tampered.stderr, /load artifact hash mismatch/)
-  console.log('PHASE 2 EVIDENCE VERIFIED: complete packet passes and tampering fails closed')
+  console.log('PHASE 2 EVIDENCE VERIFIED: complete packet passes; negative RPO and tampering fail closed')
 } finally {
   const relativeToTemp = path.relative(os.tmpdir(), fixtureRoot)
   if (relativeToTemp.startsWith('velostra-phase2-evidence-') && !relativeToTemp.includes('..')) {

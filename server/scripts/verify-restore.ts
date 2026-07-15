@@ -19,6 +19,9 @@ const backupCapturedAt = process.env.BACKUP_CAPTURED_AT
 if (backupCapturedAt && Number.isNaN(backupCapturedAt.getTime())) {
   throw new Error('BACKUP_CAPTURED_AT must be ISO-8601')
 }
+if (backupCapturedAt && backupCapturedAt.getTime() > startedAt.getTime()) {
+  throw new Error('BACKUP_CAPTURED_AT cannot be later than RESTORE_DRILL_STARTED_AT')
+}
 
 const source = new Client({ connectionString: sourceUrl })
 const restored = new Client({ connectionString: restoredUrl })
@@ -118,13 +121,16 @@ try {
     after.indexes.some((row) => row.indexname === 'settlement_attempt_status_updated_idx')
   )
   const completedAt = new Date()
+  const durationMs = completedAt.getTime() - startedAt.getTime()
+  assert(durationMs >= 0, 'RESTORE_DRILL_STARTED_AT cannot be in the future')
+  const rpoMs = backupCapturedAt ? startedAt.getTime() - backupCapturedAt.getTime() : null
   const evidence = {
     schemaVersion: 1,
     kind: 'postgres-restore-integrity',
     startedAt: startedAt.toISOString(),
     completedAt: completedAt.toISOString(),
-    durationMs: completedAt.getTime() - startedAt.getTime(),
-    rpoMs: backupCapturedAt ? startedAt.getTime() - backupCapturedAt.getTime() : null,
+    durationMs,
+    rpoMs,
     tableCount: after.tables.length,
     migrationCount: after.migrations.length,
     rowCounts: after.rowCounts,

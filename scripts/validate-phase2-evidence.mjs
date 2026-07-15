@@ -105,7 +105,9 @@ const restore = await readArtifact(manifest, 'restore')
 if (restore) {
   check(restore.kind === 'postgres-restore-integrity', 'restore artifact kind is invalid')
   check(restore.managedPitr === true, 'restore artifact is not a managed PITR drill')
+  check(restore.durationMs >= 0, 'restore RTO cannot be negative')
   check(restore.durationMs <= slos.objectives.restoreRtoMs, 'restore RTO exceeds SLO')
+  check(restore.rpoMs !== null && restore.rpoMs >= 0, 'restore RPO cannot be negative')
   check(restore.rpoMs !== null && restore.rpoMs <= slos.objectives.restoreRpoMs, 'restore RPO exceeds SLO')
   check(restore.passed === true, 'restore artifact is not passing')
 }

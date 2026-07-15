@@ -58,8 +58,8 @@ Phase 3 also remains blocked on independent contract and backend review.
   canonical URL/history behavior, injected-wallet money/recovery flow, and three
   route performance budgets. Result: **16 passed, 1 intentionally skipped**; the skip
   is the guarded real-MetaMask staging harness.
-- Build reference: initial entry 160,660 gzip bytes, largest async chunk 235,837,
-  total JavaScript 677,501; all are within committed budgets.
+- Build reference: initial entry 160,661 gzip bytes, largest async chunk 235,837,
+  total JavaScript 677,510; all are within committed budgets.
 - The six Moderate MetaMask-tree findings are one `uuid` advisory. Reviewed installed
   call sites use `uuid.v4()` without caller buffers; the time-bounded disposition and
   invalidation conditions are in `METAMASK_DEPENDENCY_DISPOSITION.md`.
@@ -69,10 +69,10 @@ Phase 3 also remains blocked on independent contract and backend review.
 - Primary RPC 429 deterministically fails over to the configured secondary endpoint;
   unsafe fallback URLs fail production startup.
 - Twelve concurrent paid calls produced ten unique successful settlements and two
-  intentional Redis per-agent limits in 2,837 ms. Exact user debit, builder credit,
+  intentional Redis per-agent limits in 2,406 ms. Exact user debit, builder credit,
   call rows, and transaction hashes were verified.
 - A simulated worker gap spanning 27 blocks plus twelve unreported deposits caught up
-  in 2,529 ms using deterministic one-block local-EVM ranges; replay changed no money.
+  in 2,451 ms using deterministic one-block local-EVM ranges; replay changed no money.
 - The reorg drill excluded an unconfirmed fork event, reverted the fork, waited two
   confirmations, ingested only the canonical replacement, advanced the cursor, and
   ended at zero drift.
@@ -80,7 +80,7 @@ Phase 3 also remains blocked on independent contract and backend review.
   no reservation residue, 34 reconciled chain events, and 32 financial transactions.
 - PostgreSQL custom dump/clean restore matched all 19 tables, seven migrations, every
   row count, financial aggregate, outbox state, constraint, and index. The measured
-  disposable restore path completed in 1,901 ms with zero synthetic RPO.
+  disposable restore path completed in 1,542 ms with zero synthetic RPO.
 
 These local numbers are correctness references, not managed-staging SLO claims.
 Candidate objectives live in `config/phase2-slos.json` and remain unfrozen until the

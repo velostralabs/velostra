@@ -142,7 +142,7 @@ The current disposable drill uses `pg_dump --format=custom`, restores into a cle
 database, and runs `npm --prefix server run restore:verify`. Verification compares all
 19 tables, seven migrations, every row count, exact financial/outbox aggregates,
 constraints, and indexes. With the restore timing environment variables, it writes a
-redacted evidence JSON; the measured local full-data drill completed in 1,901 ms.
+redacted evidence JSON; the measured local full-data drill completed in 1,542 ms.
 
 Production must still prove provider-native encrypted PITR/WAL, retention, access
 separation, and managed RPO/RTO. Exact procedure is in

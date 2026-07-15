@@ -13,13 +13,13 @@
     "unexplainedDriftUsd": 0
   },
   "localReference": {
-    "capturedAt": "2026-07-15T11:45:00Z",
+    "capturedAt": "2026-07-15T12:47:00Z",
     "concurrentRequests": 12,
     "successfulPaidCalls": 10,
     "intentionalRateLimits": 2,
-    "batchDurationMs": 2837,
+    "batchDurationMs": 2406,
     "catchUpBlocks": 27,
-    "catchUpDurationMs": 2529,
+    "catchUpDurationMs": 2451,
     "financialDriftUsd": 0,
     "notes": "Local EVM reference is a correctness baseline, not managed-staging SLO evidence. Freeze these objectives only after the one-hour lag, real RPC, and managed PITR drills pass."
   }

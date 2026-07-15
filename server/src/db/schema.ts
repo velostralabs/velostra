@@ -518,3 +518,56 @@ export const chainEvents = pgTable(
     index('chain_event_pending_block_idx').on(t.reconciled, t.block_number),
   ]
 )
+
+// Durable Phase 2 operator state. Heartbeats make process/backup freshness observable
+// across instances; alert lifecycle preserves dedupe, acknowledgement, and resolution.
+export const operationalAlertStatusEnum = pgEnum('operational_alert_status', [
+  'OPEN',
+  'ACKNOWLEDGED',
+  'RESOLVED',
+])
+
+export const operationalHeartbeats = pgTable(
+  'operational_heartbeats',
+  {
+    service_name: text('service_name').primaryKey(),
+    instance_id: text('instance_id').notNull(),
+    release: text('release').notNull(),
+    status: text('status').notNull(),
+    details: jsonb('details').notNull().default({}),
+    last_seen_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+    created_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('operational_heartbeat_seen_idx').on(table.last_seen_at),
+    check('operational_heartbeat_status_check', sql.raw("status in ('ok', 'degraded', 'failed')")),
+  ]
+)
+
+export const operationalAlerts = pgTable(
+  'operational_alerts',
+  {
+    id: id(),
+    fingerprint: text('fingerprint').notNull().unique(),
+    rule: text('rule').notNull(),
+    severity: text('severity').notNull(),
+    status: operationalAlertStatusEnum('status').notNull().default('OPEN'),
+    summary: text('summary').notNull(),
+    details: jsonb('details').notNull().default({}),
+    occurrences: integer('occurrences').notNull().default(1),
+    first_seen_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+    last_seen_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+    last_notified_at: timestamp('', { withTimezone: true }),
+    acknowledged_at: timestamp('', { withTimezone: true }),
+    acknowledged_by: text('acknowledged_by'),
+    resolved_at: timestamp('', { withTimezone: true }),
+    created_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+    updated_at: timestamp('', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('operational_alert_status_seen_idx').on(table.status, table.last_seen_at),
+    index('operational_alert_rule_seen_idx').on(table.rule, table.last_seen_at),
+    check('operational_alert_severity_check', sql.raw("severity in ('warning', 'critical')")),
+    check('operational_alert_occurrences_positive', sql.raw('occurrences > 0')),
+  ]
+)

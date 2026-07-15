@@ -1,0 +1,93 @@
+{
+  "annotations": { "list": [] },
+  "editable": false,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Dependency health",
+      "targets": [{ "expr": "min(velostra_dependency_up)", "refId": "A" }],
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Reconciliation lag (blocks)",
+      "targets": [{ "expr": "velostra_reconciliation_lag_blocks", "refId": "A" }],
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Oldest recoverable outbox (seconds)",
+      "targets": [{ "expr": "velostra_outbox_oldest_recoverable_age_seconds", "refId": "A" }],
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Financial drift",
+      "targets": [{ "expr": "velostra_reconciliation_drift", "refId": "A" }],
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 }
+    },
+    {
+      "type": "timeseries",
+      "title": "API request rate by status",
+      "targets": [
+        {
+          "expr": "sum by (status) (rate(velostra_http_requests_total[5m]))",
+          "legendFormat": "{{ status }}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Dependency latency (ms)",
+      "targets": [
+        {
+          "expr": "velostra_dependency_latency_milliseconds",
+          "legendFormat": "{{ dependency }}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Outbox rows by status",
+      "targets": [
+        {
+          "expr": "velostra_outbox_rows",
+          "legendFormat": "{{ status }}",
+          "refId": "A"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Worker and backup heartbeat age",
+      "targets": [
+        {
+          "expr": "velostra_worker_heartbeat_age_seconds",
+          "legendFormat": "worker",
+          "refId": "A"
+        },
+        {
+          "expr": "velostra_backup_heartbeat_age_seconds",
+          "legendFormat": "backup",
+          "refId": "B"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 }
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 39,
+  "tags": ["velostra", "phase2", "settlement"],
+  "templating": { "list": [] },
+  "time": { "from": "now-6h", "to": "now" },
+  "timezone": "browser",
+  "title": "Velostra staging operations",
+  "uid": "velostra-staging-ops",
+  "version": 1
+}

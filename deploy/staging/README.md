@@ -15,14 +15,16 @@ resources.
 - the API and reconciliation worker use separate supervised processes and the worker
   has a single active logical signer writer;
 - image references are immutable tags or digests generated from a reviewed commit;
-- `server.env` is delivered by the deployment secret store and is never committed.
+- role-specific common/api/worker/monitor env files are materialized from separate
+  secret scopes and never committed.
 
 ## Deployment sequence
 
 1. Provision isolated managed PostgreSQL with PITR, managed Redis, dedicated RPC,
    TLS ingress, image registry, and secret store.
-2. Copy `server.env.example` into the platform secret/config store and replace every
-   placeholder. Keep `NODE_ENV=production` so startup validation fails closed.
+2. Materialize `common.env` plus only the role-specific `api.env`, `worker.env`, or
+   `monitor.env` from the platform secret/config store. Replace every placeholder and
+   keep `NODE_ENV=production` so startup validation fails closed.
 3. Apply versioned migrations with the release image:
    `docker compose --profile release -f deploy/staging/compose.yaml run --rm migration`.
 4. Build immutable web/server images and scan them before publishing.

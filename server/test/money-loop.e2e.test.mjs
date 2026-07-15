@@ -1020,11 +1020,45 @@ async function main() {
     } finally {
       await unknownDb.end()
     }
+    const finalHead = await publicClient.getBlockNumber({ cacheTime: 0 })
+    await runReconcile(runtimeEnv, 0n, finalHead)
+    Object.assign(process.env, runtimeEnv, {
+      READINESS_REQUIRE_WORKER: 'true',
+      READINESS_WORKER_MAX_AGE_MS: '90000',
+      SETTLEMENT_SIGNER_MODE: 'local',
+    })
+    const { recordHeartbeat } = await import('../src/lib/observability/heartbeats.js')
+    const { collectOperationalSnapshot, readinessFromSnapshot } = await import(
+      '../src/lib/observability/operations.js'
+    )
+    const { renderPrometheus, setOperationalSnapshot } = await import(
+      '../src/lib/observability/metrics.js'
+    )
+    await recordHeartbeat('reconciliation-worker', 'ok', { source: 'money-loop-e2e' })
+    await recordHeartbeat('backup', 'ok', { source: 'money-loop-e2e' })
+    const operationalSnapshot = await collectOperationalSnapshot()
+    assert(
+      readinessFromSnapshot(operationalSnapshot).ready === true,
+      'deep readiness verifies Postgres, Redis, RPC, escrow solvency, and worker heartbeat'
+    )
+    setOperationalSnapshot(operationalSnapshot)
+    const operationalMetrics = renderPrometheus()
+    assert(
+      operationalMetrics.includes('velostra_reconciliation_drift 0') &&
+        operationalMetrics.includes('velostra_chain_solvent 1'),
+      `Prometheus metrics expose clean drift and solvent escrow state: ${JSON.stringify(operationalSnapshot.drift)}`
+    )
     console.log(
       'MONEY LOOP VERIFIED: outbox recovery + idempotent rescan + concurrent live/worker finalization'
     )
   } finally {
     await stopChild(backend)
+    await import('../src/lib/redis.js')
+      .then(({ closeRedis }) => closeRedis())
+      .catch(() => undefined)
+    await import('../src/db/client.js')
+      .then(({ pool }) => pool.end())
+      .catch(() => undefined)
     await close(mockServer).catch(() => undefined)
     await evm.close().catch(() => undefined)
   }

@@ -17,6 +17,8 @@ import {
   webOrigins,
 } from './lib/config.js'
 import { AppError } from './lib/errors.js'
+import { metricsHandler, readinessHandler, requestObservability } from './lib/observability/http.js'
+import { logger } from './lib/observability/logger.js'
 
 export function createApp(): express.Express {
   assertProductionConfiguration()
@@ -42,6 +44,7 @@ export function createApp(): express.Express {
     }
     next()
   })
+  app.use(requestObservability)
 
   app.use(
     cors({
@@ -57,8 +60,17 @@ export function createApp(): express.Express {
   app.use(attachAuth)
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'ok', chain: 'Robinhood Chain', chainId: 4663 })
+    res.json({
+      status: 'ok',
+      service: 'velostra-api',
+      environment: process.env.VELOSTRA_ENVIRONMENT ?? 'local',
+      release: process.env.VELOSTRA_RELEASE ?? 'development',
+      chain: 'Robinhood Chain',
+      chainId: 4663,
+    })
   })
+  app.get('/ready', readinessHandler)
+  app.get('/metrics', metricsHandler)
 
   app.use('/api/auth', authRouter)
   app.use('/api/agents', agentsRouter)
@@ -81,7 +93,7 @@ export function createApp(): express.Express {
           : new AppError(500, 'INTERNAL_ERROR', 'Internal server error', { expose: false, cause: error })
 
     if (normalized.status >= 500) {
-      console.error('[request-error]', {
+      logger.error('http_request_failed', {
         requestId: req.requestId,
         code: normalized.code,
         path: req.originalUrl,

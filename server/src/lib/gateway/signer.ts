@@ -25,6 +25,13 @@ function positiveInteger(name: string, fallback: number): number {
   return parsed
 }
 
+function configuredRemoteSignerAddress(): Address {
+  const rawAddress = process.env.SETTLEMENT_SIGNER_ADDRESS
+  if (!rawAddress || !isAddress(rawAddress) || /^0x0{40}$/i.test(rawAddress)) {
+    throw new Error('SETTLEMENT_SIGNER_ADDRESS must be a non-zero EVM address')
+  }
+  return getAddress(rawAddress)
+}
 function remoteSignerConfiguration(): {
   url: URL
   token: string
@@ -33,11 +40,8 @@ function remoteSignerConfiguration(): {
 } {
   const rawUrl = process.env.SETTLEMENT_SIGNER_URL
   const token = process.env.SETTLEMENT_SIGNER_AUTH_TOKEN
-  const rawAddress = process.env.SETTLEMENT_SIGNER_ADDRESS
-  if (!rawUrl || !token || !rawAddress) {
-    throw new Error(
-      'SETTLEMENT_SIGNER_URL, SETTLEMENT_SIGNER_AUTH_TOKEN, and SETTLEMENT_SIGNER_ADDRESS are required'
-    )
+  if (!rawUrl || !token) {
+    throw new Error('SETTLEMENT_SIGNER_URL and SETTLEMENT_SIGNER_AUTH_TOKEN are required')
   }
   const url = new URL(rawUrl)
   if (process.env.NODE_ENV === 'production' && url.protocol !== 'https:') {
@@ -49,19 +53,16 @@ function remoteSignerConfiguration(): {
   if (token.length < 32) {
     throw new Error('SETTLEMENT_SIGNER_AUTH_TOKEN must be at least 32 characters')
   }
-  if (!isAddress(rawAddress) || /^0x0{40}$/i.test(rawAddress)) {
-    throw new Error('SETTLEMENT_SIGNER_ADDRESS must be a non-zero EVM address')
-  }
   return {
     url,
     token,
-    address: getAddress(rawAddress),
+    address: configuredRemoteSignerAddress(),
     timeoutMs: positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', 10_000),
   }
 }
 
 export function getRemoteSettlementSignerAddress(): Address {
-  return remoteSignerConfiguration().address
+  return configuredRemoteSignerAddress()
 }
 
 export async function submitRemoteSettlement(input: {

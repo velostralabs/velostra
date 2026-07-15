@@ -3,9 +3,20 @@ import { assertProductionConfiguration } from '../src/lib/config.js'
 
 const validProductionEnv: Record<string, string> = {
   NODE_ENV: 'production',
+  VELOSTRA_PROCESS_ROLE: 'api',
   VELOSTRA_SECRET_PROVIDER: 'managed-injection',
   VELOSTRA_ENVIRONMENT: 'staging',
   VELOSTRA_RELEASE: '1aab94d',
+  METRICS_AUTH_TOKEN: 'm'.repeat(32),
+  OBSERVABILITY_INTERVAL_MS: '15000',
+  READINESS_REQUIRE_WORKER: 'true',
+  READINESS_WORKER_MAX_AGE_MS: '90000',
+  MONITOR_INTERVAL_MS: '30000',
+  ALERT_WEBHOOK_URL: 'https://alerts.velostra.internal/events',
+  ALERT_WEBHOOK_TOKEN: 'a'.repeat(32),
+  ALERT_RUNBOOK_BASE_URL: 'https://runbooks.velostra.internal/operations',
+  ALERT_REQUIRE_BACKUP_HEARTBEAT: 'true',
+  ALERT_SIGNER_MIN_BALANCE_WEI: '10000000000000000',
   DATABASE_URL: 'postgresql://velostra:secret@db.internal:5432/velostra?sslmode=require',
   DATABASE_POOL_MAX: '10',
   DATABASE_CONNECTION_TIMEOUT_MS: '5000',
@@ -93,8 +104,44 @@ try {
   rejects({ ROBINHOOD_RPC_URL: 'http://rpc.internal' }, /ROBINHOOD_RPC_URL/)
   rejects({ VELOSTRA_ENVIRONMENT: 'Invalid Environment' }, /VELOSTRA_ENVIRONMENT/)
   rejects({ VELOSTRA_RELEASE: 'dev' }, /VELOSTRA_RELEASE/)
+  rejects({ METRICS_AUTH_TOKEN: 'weak' }, /METRICS_AUTH_TOKEN/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_URL: 'http://alerts.internal' }, /ALERT_WEBHOOK_URL/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_TOKEN: 'weak' }, /ALERT_WEBHOOK_TOKEN/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_RUNBOOK_BASE_URL: 'http://runbooks.internal' }, /ALERT_RUNBOOK_BASE_URL/)
+  rejects({ READINESS_REQUIRE_WORKER: 'false' }, /READINESS_REQUIRE_WORKER/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_REQUIRE_BACKUP_HEARTBEAT: 'false' }, /ALERT_REQUIRE_BACKUP_HEARTBEAT/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_SIGNER_MIN_BALANCE_WEI: '-1' }, /ALERT_SIGNER_MIN_BALANCE_WEI/)
   rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 2 blocks production/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'unknown' }, /VELOSTRA_PROCESS_ROLE/)
 
+  configure({
+    VELOSTRA_PROCESS_ROLE: 'migration',
+    WEB_ORIGIN: undefined,
+    JWT_SECRET: undefined,
+    GATEWAY_HMAC_SECRET: undefined,
+    REDIS_URL: undefined,
+    AGENT_SECRET_ENCRYPTION_KEY: undefined,
+    VELOSTRA_ESCROW_ADDRESS: undefined,
+    ROBINHOOD_RPC_URL: undefined,
+    SETTLEMENT_SIGNER_URL: undefined,
+    SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
+    METRICS_AUTH_TOKEN: undefined,
+    ALERT_WEBHOOK_URL: undefined,
+    ALERT_WEBHOOK_TOKEN: undefined,
+  })
+  assert.doesNotThrow(() => assertProductionConfiguration())
+
+  configure({
+    VELOSTRA_PROCESS_ROLE: 'operational-monitor',
+    WEB_ORIGIN: undefined,
+    JWT_SECRET: undefined,
+    GATEWAY_HMAC_SECRET: undefined,
+    AGENT_SECRET_ENCRYPTION_KEY: undefined,
+    SETTLEMENT_SIGNER_URL: undefined,
+    SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
+    METRICS_AUTH_TOKEN: undefined,
+  })
+  assert.doesNotThrow(() => assertProductionConfiguration())
   configure({
     VELOSTRA_ENVIRONMENT: 'production',
     PHASE2_ALLOW_MAINNET: 'explicitly-approved',

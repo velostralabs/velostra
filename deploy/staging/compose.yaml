@@ -4,9 +4,6 @@ x-server-common: &server-common
   image: ${VELOSTRA_SERVER_IMAGE:?set VELOSTRA_SERVER_IMAGE to an immutable image reference}
   restart: unless-stopped
   init: true
-  env_file:
-    - path: ./server.env
-      required: true
   networks:
     - backend
   security_opt:
@@ -51,15 +48,27 @@ services:
 
   migration:
     <<: *server-common
+    env_file:
+      - path: ./common.env
+        required: true
     profiles: ["release"]
     restart: "no"
     command: ["node", "dist/scripts/migrate.js"]
+    environment:
+      VELOSTRA_PROCESS_ROLE: migration
     healthcheck:
       disable: true
 
   api:
     <<: *server-common
+    env_file:
+      - path: ./common.env
+        required: true
+      - path: ./api.env
+        required: true
     command: ["node", "dist/index.js"]
+    environment:
+      VELOSTRA_PROCESS_ROLE: api
     ports:
       - "${API_BIND_ADDRESS:-127.0.0.1}:${API_PORT:-8787}:8787"
     networks:
@@ -69,10 +78,31 @@ services:
 
   reconciliation-worker:
     <<: *server-common
+    env_file:
+      - path: ./common.env
+        required: true
+      - path: ./worker.env
+        required: true
     command: ["node", "dist/jobs/reconcile.js", "--watch"]
+    environment:
+      VELOSTRA_PROCESS_ROLE: reconciliation-worker
     healthcheck:
       disable: true
     stop_grace_period: 60s
+
+  operational-monitor:
+    <<: *server-common
+    env_file:
+      - path: ./common.env
+        required: true
+      - path: ./monitor.env
+        required: true
+    command: ["node", "dist/jobs/monitor.js", "--watch"]
+    environment:
+      VELOSTRA_PROCESS_ROLE: operational-monitor
+    healthcheck:
+      disable: true
+    stop_grace_period: 30s
 
 networks:
   edge:

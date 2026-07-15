@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Validate staging topology
         run: |
-          cp deploy/staging/server.env.example deploy/staging/server.env
+          for role in common api worker monitor; do cp "deploy/staging/$role.env.example" "deploy/staging/$role.env"; done
           docker compose -f deploy/staging/compose.yaml config --quiet
       - name: Build API and worker image
         run: docker build -f server/Dockerfile -t "$VELOSTRA_SERVER_IMAGE" server
@@ -39,4 +39,5 @@ jobs:
         run: |
           test "$(docker image inspect "$VELOSTRA_SERVER_IMAGE" --format '{{.Config.User}}')" = "velostra"
           test -n "$(docker image inspect "$VELOSTRA_WEB_IMAGE" --format '{{.Config.User}}')"
-          docker run --rm --entrypoint node "$VELOSTRA_SERVER_IMAGE" -e +            "const fs=require('fs'); process.exit(fs.existsSync('/app/dist/scripts/migrate.js') && fs.existsSync('/app/drizzle/meta/_journal.json') ? 0 : 1)"
+          docker run --rm --entrypoint node "$VELOSTRA_SERVER_IMAGE" \
+            -e "const fs=require('fs'); process.exit(fs.existsSync('/app/dist/scripts/migrate.js') && fs.existsSync('/app/drizzle/meta/_journal.json') ? 0 : 1)"

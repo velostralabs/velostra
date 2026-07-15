@@ -45,7 +45,13 @@
     "db:migrate:runtime": "node dist/scripts/migrate.js",
     "test:signer": "tsx test/remote-signer.test.ts",
     "test:authority": "tsx test/authority-policy.test.ts",
-    "authority:validate": "tsx src/scripts/validate-authority-policy.ts"
+    "authority:validate": "tsx src/scripts/validate-authority-policy.ts",
+    "monitor": "tsx src/jobs/monitor.ts",
+    "monitor:worker": "tsx src/jobs/monitor.ts --watch",
+    "alert:ack": "tsx src/scripts/acknowledge-alert.ts",
+    "test:observability": "tsx test/observability.test.ts",
+    "test:observability-db": "tsx test/observability-db.e2e.test.ts",
+    "heartbeat:record": "tsx src/scripts/record-heartbeat.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

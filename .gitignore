@@ -24,6 +24,7 @@ test-results/
 !/.env.example
 !**/.env.example
 **/server.env
+deploy/staging/*.env
 *.pem
 *.key
 *.p12

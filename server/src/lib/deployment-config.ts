@@ -1,0 +1,186 @@
+const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
+
+export type DeploymentProcessRole =
+  | 'api'
+  | 'reconciliation-worker'
+  | 'operational-monitor'
+  | 'migration'
+
+function required(name: string): string {
+  const value = process.env[name]?.trim()
+  if (!value) throw new Error('Production ' + name + ' is required')
+  return value
+}
+
+function positiveInteger(name: string, fallback?: string): number {
+  const parsed = Number(process.env[name] ?? fallback)
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error('Production ' + name + ' must be a positive integer')
+  }
+  return parsed
+}
+
+function secret(name: string): string {
+  const value = required(name)
+  if (value.length < 32) throw new Error('Production ' + name + ' must be at least 32 characters')
+  return value
+}
+
+function nonZeroAddress(name: string): string {
+  const value = required(name)
+  if (!EVM_ADDRESS.test(value) || /^0x0{40}$/i.test(value)) {
+    throw new Error('Production ' + name + ' must be a non-zero EVM address')
+  }
+  return value
+}
+
+function httpsUrl(name: string): URL {
+  const value = new URL(required(name))
+  if (value.protocol !== 'https:' || value.username || value.password) {
+    throw new Error('Production ' + name + ' must use HTTPS without embedded credentials')
+  }
+  return value
+}
+
+function exact32ByteSecret(name: string): void {
+  const value = required(name)
+  const decoded = /^[0-9a-fA-F]{64}$/.test(value)
+    ? Buffer.from(value, 'hex')
+    : Buffer.from(value, 'base64')
+  if (decoded.length !== 32) {
+    throw new Error('Production ' + name + ' must encode exactly 32 bytes')
+  }
+}
+
+export function deploymentProcessRole(): DeploymentProcessRole {
+  const role = process.env.VELOSTRA_PROCESS_ROLE ?? 'api'
+  if (
+    role !== 'api' &&
+    role !== 'reconciliation-worker' &&
+    role !== 'operational-monitor' &&
+    role !== 'migration'
+  ) {
+    throw new Error('Production VELOSTRA_PROCESS_ROLE is invalid')
+  }
+  return role
+}
+
+function assertCommon(): void {
+  if (required('VELOSTRA_SECRET_PROVIDER') !== 'managed-injection') {
+    throw new Error('Production VELOSTRA_SECRET_PROVIDER must be managed-injection')
+  }
+  const databaseUrl = new URL(required('DATABASE_URL'))
+  if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
+    throw new Error('Production DATABASE_URL must use postgres or postgresql')
+  }
+  const sslMode = databaseUrl.searchParams.get('sslmode')
+  if (!sslMode || !['require', 'verify-ca', 'verify-full'].includes(sslMode)) {
+    throw new Error('Production DATABASE_URL must enforce TLS')
+  }
+  positiveInteger('DATABASE_POOL_MAX', '10')
+  positiveInteger('DATABASE_CONNECTION_TIMEOUT_MS', '5000')
+
+  const environment = required('VELOSTRA_ENVIRONMENT')
+  if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(environment)) {
+    throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase identifier')
+  }
+  if (environment === 'production' && process.env.PHASE2_ALLOW_MAINNET !== 'explicitly-approved') {
+    throw new Error('Phase 2 blocks production environment startup without explicit release approval')
+  }
+  const release = required('VELOSTRA_RELEASE')
+  if (release.length < 7 || release.length > 128 || /\s/.test(release)) {
+    throw new Error('Production VELOSTRA_RELEASE must identify an immutable build')
+  }
+}
+
+function assertRedis(): void {
+  const redis = new URL(required('REDIS_URL'))
+  if (redis.protocol !== 'rediss:') throw new Error('Production REDIS_URL must use rediss TLS')
+  if (process.env.REDIS_FAILURE_MODE === 'open') {
+    throw new Error('Production REDIS_FAILURE_MODE cannot be open')
+  }
+}
+
+function assertChain(requireSignerAuthorization: boolean): void {
+  nonZeroAddress('VELOSTRA_ESCROW_ADDRESS')
+  if (positiveInteger('ROBINHOOD_CHAIN_ID') !== 4663) {
+    throw new Error('Production ROBINHOOD_CHAIN_ID must be 4663')
+  }
+  if (positiveInteger('SETTLEMENT_TOKEN_DECIMALS') !== 6) {
+    throw new Error('Production SETTLEMENT_TOKEN_DECIMALS must be 6')
+  }
+  positiveInteger('VELOSTRA_DEPLOYMENT_BLOCK')
+  httpsUrl('ROBINHOOD_RPC_URL')
+  if (process.env.ONCHAIN_SETTLEMENT_MODE !== 'required') {
+    throw new Error('Production ONCHAIN_SETTLEMENT_MODE must be required')
+  }
+  if ((process.env.BACKEND_SIGNER_PRIVATE_KEY ?? '').trim()) {
+    throw new Error('Production must not receive BACKEND_SIGNER_PRIVATE_KEY')
+  }
+  if (required('SETTLEMENT_SIGNER_MODE') !== 'remote') {
+    throw new Error('Production SETTLEMENT_SIGNER_MODE must be remote')
+  }
+  nonZeroAddress('SETTLEMENT_SIGNER_ADDRESS')
+  if (requireSignerAuthorization) {
+    httpsUrl('SETTLEMENT_SIGNER_URL')
+    secret('SETTLEMENT_SIGNER_AUTH_TOKEN')
+    positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', '10000')
+  }
+}
+
+function assertApi(origins: string[]): void {
+  secret('JWT_SECRET')
+  secret('GATEWAY_HMAC_SECRET')
+  const authUri = httpsUrl('AUTH_PUBLIC_URI')
+  if (authUri.origin !== authUri.toString().replace(/\/$/, '') || !origins.includes(authUri.origin)) {
+    throw new Error('Production AUTH_PUBLIC_URI must be a canonical WEB_ORIGIN')
+  }
+  if (process.env.AUTH_NONCE_STORE === 'memory') {
+    throw new Error('Production AUTH_NONCE_STORE cannot be memory')
+  }
+  assertRedis()
+  exact32ByteSecret('AGENT_SECRET_ENCRYPTION_KEY')
+  if (!/^[a-zA-Z0-9_-]{1,32}$/.test(process.env.AGENT_SECRET_ENCRYPTION_KEY_ID ?? 'primary')) {
+    throw new Error('Production AGENT_SECRET_ENCRYPTION_KEY_ID is invalid')
+  }
+  assertChain(true)
+  secret('METRICS_AUTH_TOKEN')
+  positiveInteger('OBSERVABILITY_INTERVAL_MS', '15000')
+  positiveInteger('READINESS_WORKER_MAX_AGE_MS', '90000')
+  if (process.env.READINESS_REQUIRE_WORKER !== 'true') {
+    throw new Error('Production READINESS_REQUIRE_WORKER must be true')
+  }
+}
+
+function assertWorker(): void {
+  assertChain(true)
+  positiveInteger('RECONCILE_MAX_BLOCK_RANGE', '2000')
+  positiveInteger('RECONCILE_RPC_RETRIES', '3')
+  positiveInteger('RECONCILE_INTERVAL_MS', '30000')
+}
+
+function assertMonitor(): void {
+  assertRedis()
+  assertChain(false)
+  httpsUrl('ALERT_WEBHOOK_URL')
+  secret('ALERT_WEBHOOK_TOKEN')
+  httpsUrl('ALERT_RUNBOOK_BASE_URL')
+  positiveInteger('MONITOR_INTERVAL_MS', '30000')
+  if (process.env.ALERT_REQUIRE_BACKUP_HEARTBEAT !== 'true') {
+    throw new Error('Production ALERT_REQUIRE_BACKUP_HEARTBEAT must be true')
+  }
+  if (!/^\d+$/.test(process.env.ALERT_SIGNER_MIN_BALANCE_WEI ?? '10000000000000000')) {
+    throw new Error('Production ALERT_SIGNER_MIN_BALANCE_WEI must be a non-negative integer')
+  }
+}
+
+export function assertDeploymentConfiguration(
+  role: DeploymentProcessRole,
+  origins: string[]
+): void {
+  assertCommon()
+  if (role === 'migration') return
+  if (role === 'api') assertApi(origins)
+  else if (role === 'reconciliation-worker') assertWorker()
+  else assertMonitor()
+}

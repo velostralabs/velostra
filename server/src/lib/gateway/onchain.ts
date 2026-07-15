@@ -29,6 +29,12 @@ import { settlementSignerMode, submitRemoteSettlement } from './signer.js'
 export const velostraEscrowAbi = [
   {
     type: 'function',
+    name: 'isSolvent',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool' }],
+  },  {
+    type: 'function',
     name: 'creditBuilderEarnings',
     stateMutability: 'nonpayable',
     inputs: [

@@ -1,12 +1,16 @@
 import 'dotenv/config'
 import { createApp } from './app.js'
+import { pool } from './db/client.js'
 import { assertSecurityReadiness } from './lib/security-readiness.js'
+import { closeRedis } from './lib/redis.js'
+import { logger } from './lib/observability/logger.js'
+import { startApiObservability } from './lib/observability/runtime.js'
 
 process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason)
+  logger.error('process_unhandled_rejection', { reason })
 })
 process.on('uncaughtException', (error) => {
-  console.error('[uncaughtException]', error)
+  logger.error('process_uncaught_exception', { error })
 })
 
 async function main(): Promise<void> {
@@ -17,12 +21,37 @@ async function main(): Promise<void> {
 
   await assertSecurityReadiness()
   const app = createApp()
-  app.listen(port, () => {
-    console.log(`[velostra-server] listening on :${port} — Robinhood Chain (4663)`)
+  const stopObservability = startApiObservability()
+  const server = app.listen(port, () => {
+    logger.info('api_listening', { port, chain: 'Robinhood Chain', chainId: 4663 })
   })
+
+  let stopping = false
+  const shutdown = async (signal: string) => {
+    if (stopping) return
+    stopping = true
+    logger.info('api_shutdown_started', { signal })
+    stopObservability()
+    await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(
+        () => reject(new Error('HTTP server shutdown timed out')),
+        Number(process.env.SHUTDOWN_TIMEOUT_MS ?? 20_000)
+      )
+      server.close((error) => {
+        clearTimeout(timeout)
+        if (error) reject(error)
+        else resolve()
+      })
+    })
+    await closeRedis()
+    await pool.end()
+    logger.info('api_shutdown_complete')
+  }
+  process.on('SIGINT', () => void shutdown('SIGINT'))
+  process.on('SIGTERM', () => void shutdown('SIGTERM'))
 }
 
 main().catch((error) => {
-  console.error('[startup] fatal', error)
+  logger.error('startup_fatal', { error })
   process.exitCode = 1
 })

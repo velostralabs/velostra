@@ -11,6 +11,7 @@ async function main(): Promise<void> {
   process.env.JSON_BODY_LIMIT = '64b'
   process.env.JWT_SECRET = 'http-security-test-secret-that-is-long-enough'
   process.env.AGENT_SECRET_ENCRYPTION_KEY = '00'.repeat(32)
+  process.env.METRICS_AUTH_TOKEN = 'metrics-test-token-that-is-long-enough'
 
   const { createApp } = await import('../src/app.js')
   const app = createApp()
@@ -33,6 +34,19 @@ async function main(): Promise<void> {
     assert(health.headers.get('access-control-allow-origin') === 'https://app.velostra.test', 'CORS echoes only the allowlisted origin')
     assert(health.headers.get('x-powered-by') === null, 'Express fingerprint header is disabled')
 
+    const readiness = await fetch(`${base}/ready`)
+    assert(readiness.status === 503, 'deep readiness fails closed before a dependency snapshot exists')
+
+    const metricsWithoutToken = await fetch(`${base}/metrics`)
+    assert(metricsWithoutToken.status === 401, 'metrics reject an unauthenticated scrape')
+    const metrics = await fetch(`${base}/metrics`, {
+      headers: { authorization: `Bearer ${process.env.METRICS_AUTH_TOKEN}` },
+    })
+    assert(metrics.status === 200, 'metrics accept the configured scrape token')
+    assert(
+      (await metrics.text()).includes('velostra_process_uptime_seconds'),
+      'metrics return Prometheus text exposition'
+    )
     const blockedOrigin = await fetch(`${base}/health`, {
       headers: { origin: 'https://evil.example' },
     })

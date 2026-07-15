@@ -13,6 +13,7 @@ const migrations = [
   'drizzle/0003_query_indexes.sql',
   'drizzle/0004_transaction_indexes.sql',
   'drizzle/0005_earnings_invariants.sql',
+  'drizzle/0006_dark_darkstar.sql',
 ]
 
 async function loadMigration(path: string, schema: string): Promise<string[]> {
@@ -92,8 +93,8 @@ try {
       where table_schema = $1 and table_type = 'BASE TABLE'`,
     [freshSchema]
   )
-  assert.equal(tableCount.rows[0].count, 17)
-  console.log('✅ fresh install creates the complete Phase 1 schema')
+  assert.equal(tableCount.rows[0].count, 19)
+  console.log('✅ fresh install creates the complete Phase 2 operational schema')
 
   const constraints = await client.query(
     `select conname
@@ -108,11 +109,14 @@ try {
           'builder_earnings_total_nonnegative',
           'builder_earnings_available_nonnegative',
           'builder_earnings_claimed_nonnegative',
-          'earnings_claim_amount_positive'
+          'earnings_claim_amount_positive',
+          'operational_heartbeat_status_check',
+          'operational_alert_severity_check',
+          'operational_alert_occurrences_positive'
         )`,
     [freshSchema]
   )
-  assert.equal(constraints.rowCount, 8)
+  assert.equal(constraints.rowCount, 11)
   console.log('✅ fresh install includes all critical money invariants')
 
   await client.query(
@@ -159,12 +163,30 @@ try {
           'earnings_claim_status_created_idx',
           'report_status_created_idx',
           'settlement_attempt_status_updated_idx',
-          'transaction_chain_ledger_idx'
+          'transaction_chain_ledger_idx',
+          'operational_heartbeat_seen_idx',
+          'operational_alert_status_seen_idx',
+          'operational_alert_rule_seen_idx'
         )`,
     [freshSchema]
   )
-  assert.equal(operationalIndexes.rowCount, 7)
-  console.log('✅ operational history, pending-work, and ledger indexes are installed')
+  assert.equal(operationalIndexes.rowCount, 10)
+  console.log('PASS: operational ledger, heartbeat, and alert indexes are installed')
+
+  const operationalTimestamps = await client.query(
+    `select data_type
+       from information_schema.columns
+      where table_schema = $1
+        and table_name in ('operational_alerts', 'operational_heartbeats')
+        and column_name in ('first_seen_at', 'last_seen_at', 'last_notified_at',
+                            'acknowledged_at', 'resolved_at', 'created_at', 'updated_at')`,
+    [freshSchema]
+  )
+  assert(
+    operationalTimestamps.rows.length > 0 &&
+      operationalTimestamps.rows.every((row) => row.data_type === 'timestamp with time zone')
+  )
+  console.log('PASS: operational alert and heartbeat clocks are timezone-safe')
 
 } finally {
   await client.query('set search_path to public')

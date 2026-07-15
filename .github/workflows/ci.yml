@@ -52,6 +52,7 @@ jobs:
       - run: npm run test:secrets
       - run: npm run test:signer
       - run: npm run test:authority
+      - run: npm run test:observability
       - run: npm run authority:validate -- ../deploy/staging/authority-policy.example.json
       - run: npm run test:admin-policy
       - run: npm run test:money-unit
@@ -90,6 +91,15 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6399:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       DATABASE_URL: postgresql://postgres:velostra@127.0.0.1:5432/velostra_test
     steps:
@@ -105,6 +115,7 @@ jobs:
       - run: npm ci --prefix contracts
       - run: npm --prefix server run db:migrate
       - run: npm --prefix server run test:migrations
+      - run: npm --prefix server run test:observability-db
       - run: npm --prefix server run test:money
       - name: Dump migrated source database
         run: >-

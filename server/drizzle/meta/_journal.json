@@ -43,6 +43,13 @@
       "when": 1784103579008,
       "tag": "0005_earnings_invariants",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784110972959,
+      "tag": "0006_dark_darkstar",
+      "breakpoints": true
     }
   ]
 }

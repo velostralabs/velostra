@@ -1,0 +1,67 @@
+groups:
+  - name: velostra-operational
+    rules:
+      - alert: VelostraDependencyDown
+        expr: velostra_dependency_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Velostra dependency {{ $labels.dependency }} is down"
+          runbook: "dependency-health"
+      - alert: VelostraWorkerStale
+        expr: velostra_worker_heartbeat_age_seconds > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Reconciliation worker heartbeat is stale"
+          runbook: "worker_stale"
+      - alert: VelostraCursorLag
+        expr: velostra_reconciliation_lag_blocks > 2000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Reconciliation cursor exceeds its lag budget"
+          runbook: "cursor_lag"
+      - alert: VelostraOutboxStale
+        expr: velostra_outbox_oldest_recoverable_age_seconds > 300
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Recoverable settlement outbox row is stale"
+          runbook: "outbox_stale"
+      - alert: VelostraFinancialDrift
+        expr: velostra_reconciliation_drift == 1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Onchain and PostgreSQL financial ledgers differ"
+          runbook: "financial_drift"
+      - alert: VelostraEscrowInsolvent
+        expr: velostra_chain_solvent == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Escrow liabilities exceed collateral"
+          runbook: "escrow_insolvent"
+      - alert: VelostraSignerLowBalance
+        expr: velostra_signer_balance_wei < 10000000000000000
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Settlement signer gas balance is low"
+          runbook: "signer_low_balance"
+      - alert: VelostraBackupStale
+        expr: velostra_backup_heartbeat_age_seconds > 86400
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Managed backup/PITR verification heartbeat is stale"
+          runbook: "backup_stale"

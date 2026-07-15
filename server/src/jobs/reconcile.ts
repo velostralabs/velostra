@@ -27,6 +27,8 @@ import {
   verifyBuilderCreditReceipt,
 } from '../lib/gateway/onchain.js'
 import { compareMoney, money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
+import { recordHeartbeat } from '../lib/observability/heartbeats.js'
+import { logger } from '../lib/observability/logger.js'
 import {
   failUnsettledCall,
   finalizeSettlement,
@@ -752,7 +754,7 @@ async function sumClaims(address: Address): Promise<Money> {
   return money(row?.total ?? '0')
 }
 
-export async function reportReconciliationDrift() {
+export async function reportReconciliationDrift(options: { log?: boolean } = {}) {
   const address = getVelostraEscrowAddress()
   const syncId = stateId(address)
   const totals = {
@@ -784,11 +786,13 @@ export async function reportReconciliationDrift() {
     const units = moneyToMinor(value)
     return (units < 0n ? -units : units) > thresholdMinor
   })
-  const log = exceedsThreshold ? console.warn : console.info
-  log(
-    '[reconcile] ' + (exceedsThreshold ? 'DRIFT WARNING ' : 'drift clean ') +
-      JSON.stringify({ threshold: driftThreshold, totals, drift })
-  )
+  if (options.log !== false) {
+    const log = exceedsThreshold ? console.warn : console.info
+    log(
+      '[reconcile] ' + (exceedsThreshold ? 'DRIFT WARNING ' : 'drift clean ') +
+        JSON.stringify({ threshold: driftThreshold, totals, drift })
+    )
+  }
   return { totals, drift, exceedsThreshold }
 }
 
@@ -891,10 +895,20 @@ async function main(): Promise<void> {
   let nextOptions: ReconcileOptions = options
   while (!stopping) {
     try {
-      await runReconciliation(nextOptions)
+      const result = await runReconciliation(nextOptions)
       nextOptions = {}
+      await recordHeartbeat('reconciliation-worker', 'ok', {
+        safe_head: result.safeHead,
+        to_block: result.toBlock,
+        scanned_events: result.scannedEvents,
+        recovered_outbox: result.recoveredOutbox,
+        drift: result.drift.exceedsThreshold,
+      })
     } catch (error) {
-      console.error('[reconcile] worker iteration failed', error)
+      logger.error('reconciliation_worker_iteration_failed', { error })
+      await recordHeartbeat('reconciliation-worker', 'failed', {
+        error: error instanceof Error ? error.name : 'UnknownError',
+      }).catch(() => undefined)
     }
     if (!stopping) await sleep(intervalMs)
   }

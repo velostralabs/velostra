@@ -7,6 +7,7 @@ import {
   gitHead,
   readJson,
   sealManifest,
+  validateReleaseAuthorityPolicy,
   validatePhase3Manifest,
 } from './lib/phase3-release.mjs'
 
@@ -29,6 +30,50 @@ assert.equal(manifest.release, gitHead(repositoryRoot))
 assert.equal(manifest.authorization.mainnetApproved, false)
 assert.equal(manifest.contract.address, null)
 
+const authorityPolicy = await readJson(
+  path.join(repositoryRoot, manifest.policies.authority.path)
+)
+const productionAuthorityPolicy = structuredClone(authorityPolicy)
+productionAuthorityPolicy.environment = 'robinhood-mainnet'
+productionAuthorityPolicy.change_ticket = 'release-1234'
+const expectedPrincipals = {
+  DEFAULT_ADMIN: manifest.contract.constructor.roles.admin,
+  FEE_MANAGER: manifest.contract.constructor.roles.admin,
+  SETTLER: manifest.contract.constructor.roles.settler,
+  TREASURY: manifest.contract.constructor.roles.treasury,
+  PAUSER: manifest.contract.constructor.roles.pauseGuardian,
+}
+productionAuthorityPolicy.roles = productionAuthorityPolicy.roles.map((role) => ({
+  ...role,
+  principal: expectedPrincipals[role.role],
+}))
+const authorityContext = {
+  stage: 'broadcast-approved',
+  environment: 'robinhood-mainnet',
+  changeTicket: 'release-1234',
+  constructor: manifest.contract.constructor,
+}
+assert.deepEqual(
+  validateReleaseAuthorityPolicy(productionAuthorityPolicy, authorityContext),
+  { passed: true, failures: [] }
+)
+const wrongSettlerPolicy = structuredClone(productionAuthorityPolicy)
+wrongSettlerPolicy.roles = wrongSettlerPolicy.roles.map((role) =>
+  role.role === 'SETTLER'
+    ? { ...role, principal: '0x9999999999999999999999999999999999999999' }
+    : role
+)
+const wrongSettlerResult = validateReleaseAuthorityPolicy(
+  wrongSettlerPolicy,
+  authorityContext
+)
+assert.equal(wrongSettlerResult.passed, false)
+assert(
+  wrongSettlerResult.failures.includes(
+    'authority principal differs from contract constructor for SETTLER'
+  )
+)
+
 const valid = await validatePhase3Manifest({
   repositoryRoot,
   manifest,
@@ -49,6 +94,66 @@ const tamperedHashResult = await validatePhase3Manifest({
 assert.equal(tamperedHashResult.passed, false)
 assert(tamperedHashResult.failures.includes('manifest integrity hash mismatch'))
 assert(tamperedHashResult.failures.includes('contract source hash mismatch'))
+
+const omittedLockfile = sealManifest({
+  ...manifest,
+  integrity: undefined,
+  repository: {
+    ...manifest.repository,
+    lockfiles: manifest.repository.lockfiles.slice(1),
+  },
+})
+const omittedLockfileResult = await validatePhase3Manifest({
+  repositoryRoot,
+  manifest: omittedLockfile,
+  mode: 'preparation',
+  requireClean: false,
+})
+assert.equal(omittedLockfileResult.passed, false)
+assert(
+  omittedLockfileResult.failures.includes(
+    'manifest lockfile set differs from required release lockfiles'
+  )
+)
+
+const omittedReleaseTool = sealManifest({
+  ...manifest,
+  integrity: undefined,
+  repository: {
+    ...manifest.repository,
+    releaseTools: manifest.repository.releaseTools.slice(1),
+  },
+})
+const omittedReleaseToolResult = await validatePhase3Manifest({
+  repositoryRoot,
+  manifest: omittedReleaseTool,
+  mode: 'preparation',
+  requireClean: false,
+})
+assert.equal(omittedReleaseToolResult.passed, false)
+assert(
+  omittedReleaseToolResult.failures.includes(
+    'manifest release-tool set differs from required release tools'
+  )
+)
+
+const divergentArtifactPath = sealManifest({
+  ...manifest,
+  integrity: undefined,
+  contract: { ...manifest.contract, artifact: 'contracts/build/MockUSD.json' },
+})
+const divergentArtifactResult = await validatePhase3Manifest({
+  repositoryRoot,
+  manifest: divergentArtifactPath,
+  mode: 'preparation',
+  requireClean: false,
+})
+assert.equal(divergentArtifactResult.passed, false)
+assert(
+  divergentArtifactResult.failures.includes(
+    'contract artifact path differs from repository artifact entry'
+  )
+)
 
 const wrongChain = sealManifest({
   ...manifest,

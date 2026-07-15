@@ -33,6 +33,20 @@ function sameAddress(actual, expected) {
   return ethers.getAddress(actual) === ethers.getAddress(expected)
 }
 
+function deploymentTransactionChecks(transaction, manifest, expectedData) {
+  return {
+    deployment_transaction_present: Boolean(transaction),
+    deployment_transaction_deployer:
+      Boolean(transaction) && sameAddress(transaction.from, manifest.contract.deployer),
+    deployment_transaction_creation: transaction?.to === null,
+    deployment_transaction_chain: transaction?.chainId === BigInt(CHAIN_ID),
+    deployment_transaction_zero_value: transaction?.value === 0n,
+    deployment_transaction_init_code:
+      typeof transaction?.data === 'string' &&
+      transaction.data.toLowerCase() === expectedData.toLowerCase(),
+  }
+}
+
 async function main() {
   const manifestPath = path.resolve(
     REPOSITORY_ROOT,
@@ -106,6 +120,20 @@ async function main() {
   const escrow = new ethers.Contract(address, artifact.abi, provider)
   const expected = manifest.contract.constructor
   const roles = expected.roles
+  const expectedDeployment = await new ethers.ContractFactory(
+    artifact.abi,
+    artifact.bytecode
+  ).getDeployTransaction(
+    expected.settlementToken,
+    expected.platformFeeBps,
+    roles.admin,
+    roles.settler,
+    roles.treasury,
+    roles.pauseGuardian
+  )
+  if (typeof expectedDeployment.data !== 'string') {
+    throw new Error('Expected deployment init code could not be constructed')
+  }
   const [
     settlementToken,
     platformFeeBps,
@@ -117,6 +145,7 @@ async function main() {
     treasuryRole,
     pauserRole,
     feeManagerRole,
+    deploymentTransaction,
     receipt,
   ] = await Promise.all([
     escrow.settlementToken(),
@@ -129,6 +158,7 @@ async function main() {
     escrow.hasRole(ethers.id('TREASURY_ROLE'), roles.treasury),
     escrow.hasRole(ethers.id('PAUSER_ROLE'), roles.pauseGuardian),
     escrow.hasRole(ethers.id('FEE_MANAGER_ROLE'), roles.admin),
+    provider.getTransaction(manifest.contract.deploymentTxHash),
     provider.getTransactionReceipt(manifest.contract.deploymentTxHash),
   ])
 
@@ -148,6 +178,15 @@ async function main() {
   check('treasury_role', treasuryRole === true)
   check('pauser_role', pauserRole === true)
   check('fee_manager_role', feeManagerRole === true)
+  for (const [name, passed] of Object.entries(
+    deploymentTransactionChecks(
+      deploymentTransaction,
+      manifest,
+      expectedDeployment.data
+    )
+  )) {
+    check(name, passed)
+  }
   check('deployment_receipt_present', Boolean(receipt))
   if (receipt) {
     check(
@@ -185,7 +224,11 @@ async function main() {
   if (!output.passed) process.exitCode = 1
 }
 
-main().catch((error) => {
-  console.error('Deployment verification failed:', error.message || error)
-  process.exitCode = 1
-})
+if (require.main === module) {
+  main().catch((error) => {
+    console.error('Deployment verification failed:', error.message || error)
+    process.exitCode = 1
+  })
+}
+
+module.exports = { deploymentTransactionChecks }

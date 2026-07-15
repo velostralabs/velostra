@@ -294,7 +294,7 @@ export function evaluateCatchup({
   const startCursor = bigint(evidence?.startCursorBlock)
   const safeHead = bigint(evidence?.safeHeadBlock)
   const finalCursor = bigint(evidence?.finalCursorBlock)
-  const ranges = evidence?.queriedRanges ?? []
+  const ranges = Array.isArray(evidence?.queriedRanges) ? evidence.queriedRanges : []
   let expectedFrom =
     startCursor === undefined ? undefined : startCursor + 1n
   let contiguous = Array.isArray(ranges) && ranges.length > 0
@@ -330,11 +330,18 @@ export function evaluateCatchup({
       safeHead !== undefined &&
       finalCursor >= safeHead
   )
+  const cursorCheckpoints = evidence?.cursorCheckpoints
+  const checkpointsMatch =
+    Array.isArray(cursorCheckpoints) &&
+    cursorCheckpoints.length === ranges.length &&
+    ranges.every(
+      (range, index) =>
+        bigint(cursorCheckpoints[index]) !== undefined &&
+        bigint(cursorCheckpoints[index]) === bigint(range?.toBlock)
+    )
   check(
     'cursor_checkpoints',
-    Array.isArray(evidence?.cursorCheckpoints) &&
-      evidence.cursorCheckpoints.length === ranges.length &&
-      bigint(evidence.cursorCheckpoints.at(-1)) === finalCursor
+    checkpointsMatch && bigint(cursorCheckpoints.at(-1)) === finalCursor
   )
   check('restart_resume', evidence?.restart?.resumedFromCheckpoint === true)
   check('restart_observed', evidence?.restart?.workerRestarted === true)

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
+import { validateCanaryPolicy } from './phase3-policy.mjs'
 
 export const PHASE3_SCHEMA_VERSION = 1
 export const PHASE3_CHAIN_ID = 4663
@@ -14,6 +15,25 @@ const SHA256 = /^[a-f0-9]{64}$/
 const TX_HASH = /^0x[a-f0-9]{64}$/i
 const FULL_COMMIT = /^[a-f0-9]{40}$/i
 const IMAGE_DIGEST = /^sha256:[a-f0-9]{64}$/
+
+const LOCKFILE_PATHS = [
+  'package-lock.json',
+  'server/package-lock.json',
+  'contracts/package-lock.json',
+]
+const RELEASE_TOOL_PATHS = [
+  'scripts/lib/phase3-release.mjs',
+  'scripts/lib/phase3-policy.mjs',
+  'scripts/prepare-phase3-release.mjs',
+  'scripts/validate-phase3-release.mjs',
+  'scripts/lib/phase3-deployment.mjs',
+  'scripts/plan-phase3-deployment.mjs',
+  'scripts/finalize-phase3-deployment.mjs',
+  'scripts/lib/phase3-gates.mjs',
+  'scripts/evaluate-phase3-readiness.mjs',
+  'scripts/evaluate-phase3-canary.mjs',
+  'config/phase3-release-manifest.schema.json',
+]
 
 function canonicalValue(value) {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') return value
@@ -127,7 +147,85 @@ export function validAddress(value) {
 function check(condition, failures, message) {
   if (!condition) failures.push(message)
 }
+const AUTHORITY_ROLES = [
+  'DEFAULT_ADMIN',
+  'PAUSER',
+  'FEE_MANAGER',
+  'SETTLER',
+  'TREASURY',
+]
 
+export function validateReleaseAuthorityPolicy(policy, context = {}) {
+  const failures = []
+  const checkPolicy = (condition, message) => {
+    if (!condition) failures.push(message)
+  }
+  checkPolicy(policy?.policy_version === 1, 'authority policy version must be 1')
+  checkPolicy(
+    typeof policy?.environment === 'string' &&
+      /^[a-z0-9][a-z0-9-]{1,31}$/.test(policy.environment),
+    'authority policy environment is invalid'
+  )
+  checkPolicy(
+    typeof policy?.change_ticket === 'string' &&
+      policy.change_ticket.length >= 3 &&
+      policy.change_ticket.length <= 128,
+    'authority policy change ticket is invalid'
+  )
+  const roles = Array.isArray(policy?.roles) ? policy.roles : []
+  checkPolicy(roles.length === AUTHORITY_ROLES.length, 'authority policy must contain five roles')
+  const byRole = new Map()
+  for (const entry of roles) {
+    checkPolicy(AUTHORITY_ROLES.includes(entry?.role), 'authority policy contains an unknown role')
+    checkPolicy(!byRole.has(entry?.role), 'authority policy contains a duplicate role')
+    if (entry?.role) byRole.set(entry.role, entry)
+    checkPolicy(validAddress(entry?.principal), 'authority principal is invalid for ' + entry?.role)
+    checkPolicy(Boolean(entry?.owner && entry.owner.length >= 3), 'authority owner is invalid for ' + entry?.role)
+    checkPolicy(Boolean(entry?.escalation && entry.escalation.length >= 3), 'authority escalation is invalid for ' + entry?.role)
+    if (entry?.role === 'SETTLER') {
+      checkPolicy(entry?.principal_type === 'restricted-signer', 'SETTLER must use a restricted signer')
+      checkPolicy(entry?.approval_threshold === 1, 'SETTLER approval threshold must be one')
+    } else {
+      checkPolicy(entry?.principal_type === 'multisig', entry?.role + ' must use a multisig')
+      checkPolicy(
+        Number.isInteger(entry?.approval_threshold) && entry.approval_threshold >= 2,
+        entry?.role + ' multisig threshold must be at least two'
+      )
+    }
+  }
+  for (const role of AUTHORITY_ROLES) {
+    checkPolicy(byRole.has(role), 'authority policy is missing ' + role)
+  }
+
+  if (context.stage !== undefined && context.stage !== 'preparation') {
+    checkPolicy(
+      policy?.environment === context.environment,
+      'authority policy environment differs from release environment'
+    )
+    checkPolicy(
+      policy?.change_ticket === context.changeTicket,
+      'authority policy ticket differs from release authorization'
+    )
+    const expected = {
+      DEFAULT_ADMIN: context.constructor?.roles?.admin,
+      FEE_MANAGER: context.constructor?.roles?.admin,
+      SETTLER: context.constructor?.roles?.settler,
+      TREASURY: context.constructor?.roles?.treasury,
+      PAUSER: context.constructor?.roles?.pauseGuardian,
+    }
+    for (const [role, principal] of Object.entries(expected)) {
+      checkPolicy(
+        addressLower(byRole.get(role)?.principal) === addressLower(principal),
+        'authority principal differs from contract constructor for ' + role
+      )
+    }
+  }
+  return { passed: failures.length === 0, failures }
+}
+
+function addressLower(value) {
+  return typeof value === 'string' ? value.toLowerCase() : ''
+}
 function validateConstructor(constructor, failures) {
   check(
     validAddress(constructor?.settlementToken),
@@ -217,6 +315,34 @@ export async function createPhase3Manifest({
   if (!Array.isArray(artifact.abi) || !/^0x[a-f0-9]+$/i.test(artifact.bytecode ?? '')) {
     throw new Error('VelostraEscrow build artifact is missing ABI or bytecode')
   }
+  const [canaryPolicyValue, authorityPolicyValue] = await Promise.all([
+    readJson(repositoryPath(repositoryRoot, input.policies.canary)),
+    readJson(repositoryPath(repositoryRoot, input.policies.authority)),
+  ])
+  const authorityPolicyResult = validateReleaseAuthorityPolicy(
+    authorityPolicyValue,
+    {
+      stage: input.stage,
+      environment: input.environment,
+      changeTicket: input.authorization?.changeTicket,
+      constructor: input.contract.constructor,
+    }
+  )
+  if (!authorityPolicyResult.passed) {
+    throw new Error(
+      'Invalid Phase 3 authority policy:\n- ' + authorityPolicyResult.failures.join('\n- ')
+    )
+  }
+  const canaryPolicyResult = validateCanaryPolicy(
+    canaryPolicyValue,
+    input.stage,
+    input.environment
+  )
+  if (!canaryPolicyResult.passed) {
+    throw new Error(
+      'Invalid Phase 3 canary policy:\n- ' + canaryPolicyResult.failures.join('\n- ')
+    )
+  }
 
   const [
     source,
@@ -234,23 +360,12 @@ export async function createPhase3Manifest({
     collectMigrations(repositoryRoot),
   ])
 
-  const lockfiles = await Promise.all([
-    fileEntry(repositoryRoot, 'package-lock.json'),
-    fileEntry(repositoryRoot, 'server/package-lock.json'),
-    fileEntry(repositoryRoot, 'contracts/package-lock.json'),
-  ])
-  const releaseTools = await Promise.all([
-    fileEntry(repositoryRoot, 'scripts/lib/phase3-release.mjs'),
-    fileEntry(repositoryRoot, 'scripts/prepare-phase3-release.mjs'),
-    fileEntry(repositoryRoot, 'scripts/validate-phase3-release.mjs'),
-    fileEntry(repositoryRoot, 'scripts/lib/phase3-deployment.mjs'),
-    fileEntry(repositoryRoot, 'scripts/plan-phase3-deployment.mjs'),
-    fileEntry(repositoryRoot, 'scripts/finalize-phase3-deployment.mjs'),
-    fileEntry(repositoryRoot, 'scripts/lib/phase3-gates.mjs'),
-    fileEntry(repositoryRoot, 'scripts/evaluate-phase3-readiness.mjs'),
-    fileEntry(repositoryRoot, 'scripts/evaluate-phase3-canary.mjs'),
-    fileEntry(repositoryRoot, 'config/phase3-release-manifest.schema.json'),
-  ])
+  const lockfiles = await Promise.all(
+    LOCKFILE_PATHS.map((entry) => fileEntry(repositoryRoot, entry))
+  )
+  const releaseTools = await Promise.all(
+    RELEASE_TOOL_PATHS.map((entry) => fileEntry(repositoryRoot, entry))
+  )
   const externalEvidence = {
     phase2: await optionalEntry(repositoryRoot, input.externalEvidence?.phase2),
     independentReview: await optionalEntry(
@@ -347,8 +462,9 @@ function validateApproval(authorization, failures) {
     failures,
     'two operator approvals are required'
   )
+  const approvalEntries = Array.isArray(approvals) ? approvals : []
   const names = new Set()
-  for (const [index, approval] of (approvals ?? []).entries()) {
+  for (const [index, approval] of approvalEntries.entries()) {
     check(
       approval?.decision === 'approve',
       failures,
@@ -367,7 +483,7 @@ function validateApproval(authorization, failures) {
     if (approval?.name) names.add(approval.name.toLowerCase())
   }
   check(
-    names.size === (approvals ?? []).length,
+    names.size === approvalEntries.length,
     failures,
     'operator approvals must be from distinct people'
   )
@@ -406,6 +522,16 @@ export async function validatePhase3Manifest({
   )
   validateConstructor(manifest?.contract?.constructor, failures)
   check(validAddress(manifest?.contract?.deployer), failures, 'deployment-only deployer must be a non-zero address')
+  check(
+    manifest?.contract?.source === manifest?.repository?.source?.path,
+    failures,
+    'contract source path differs from repository source entry'
+  )
+  check(
+    manifest?.contract?.artifact === manifest?.repository?.contractArtifact?.path,
+    failures,
+    'contract artifact path differs from repository artifact entry'
+  )
 
   const { integrity: _integrity, ...body } = manifest ?? {}
   check(
@@ -460,12 +586,52 @@ export async function validatePhase3Manifest({
     failures,
     'authority policy'
   )
+  try {
+    const authorityPolicy = await readJson(
+      repositoryPath(repositoryRoot, manifest?.policies?.authority?.path)
+    )
+    const authorityPolicyResult = validateReleaseAuthorityPolicy(
+      authorityPolicy,
+      {
+        stage: manifest?.stage,
+        environment: manifest?.environment,
+        changeTicket: manifest?.authorization?.changeTicket,
+        constructor: manifest?.contract?.constructor,
+      }
+    )
+    for (const failure of authorityPolicyResult.failures) {
+      failures.push('authority policy: ' + failure)
+    }
+  } catch (error) {
+    failures.push(
+      'authority policy content is invalid: ' +
+        (error instanceof Error ? error.message : String(error))
+    )
+  }
   await validateFileEntry(
     repositoryRoot,
     manifest?.policies?.canary,
     failures,
     'canary policy'
   )
+  try {
+    const canaryPolicy = await readJson(
+      repositoryPath(repositoryRoot, manifest?.policies?.canary?.path)
+    )
+    const canaryPolicyResult = validateCanaryPolicy(
+      canaryPolicy,
+      manifest?.stage,
+      manifest?.environment
+    )
+    for (const failure of canaryPolicyResult.failures) {
+      failures.push('canary policy: ' + failure)
+    }
+  } catch (error) {
+    failures.push(
+      'canary policy content is invalid: ' +
+        (error instanceof Error ? error.message : String(error))
+    )
+  }
   for (const [index, entry] of (manifest?.repository?.migrations ?? []).entries()) {
     await validateFileEntry(
       repositoryRoot,
@@ -519,6 +685,30 @@ export async function validatePhase3Manifest({
       JSON.stringify(expectedMigrations),
     failures,
     'manifest migration set differs from repository journal'
+  )
+  const expectedLockfiles = await Promise.all(
+    LOCKFILE_PATHS.map((entry) => fileEntry(repositoryRoot, entry))
+  ).catch((error) => {
+    failures.push(error instanceof Error ? error.message : String(error))
+    return []
+  })
+  check(
+    JSON.stringify(manifest?.repository?.lockfiles ?? []) ===
+      JSON.stringify(expectedLockfiles),
+    failures,
+    'manifest lockfile set differs from required release lockfiles'
+  )
+  const expectedReleaseTools = await Promise.all(
+    RELEASE_TOOL_PATHS.map((entry) => fileEntry(repositoryRoot, entry))
+  ).catch((error) => {
+    failures.push(error instanceof Error ? error.message : String(error))
+    return []
+  })
+  check(
+    JSON.stringify(manifest?.repository?.releaseTools ?? []) ===
+      JSON.stringify(expectedReleaseTools),
+    failures,
+    'manifest release-tool set differs from required release tools'
   )
 
   if (mode === 'preparation') {

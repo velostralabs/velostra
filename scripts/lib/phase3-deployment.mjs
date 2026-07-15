@@ -1,5 +1,8 @@
 import { encodeDeployData, getAddress, keccak256 } from 'viem'
 import { sealManifest, sha256Canonical, validAddress } from './phase3-release.mjs'
+import { validateCanaryPolicy } from './phase3-policy.mjs'
+
+export { validateCanaryPolicy }
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -9,85 +12,13 @@ function positiveInteger(value) {
   return Number.isInteger(value) && value > 0
 }
 
-export function validateCanaryPolicy(policy, stage = 'preparation') {
-  const failures = []
-  const check = (condition, message) => {
-    if (!condition) failures.push(message)
-  }
-  check(policy?.schemaVersion === 1, 'canary policy schemaVersion must be 1')
-  check(policy?.kind === 'velostra-phase3-canary-policy', 'canary policy kind is invalid')
-  if (stage === 'preparation') {
-    check(policy?.enabled === false, 'preparation canary policy must be disabled')
-  } else {
-    check(policy?.enabled === true, 'authorized canary policy must be enabled')
-  }
-  for (const name of ['wallets', 'agents', 'builders']) {
-    check(
-      Array.isArray(policy?.allowlists?.[name]) && policy.allowlists[name].length > 0,
-      name + ' allowlist must not be empty'
-    )
-  }
-  check(positiveInteger(policy?.limits?.durationSeconds), 'canary duration must be positive')
-  check(positiveInteger(policy?.limits?.maxCalls), 'canary maxCalls must be positive')
-  for (const name of [
-    'maxGrossPerCallMinor',
-    'maxGrossPerWalletMinor',
-    'maxGrossTotalMinor',
-  ]) {
-    check(/^[1-9]\d*$/.test(policy?.limits?.[name] ?? ''), name + ' must be positive')
-  }
-  if (
-    /^[1-9]\d*$/.test(policy?.limits?.maxGrossPerCallMinor ?? '') &&
-    /^[1-9]\d*$/.test(policy?.limits?.maxGrossPerWalletMinor ?? '') &&
-    /^[1-9]\d*$/.test(policy?.limits?.maxGrossTotalMinor ?? '')
-  ) {
-    const perCall = BigInt(policy.limits.maxGrossPerCallMinor)
-    const perWallet = BigInt(policy.limits.maxGrossPerWalletMinor)
-    const total = BigInt(policy.limits.maxGrossTotalMinor)
-    check(perCall <= perWallet && perWallet <= total, 'canary gross limits are inconsistent')
-  }
-  check(
-    policy?.thresholds?.maxUnexplainedDriftMinor === '0',
-    'unexplained drift threshold must be zero'
-  )
-  check(
-    Number.isInteger(policy?.thresholds?.maxCursorLagBlocks) &&
-      policy.thresholds.maxCursorLagBlocks >= 0,
-    'cursor lag threshold is invalid'
-  )
-  check(
-    typeof policy?.thresholds?.maxErrorRate === 'number' &&
-      policy.thresholds.maxErrorRate >= 0 &&
-      policy.thresholds.maxErrorRate <= 1,
-    'error rate threshold is invalid'
-  )
-  for (const action of [
-    'disable-paid-writes',
-    'preserve-builder-claims',
-    'keep-reconciliation-running',
-    'page-incident-owner',
-  ]) {
-    check(policy?.stopActions?.includes(action), 'required stop action is missing: ' + action)
-  }
-  check(
-    policy?.rollback?.destructiveDatabaseRollbackAllowed === false,
-    'destructive database rollback must be forbidden'
-  )
-  check(policy?.rollback?.preserveClaims === true, 'rollback must preserve claims')
-  check(
-    policy?.rollback?.preserveReconciliation === true,
-    'rollback must preserve reconciliation'
-  )
-  return { passed: failures.length === 0, failures }
-}
-
 export function createDeploymentPlan({
   manifest,
   artifact,
   canaryPolicy,
   generatedAt = new Date().toISOString(),
 }) {
-  const policyResult = validateCanaryPolicy(canaryPolicy, manifest.stage)
+  const policyResult = validateCanaryPolicy(canaryPolicy, manifest.stage, manifest.environment)
   if (!policyResult.passed) {
     throw new Error('Invalid canary policy:\n- ' + policyResult.failures.join('\n- '))
   }

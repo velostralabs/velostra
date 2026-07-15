@@ -178,6 +178,28 @@ const gapResult = evaluateCatchup({
 assert.equal(gapResult.passed, false)
 assert(gapResult.failures.includes('ranges_contiguous'))
 
+const malformedRangeEvidence = structuredClone(catchupEvidence)
+malformedRangeEvidence.queriedRanges = {}
+const malformedRangeResult = evaluateCatchup({
+  release: deployedManifest.release,
+  evidence: malformedRangeEvidence,
+  maxBlockRange: 2_000,
+  catchUpSloMs: 900_000,
+})
+assert.equal(malformedRangeResult.passed, false)
+assert(malformedRangeResult.failures.includes('ranges_contiguous'))
+
+const checkpointEvidence = structuredClone(catchupEvidence)
+checkpointEvidence.cursorCheckpoints[0] = '2999'
+const checkpointResult = evaluateCatchup({
+  release: deployedManifest.release,
+  evidence: checkpointEvidence,
+  maxBlockRange: 2_000,
+  catchUpSloMs: 900_000,
+})
+assert.equal(checkpointResult.passed, false)
+assert(checkpointResult.failures.includes('cursor_checkpoints'))
+
 const flowCounts = Object.fromEntries(policy.requiredFlow.map((flow) => [flow, 1]))
 const summary = {
   schemaVersion: 1,

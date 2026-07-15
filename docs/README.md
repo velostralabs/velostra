@@ -4,9 +4,10 @@
 
 Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and the historical
 [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 0-3 repository preparation is
-complete and has passed internal engineering/CI audit. Phase 3 execution remains
-deliberately gated on independent review, managed-staging evidence, immutable release
-approval, and explicit operator broadcast; no mainnet deployment is recorded.
+complete and has passed internal engineering/CI audit. Phase 4 is the next non-mainnet
+repository focus. Phase 3 execution and any closed-beta activation remain deliberately
+gated on independent review, managed-staging evidence, immutable release approval, and
+explicit operator broadcast; no mainnet deployment is recorded.
 
 | Document | Purpose |
 |---|---|
@@ -43,8 +44,9 @@ or sequencing changes require a roadmap update.
 ## Scope statement
 
 The repository has passed its automated and internal engineering audit, which closes
-Phase 0-3 repository preparation and clears continued non-mainnet development. This is not a
-claim that an independent third-party audit or production approval has occurred.
+Phase 0-3 repository preparation and clears continued non-mainnet development. This is
+not a claim that an independent third-party audit or production approval has occurred.
 Managed infrastructure, signer custody, operator alerts, real-wallet staging,
-load/outage/PITR drills, and a 72-hour soak remain mainnet release prerequisites;
-they do not block continued product development Phase 3 execution remains gated.
+load/outage/PITR drills, and a 72-hour soak remain mainnet release prerequisites.
+They do not block Phase 4 repository work; Phase 3 execution, closed-beta activation,
+and all real-value use remain gated.

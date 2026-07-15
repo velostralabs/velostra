@@ -1,41 +1,47 @@
 # Server test quick reference
 
-> Last verified against server scripts and reconciliation coverage: 2026-07-15.
-> Full setup, browser release QA, and remaining coverage gaps:
-> [docs/TESTING.md](../../docs/TESTING.md).
+> Last verified: 2026-07-15. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
 
-Run from `server/`:
+Run from repository root:
 
 ```bash
-npm run build
-npm run test:auth
-npm run test:platform
-npm run test:money
+npm --prefix server run build
+npm --prefix server run db:check
+npm --prefix server run test:config
+npm --prefix server run test:auth
+npm --prefix server run test:ssrf
+npm --prefix server run test:http-security
+npm --prefix server run test:secrets
+npm --prefix server run test:admin-policy
+npm --prefix server run test:money-unit
+npm test --prefix contracts
 ```
 
-- `test:auth`: no DB/network; real EVM key signatures, replay, and spoof rejection.
-- `test:platform`: requires running API, Postgres, Redis, mock agent on `:9099`, and
-  `TEST_ADMIN_PK` matching `ADMIN_WALLET`.
-- `test:money`: requires disposable Postgres with current schema. It starts its own
-  Ganache, deploys contracts, starts API/mock agent, and runs reconciliation.
-
-Prepare disposable money-loop DB before the test:
+Disposable Postgres:
 
 ```bash
-npm run db:push -- --force
-npm run test:money
+export DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/velostra_test
+npm --prefix server run db:migrate
+npm --prefix server run test:migrations
+npm --prefix server run test:money
 ```
 
-Reconciliation commands:
+`test:money` starts its own Ganache, deploys the contract, starts the real API and
+HMAC mock agent, and runs the real worker. It covers missed top-up/claim reports,
+post-chain DB failure, exact call recovery, receipt ambiguity, lost broadcast
+response without a DB hash, idempotent retroactive scan/cursor preservation, drift,
+and concurrent live/worker exactly-once finalization.
+
+`test:platform` is a legacy running-stack smoke and requires Postgres, Redis, API,
+mock agent, and `TEST_ADMIN_PK` for a bootstrap/admin wallet. It is not part of the
+self-contained money-loop gate.
+
+Reconciliation:
 
 ```bash
-npm run reconcile
-npm run reconcile -- --from-block=123456 --to-block=125000
-npm run reconcile:worker
+npm --prefix server run reconcile
+npm --prefix server run reconcile -- --from-block=123456 --to-block=125000
+npm --prefix server run reconcile:worker
 ```
 
-Coverage includes missed top-up/claim reports, forced DB rollback after confirmed
-paid settlement, exact call recovery, idempotent retroactive rescan, drift check,
-and concurrent live-request/worker finalization with exactly-once ledger effects.
-
-Never point destructive schema setup or E2E suites at production data.
+Never run integration schema/data setup against staging or production.

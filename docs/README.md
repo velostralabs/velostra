@@ -1,45 +1,43 @@
-# Dokumentasi Velostra
+# Velostra documentation
 
 > Last verified against the workspace: 2026-07-15.
 
-Mulai dari [STATUS.md](./STATUS.md) untuk posisi aktual, lalu
-[ROADMAP.md](./ROADMAP.md) untuk urutan kerja berikutnya. Dokumen lain menjelaskan
-cara sistem bekerja dan cara mengoperasikannya. Snapshot ini juga mencakup Crystal V
-brand system, semantic routing, dan provider picker MetaMask/injected terbaru.
+Start with [STATUS.md](./STATUS.md), then [ROADMAP.md](./ROADMAP.md). Phase 1 code is
+locally complete; independent audit remains the release gate. No mainnet deployment
+is recorded.
 
-| Dokumen | Isi |
+| Document | Purpose |
 |---|---|
-| [STATUS.md](./STATUS.md) | Apa yang sudah selesai, terverifikasi, belum selesai, dan blocker production. |
-| [ROADMAP.md](./ROADMAP.md) | Flow kerja dari foundation yang sudah selesai sampai mainnet, beta, dan scale. |
-| [QUICKSTART.md](./QUICKSTART.md) | Menyalakan frontend, API, Postgres, Redis, worker, wallet provider, dan local verification. |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Batas authority, data flow, paid-call settlement, reconciliation, dan race safety. |
-| [API_REFERENCE.md](./API_REFERENCE.md) | Route Express yang benar-benar tersedia beserta input, output, dan error penting. |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | Tabel Drizzle, relasi, unique constraint, cursor, dan raw chain-event ledger. |
-| [SMART_CONTRACT.md](./SMART_CONTRACT.md) | ABI `VelostraEscrow`, event correlation, economics, test, dan risiko pre-mainnet. |
-| [BUILDER_GUIDE.md](./BUILDER_GUIDE.md) | Cara builder mendaftarkan agent dan memverifikasi request HMAC. |
-| [SECURITY.md](./SECURITY.md) | Wallet/provider boundary, key/secrets, replay protection, SSRF, dan hardening checklist. |
-| [TESTING.md](./TESTING.md) | Test matrix, browser/wallet QA, reconciliation/race coverage, dan coverage gap. |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Topologi production, env, provider smoke, release order, worker operations, dan rollback. |
-| [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | Crystal V identity, typography, wallet UX, responsive layout, motion, 3D, accessibility, dan performance. |
+| [STATUS.md](./STATUS.md) | Current truth, evidence, and blockers. |
+| [ROADMAP.md](./ROADMAP.md) | Ordered phases and granular Phase 1 completion. |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker, and failures. |
+| [THREAT_MODEL.md](./THREAT_MODEL.md) | Assets, actors, invariants, threats, controls, residual risks. |
+| [AUDIT_READINESS.md](./AUDIT_READINESS.md) | External scope, frozen decisions, commands, findings policy. |
+| [OPERATIONS.md](./OPERATIONS.md) | Worker, incidents, one-hour catch-up, backups, secrets, successor. |
+| [SECURITY.md](./SECURITY.md) | Implemented controls and remaining production gates. |
+| [SMART_CONTRACT.md](./SMART_CONTRACT.md) | Roles, ABI behavior, solvency, migration, and test evidence. |
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 17 tables, money/outbox invariants, migrations, indexes, restore. |
+| [API_REFERENCE.md](./API_REFERENCE.md) | Current HTTP routes, RBAC, errors, and HMAC protocol. |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Production topology, configuration, release order, and gates. |
+| [TESTING.md](./TESTING.md) | Automated/CI matrix, money-loop, migration, and restore evidence. |
+| [QUICKSTART.md](./QUICKSTART.md) | Safe local setup and verification commands. |
+| [BUILDER_GUIDE.md](./BUILDER_GUIDE.md) | Builder onboarding, HMAC, egress, recovery, secret lifecycle. |
+| [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | Crystal V visual system, interaction, motion, accessibility. |
 
-## Aturan source of truth
+## Source-of-truth order
 
-Jika dokumen dan kode berbeda, urutan authority-nya adalah:
+1. `contracts/VelostraEscrow.sol` for onchain authority/state/events;
+2. `server/src/db/schema.ts` and `server/drizzle` for persisted invariants;
+3. `server/src/lib/gateway/settlement.ts` and `server/src/routes` for live effects;
+4. `server/src/jobs/reconcile.ts` for chain repair/cursor/drift;
+5. frontend source for wallet/provider and product behavior;
+6. docs for reviewed explanation and operating policy.
 
-1. `contracts/VelostraEscrow.sol` untuk state dan event onchain;
-2. `server/src/db/schema.ts` untuk schema database;
-3. `server/src/routes/*` untuk HTTP API;
-4. `server/src/jobs/reconcile.ts` untuk recovery behavior;
-5. `src/lib/chain.ts` dan `src/components/WalletButton.tsx` untuk chain/provider wallet;
-6. `src/App.tsx` dan `src/components/RouteManager.tsx` untuk route frontend.
+Behavior changes require matching tests and updates to status/domain docs. Priority
+or sequencing changes require a roadmap update.
 
-Setiap perubahan behavior wajib mengubah test terkait, `STATUS.md`, dan dokumen
-domain terkait. Perubahan prioritas atau scope juga wajib mengubah `ROADMAP.md`.
+## Scope statement
 
-## Batas dokumentasi ini
-
-Dokumen menjelaskan implementasi yang ada, bukan menjanjikan production readiness.
-Contract audit, mainnet deployment, deployment automation, external alert delivery,
-real MetaMask/injected browser-wallet E2E, versioned migrations, dan SDK publik belum
-selesai kecuali statusnya nanti
-diubah secara eksplisit di `STATUS.md`.
+Local passing tests do not equal an independent audit or production approval.
+Managed infrastructure, KMS, alert delivery, real-wallet automation, load/chaos/
+reorg evidence, and staging soak are explicitly Phase 2.

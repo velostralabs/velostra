@@ -1,173 +1,139 @@
-# Status Velostra
+# Velostra status
 
 > Last verified against the workspace: 2026-07-15.
 
-## Executive snapshot
+## Executive status
 
-Velostra sudah memiliki product surface yang responsif, core marketplace API,
-local EVM settlement, dan reconciliation safety net yang menutup gap antara
-receipt onchain dan commit Postgres. Ini adalah foundation yang kuat untuk masuk
-ke hardening, tetapi belum production-ready atau mainnet-ready.
+Velostra Phase 1 implementation is code-complete and locally verified for contract
+authority/solvency, backend trust boundaries, exact financial state, durable
+outbox/reconciliation, migrations/indexes, and backup restore. It is still **not
+mainnet-ready** because independent contract audit and focused backend review have
+not been performed. No mainnet contract deployment is recorded.
 
-| Area | Status | Bukti / catatan |
+| Area | Status | Evidence |
 |---|---|---|
-| Frontend | Selesai untuk current scope | Crystal V identity; clean routes; responsive UI; adaptive 3D; accessible wallet picker; Vite build/lint dan browser smoke pass. |
-| Auth + marketplace | Implemented | EIP-191 login, builder registration, submission, approval, discovery, execution, review, dashboard. |
-| Wallet UX | Implemented, real-wallet E2E pending | First-class MetaMask extension/mobile connector plus EIP-6963/injected discovery for Rainbow, Coinbase, and other browser wallets. |
-| Dependency audit | Review required | API dan contract: 0 production advisories. Web: 6 moderate dari transitive `uuid` di MetaMask connector tree; upstream belum menyediakan fix. |
-| Paid money loop | Implemented di local EVM | Top-up, paid call 90/10, claim, receipt verification, replay protection. |
-| Reconciliation | Implemented dan E2E-tested | Cursor, chunk scan, four events, backfill, retry pending, drift log, retroactive scan. |
-| Paid-call correlation | Implemented | `keccak256(agent_calls.id)` dikirim sebagai `bytes32 callId`. |
-| Race safety | Implemented dan E2E-tested | Live path dan worker berbagi conditional `PROCESSING -> SUCCESS`. |
-| Contract mainnet | Belum | Belum audit, belum final authority design, belum deploy. |
-| Production operations | Sebagian | GitHub CI memverifikasi web, API/auth, contract, dan money loop; deployment CD, migrations, external alerts, secrets manager, dan incident runbook belum lengkap. |
+| Product frontend | Current scope complete | canonical routes, Crystal V identity, wallet picker, desktop/browser QA, lint/build |
+| Contract design | Frozen for external review | separated roles, pause, collateral guard, rotation, successor migration, 10 E2E groups |
+| Auth/HTTP security | Implemented | atomic Redis nonce, bound challenge, strict CORS/cookies/headers/body, stable errors |
+| Builder egress/secrets | Implemented | pinned SSRF-safe HTTP, caps/timeouts, AES-GCM envelopes, rotate/revoke |
+| Admin | Implemented | database RBAC, granular permissions, audit log, final-admin guard |
+| Financial ledger | Implemented | exact 6-decimal arithmetic, reservations, constraints, no long DB transaction |
+| Outbox/reconciliation | Implemented | seven states, four events, hash-known/hash-unknown recovery, drift, cursor safety |
+| Database release path | Implemented | five versioned migrations, fresh/upgrade tests, indexes, restore verifier |
+| CI | Implemented | web, backend security, contract, migration/money-loop, dump/restore gates |
+| External audit | Open blocker | audit packet ready; independent reviewer/sign-off still required |
+| Production staging/observability | Phase 2 | managed services, KMS, alerts, chaos/load/reorg, wallet automation, soak |
 
-## Foundation yang sudah selesai
+## Phase 1 completed implementation
 
-### Product dan frontend
+### Contract
 
-- Landing page premium, marketplace, agent detail, dashboard, builder console,
-  admin console, protocol docs, dan not-found page.
-- Canonical URL `/system`, `/proof`, `/economics`, `/marketplace`,
-  `/agents/:slug`, `/dashboard`, `/builder`, `/admin`, `/docs`.
-- Crystal V konsisten di navigation, footer, favicon/manifest, public launch assets,
-  brand kit, dan animated GitHub README hero dengan fixed aligned geometry.
-- `Connect Wallet` membuka provider picker yang memakai unique dialog IDs,
-  memprioritaskan MetaMask extension/mobile, mendeduplikasi provider, dan tetap
-  menampilkan Rainbow/Coinbase/wallet browser lain melalui EIP-6963/injected.
-- Wallet picker memiliki error surface, pending state, outside-click dan Escape
-  dismissal; aplikasi tidak pernah membaca atau menyimpan private key.
-- Legacy `/#proof`-style URL dikonversi ke semantic path; `/agent/:slug`
-  redirect ke `/agents/:slug`.
-- Marketplace search/category/sort tersimpan di query string dan dinormalisasi.
-- Route lazy-loading, transition, scroll restoration, mobile menu, skip link,
-  focus styling, form labels, responsive breakpoints, dan reduced motion.
-- WebGL execution artifact hanya diaktifkan pada viewport yang cukup besar tanpa
-  reduced-motion; mobile/reduced-motion memakai poster fallback.
+- `AccessControlDefaultAdminRules` with a two-day default-admin transfer delay.
+- Dedicated settler, treasury, pause guardian, fee manager, and governance roles.
+- Deploy script requires a deployed admin multisig and four distinct role addresses.
+- Exact 6-decimal token policy and fee-on-transfer deposit rejection.
+- Explicit builder/platform liabilities and pre-credit solvency guard.
+- Pause blocks new risk while keeping existing builder claims available.
+- Settler grant/revoke rotation.
+- One-time successor declaration permanently deprecates new risk.
+- Treasury can migrate only unencumbered liquidity; predecessor retains all
+  outstanding liability backing.
+- `EarningsCredited` carries the exact `bytes32 callId`.
 
-### API dan gateway
+### Backend trust boundaries
 
-- Wallet auth EIP-191 dengan single-use nonce dan JWT cookie.
-- Builder registration langsung memperbarui session claim `is_builder`.
-- Agent endpoint menerima JSON bertanda HMAC dan memiliki timeout configurable.
-- Free tier, Postgres fallback, Redis rate limit, paid balance check, review,
-  moderation, dashboard, dan stats tersedia.
-- Top-up dan claim API memverifikasi receipt, escrow address, sender, event,
-  amount, dan unique transaction hash.
+- Redis-backed, atomic, multi-instance wallet nonce consume.
+- Domain/URI/chain/time-bound signed challenge.
+- Production secure cookie, exact-origin CORS, proxy policy, body cap, request ID,
+  security headers, and machine-readable error codes.
+- DNS-pinned builder egress with private/reserved rejection, redirect revalidation,
+  port/scheme policy, timeout, and response cap.
+- AES-256-GCM agent secrets with version/key ID, old-key overlap, rotate/revoke, and
+  re-encryption tool.
+- Database RBAC and admin audit trail; production plaintext-secret and admin
+  readiness checks.
+- Production config fails closed for unsafe DB/Redis/origin/auth/signer/chain/
+  escrow/reconciliation settings.
 
-### Contract dan money loop
+### Money and recovery
 
-- `VelostraEscrow.sol` mendukung deposit, builder initialization,
-  correlated earnings credit, claim, platform withdrawal, dan fee update.
-- Economics default 90% builder / 10% platform; fee hard-cap 50%.
-- `creditBuilderEarnings(address,uint256,bytes32)` menolak zero/reused call ID.
-- Contract suite menjalankan 11 test group terhadap Ganache/local EVM.
+- Canonical six-decimal integer arithmetic mirrors Solidity fee rounding.
+- `credit_balances.reserved_usd` plus database nonnegative/within-balance checks.
+- Call + reservation + outbox commit before builder/RPC side effects.
+- Builder HTTP and chain waits occur without an open SQL transaction/row lock.
+- Outbox states: PREPARED, READY, SUBMITTED, AMBIGUOUS, CONFIRMED, APPLIED, FAILED.
+- Tx hash persists before receipt polling when available.
+- Receipt timeout and post-chain DB rollback recover automatically.
+- Lost broadcast response with no DB hash recovers from the exact correlated event.
+- Live path/worker race shares conditional PROCESSING-to-SUCCESS and applies one
+  debit, one builder credit, one agent update, and one ledger row.
+- Retroactive scans are idempotent and cannot jump the normal cursor over a gap.
+- Deposit, claim, earnings, and platform-withdrawal drift is reported each run.
 
-### Reconciliation dan consistency
+### Database and operations
 
-- `chain_sync_state` menyimpan cursor per `chain_id + contract_address`.
-- `chain_events` menyimpan raw event dengan unique `(tx_hash, log_index)`.
-- Worker mengindeks `Deposit`, `EarningsCredited`, `Claimed`, dan
-  `PlatformRevenueWithdrawn` sampai safe head setelah confirmation delay.
-- Event yang belum dapat dipetakan tetap pending dan dicoba lagi.
-- `EarningsCredited.callId` memulihkan call spesifik, user debit, builder credit,
-  transaction link, agent totals, output, dan final status.
-- Live path dan worker memakai conditional update yang sama. Hanya pemenang yang
-  boleh menjalankan side effect ledger/stat; jalur yang kalah menjadi no-op.
-- Drift log membandingkan total event onchain dengan ledger Postgres per deployment.
-- Manual rescan dan overlapping execution aman karena unique constraints dan
-  conditional finalization.
+- Versioned migration baseline and Phase 1 migrations.
+- Query indexes for marketplace/history/pending/admin/ledger/event paths.
+- Fresh and upgrade migration paths verified against PostgreSQL.
+- Actual disposable PostgreSQL dump/clean restore verified exact financial data,
+  outbox states, migration history, constraints, and indexes.
+- Threat model, incident/worker/backup/secret/successor runbooks, and external audit
+  packet are in `docs/`.
 
-## Yang belum selesai
+## Verification evidence
 
-### Blocker sebelum mainnet
+Passed during the current Phase 1 work:
 
-1. Finalisasi authority model contract. Saat ini `creditBuilderEarnings`, fee
-   update, dan withdrawal sama-sama `onlyOwner`; backend hot signer dan multisig
-   owner tidak dapat dipisahkan tanpa perubahan contract.
-2. Buat durable settlement-attempt/outbox state. Current signer helper baru
-   mengembalikan tx hash setelah receipt selesai; RPC error setelah broadcast dapat
-   membuat live path menandai call `FAILED` walaupun tx kemudian confirmed. Hash
-   harus disimpan segera setelah submit dan worker harus menangani state ambigu.
-3. Hindari long database transaction/row lock selama builder HTTP call dan chain
-   wait; gunakan reservation/state machine yang tetap exactly-once.
-4. Independent smart-contract audit dan perbaikan hasil audit.
-5. Review solvency/accounting invariant, pause/emergency control, role separation,
-   dan deployment/migration strategy contract.
-6. SSRF defense untuk builder-controlled `endpoint_url`.
-7. Versioned database migrations; hentikan `db:push` untuk production data.
-8. KMS/secret manager untuk backend signer, JWT secret, database credentials, dan
-   encrypted agent HMAC secrets.
-9. Redis-backed auth nonce, secure production cookie, multi-instance behavior,
-   structured audit log, dan hardened rate limiting.
-10. Production observability: worker cursor lag, pending events, drift, RPC errors,
-    API error rate, key balance/gas, dan alert delivery.
-11. Real browser-wallet E2E pada target chain/config (MetaMask dan injected) serta
-    load, outage, receipt
-    ambiguity, and reorg drills.
+- backend TypeScript build and Drizzle migration check;
+- production-config, auth, SSRF, HTTP security, secret, admin policy, and money
+  unit suites;
+- contract E2E: all 10 Phase 1 groups;
+- migration E2E: fresh + upgrade + constraints + 17 tables + indexes;
+- expanded money-loop E2E, including missed reports, forced post-chain DB failure,
+  live/worker race, known-hash receipt ambiguity, unknown-hash broadcast ambiguity,
+  cursor preservation, exactly-once effects, and zero drift;
+- PostgreSQL dump/restore integrity drill.
 
-### Product/scale gap setelah hardening
+The final full repository regression and dependency audit are run again before the
+owner receives the no-push handoff report.
 
-- SDK JavaScript/Python belum ada di workspace.
-- Agent edit/versioning, builder webhook, analytics time-series, pagination, API
-  versioning, user report creation, dan multi-admin RBAC belum ada.
-- `platform_stats` belum diisi oleh scheduled rollup.
-- Product-verification CI sudah tersedia; preview/staging environment, deployment
-  promotion, dan rollback automation belum dibangun.
+## Honest remaining blockers
 
-## Verification evidence terbaru
+### Final Phase 1 sign-off
 
-Dijalankan ulang pada 2026-07-15 setelah docs audit:
+- Independent contract audit.
+- Independent focused backend review of auth, SSRF, signer, ledger, worker, and
+  migration/recovery behavior.
+- Close all Critical/High; fix or explicitly accept each Medium under the findings
+  policy.
 
-- frontend `npm run lint`: pass;
-- frontend `npm run build`: pass, dengan expected >500 kB warning untuk main dan
-  async 3D chunks;
-- backend `npm run build`: pass;
-- backend `npm run test:auth`: 4 assertions pass;
-- contract `npm test`: seluruh 11 test groups pass di local EVM;
-- API dan contract `npm audit --omit=dev`: zero production advisories;
-- web audit: 6 moderate advisories dari `uuid` `<11.1.1` yang transitif melalui
-  `@metamask/connect-evm`; npm melaporkan belum ada fix, sehingga perlu upstream
-  monitoring dan exploitability/risk review sebelum production;
-- desktop browser smoke pada 10 canonical routes: tidak ada horizontal overflow
-  atau console error; lazy surfaces, marketplace offline fallback, execution tabs,
-  settlement controls, dan MetaMask/injected picker terverifikasi;
-- README hero SVG: XML/viewBox/link target valid dan Crystal V visual render aligned.
+These cannot be truthfully self-certified by the implementation author. The scope,
+commands, frozen decisions, and findings register are ready in
+[AUDIT_READINESS.md](./AUDIT_READINESS.md).
 
-Browser smoke tidak memberi account permission, signature, atau transaction ke
-wallet extension nyata; coverage tersebut tetap release gate Phase 2.
+### Phase 2 before mainnet
 
-`test:money` tidak dijalankan ulang pada docs-only pass ini karena membutuhkan
-Postgres disposable. Coverage recovery/race yang dicatat di atas berasal dari
-suite integration yang sudah ada dan telah digunakan untuk membuktikan flow itu;
-jalankan ulang sebagai release gate setelah disposable DB tersedia.
+- managed Postgres/Redis/RPC and secret-manager/KMS deployment;
+- external metrics/error tracking/alerts and deep readiness;
+- real MetaMask + injected wallet E2E;
+- load/signer nonce pressure, one-hour outage timing, RPC throttle/failover, reorg,
+  and managed PITR drills;
+- 72-hour staging soak with zero unexplained drift.
 
-## Command utama
+## One-hour outage answer
 
-```bash
-# frontend
-npm run lint
-npm run build
+Yes, the worker can catch up from a one-hour block gap without skipping data. It
+uses a persistent cursor, 2,000-block default chunks, timeout, exponential retry,
+adaptive range splitting, and commits only completed contiguous ranges. If RPC
+returns sustained 429/down responses, catch-up safely pauses and resumes from the
+same cursor; recovery time then depends on provider capacity. A dedicated RPC,
+lag alert, and timed Phase 2 drill are required before promising an SLO.
 
-# backend
-cd server
-npm run build
-npm run test:auth
-npm run test:money
+## Next decision
 
-# worker
-npm run reconcile
-npm run reconcile -- --from-block=123456 --to-block=125000
-npm run reconcile:worker
+The next authorized work after this local Phase 1 handoff is either:
 
-# contract
-cd ../contracts
-npm test
-```
+1. engage external reviewers using the ready packet; and/or
+2. begin Phase 2 staging infrastructure without deploying mainnet value.
 
-## Keputusan berikutnya
-
-Pekerjaan berikutnya bukan menambah visual atau fitur acak. Urutan resmi dimulai
-dari Phase 1 di [ROADMAP.md](./ROADMAP.md): freeze mainnet design, pisahkan
-contract roles, harden trust boundaries, buat migration/observability, lalu baru
-production-like staging dan deployment.
+See [ROADMAP.md](./ROADMAP.md).

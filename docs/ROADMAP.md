@@ -1,201 +1,166 @@
-# Roadmap Velostra
+# Velostra roadmap
 
-> Dibuat dari audit codebase pada 2026-07-15. `STATUS.md` adalah snapshot keadaan;
-> dokumen ini adalah urutan eksekusi.
+> Updated from the Phase 1 implementation audit: 2026-07-15.
 
-## Cara memakai roadmap
+## Status model
 
-Kerjakan phase secara berurutan. Item boleh dikerjakan paralel hanya jika tidak
-mengubah invariant phase sebelumnya. Sebuah phase dianggap selesai ketika seluruh
-exit gate-nya terbukti dengan code, test, dan dokumen—bukan hanya karena fitur
-sudah terlihat di UI.
+- **DONE**: implemented, tested, and documented in the repository.
+- **EXTERNAL GATE**: repository work is ready; independent evidence is required.
+- **NEXT**: next active phase after the gate.
+- **LATER**: intentionally sequenced after earlier exit gates.
 
-Status:
+A phase is not complete in the release sense until every exit gate has evidence.
 
-- **DONE**: sudah ada dan punya bukti lokal/E2E.
-- **NEXT**: prioritas aktif berikutnya.
-- **LATER**: menunggu dependency phase sebelumnya.
+## Phase 0 - Recoverable product foundation (DONE)
 
-## Phase 0 — Foundation lengkap (DONE)
+Delivered:
 
-Tujuan: membangun satu loop produk yang benar dan recoverable sebelum production.
+- premium responsive frontend, semantic URLs/query state, Crystal V assets, and
+  MetaMask + EIP-6963/injected provider picker;
+- wallet auth, marketplace, builder/admin/dashboard product surfaces;
+- escrow top-up, paid 90/10 call, claim, platform withdrawal;
+- `bytes32 callId` correlation, four-event indexer, missed-report backfill, drift,
+  retroactive scan, and conditional race safety.
 
-Sudah selesai:
+Exit gate: one local recoverable end-to-end product loop. Passed.
 
-- responsive premium frontend, Crystal V brand/public asset system, adaptive
-  3D/motion, clean semantic routes, dan URL/query-state synchronization;
-- explicit provider picker dengan first-class MetaMask extension/mobile connector
-  serta EIP-6963/injected discovery untuk Rainbow, Coinbase, dan wallet browser lain;
-- EVM wallet auth, marketplace, builder onboarding, approval, agent execution,
-  reviews, dashboard, earnings, dan admin basics;
-- ERC-20 escrow, 90/10 settlement, top-up, builder claim, dan platform withdrawal;
-- receipt verification dan transaction-hash replay protection;
-- durable paid-call intent dan `bytes32 callId = keccak256(agent_calls.id)`;
-- reconciliation cursor/raw event ledger untuk empat event contract;
-- automatic backfill top-up, claim, platform withdrawal, dan exact paid call;
-- pending-event retry, drift warning, retroactive scan, chunked catch-up, RPC retry;
-- live request/worker race safety dengan conditional `PROCESSING -> SUCCESS`;
-- contract E2E dan full money-loop E2E di local EVM.
+## Phase 1 - Mainnet design freeze and security hardening
 
-Exit gate: tercapai untuk local foundation. Belum berarti production-ready.
+Status: **implementation DONE; independent review EXTERNAL GATE**.
 
-## Phase 1 — Mainnet design freeze dan security hardening (NEXT)
+### 1.1 Contract authority and solvency (DONE)
 
-Tujuan: hilangkan risiko arsitektur yang mahal atau irreversible sebelum contract
-di-deploy.
+- [x] Separate `SETTLER_ROLE` from governance and treasury.
+- [x] Separate pause guardian and fee manager.
+- [x] Two-day delayed default-admin transfer.
+- [x] Require deployed multisig admin and distinct deployment roles.
+- [x] Freeze `userCreditBalance` as cumulative audit evidence, not spendable state.
+- [x] Require immutable 6-decimal standard token and exact deposits.
+- [x] Track explicit builder/platform liabilities and reject undercollateralized
+  earnings credit.
+- [x] Preserve claims during pause.
+- [x] Test settler rotation/revoke and fee/treasury isolation.
+- [x] Add permanent successor declaration and migrate only unencumbered liquidity.
+- [x] Expand contract suite across authority, pause, solvency, rotation, migration,
+  and accounting.
 
-### 1.1 Contract authority dan solvency
+Exit evidence: ABI/authority design frozen for audit; 10 contract E2E groups pass.
 
-- Pisahkan settlement operator dari governance/treasury owner. Rekomendasi:
-  role-based access (`SETTLER_ROLE`) untuk backend signer, multisig untuk admin,
-  fee, pause, dan treasury actions.
-- Putuskan apakah `userCreditBalance` tetap cumulative audit counter atau menjadi
-  spendable onchain ledger; dokumentasikan invariant tunggalnya.
-- Tambahkan/validasi solvency guard, emergency pause, role rotation, dan migration
-  path bila deployment harus diganti.
-- Finalisasi settlement token address/decimals dan deployment parameters.
-- Perluas contract tests untuk roles, pause, solvency, rotation, dan failure cases.
+### 1.2 Backend trust-boundary hardening (DONE)
 
-Exit gate: ABI dan authority model dibekukan; threat model direview; seluruh
-contract tests hijau; tidak ada unresolved design decision yang memerlukan
-redeploy setelah launch.
+- [x] SSRF-safe DNS resolution/pinning, private/reserved rejection, redirect
+  revalidation, scheme/port policy, timeouts, and response cap.
+- [x] Redis atomic multi-instance auth nonce.
+- [x] Bound wallet challenge and production-secure session/cookie/origin/proxy
+  behavior.
+- [x] Request size/security headers/request ID/stable error codes.
+- [x] AES-256-GCM agent secret envelopes, rotation, revocation, and migration.
+- [x] Database admin RBAC, granular permissions, audit log, final-admin guard.
+- [x] Production Redis/auth and startup readiness fail closed.
+- [x] Adversarial auth, SSRF, HTTP, secret, admin, and production-config tests.
 
-### 1.2 Backend trust-boundary hardening
+Exit evidence: automated security suites pass; no plaintext operational secret is
+required in repository/database.
 
-- Blokir SSRF: DNS resolution, private/loopback/link-local rejection, redirect
-  validation, port/scheme policy, response-size cap, dan egress restriction.
-- Pindahkan auth nonce ke Redis dengan atomic consume dan multi-instance test.
-- Aktifkan secure cookie berdasarkan production mode, explicit proxy/TLS config,
-  stricter CORS, request-size limit, security headers, dan machine-readable errors.
-- Enkripsi `agents.secret_key` at rest dan tambahkan rotation/revoke flow.
-- Pisahkan admin authorization dari satu env wallet ke RBAC + audit log.
-- Review fail-open Redis policy untuk paid/abuse-sensitive operations.
+### 1.3 Database and financial invariants (DONE)
 
-Exit gate: automated security tests lolos; multi-instance auth lolos; endpoint
-SSRF suite lolos; tidak ada plaintext operational secret di database atau repo.
+- [x] Versioned Drizzle SQL baseline and Phase 1 migrations.
+- [x] Exact 6-decimal arithmetic without JS float for financial decisions.
+- [x] Balance/reservation/split database constraints.
+- [x] Durable settlement attempt/outbox state machine.
+- [x] Reservation before external work; no long DB transaction around HTTP/RPC.
+- [x] Persist returned tx hash before receipt wait.
+- [x] Recover known-hash receipt timeout and confirmed-chain/failed-DB commit.
+- [x] Recover lost broadcast response with no DB hash via correlated event.
+- [x] Authoritative successful event safely resolves ambiguous candidate hashes.
+- [x] Conditional live/worker finalization and concurrent exact-once E2E.
+- [x] Four-event reconciliation, pending retries, drift, RPC retry/splitting.
+- [x] Retroactive scans preserve normal cursor and cannot introduce skipped gaps.
+- [x] Query/index audit for marketplace, history, queues, admin, ledger, and events.
+- [x] Fresh + upgrade migration E2E.
+- [x] PostgreSQL dump/restore exact-integrity drill and operations policy.
 
-### 1.3 Database dan financial invariants
+Exit evidence: migration, money-loop, invariant, ambiguity, race, and restore gates
+pass locally.
 
-- Buat versioned Drizzle migrations dan baseline migration untuk semua tabel.
-- Buat durable `settlement_attempts`/outbox: simpan call ID dan tx hash segera
-  setelah broadcast, representasikan submitted/confirmed/failed/ambiguous state,
-  dan izinkan worker menyelesaikan confirmed event dari recoverable state.
-- Refactor paid path menjadi reservation/state machine agar tidak memegang DB
-  transaction dan balance row lock selama builder HTTP call + chain receipt wait.
-- Tambahkan test RPC timeout/disconnect sesudah broadcast tetapi sebelum receipt;
-  event yang kemudian confirmed harus tetap finalize tepat sekali.
-- Tambahkan query/index audit untuk call history, pending reconciliation, admin
-  queue, dan time-based queries.
-- Buat invariant test: chain totals, transaction totals, credit balances,
-  builder earnings, claims, dan agent totals selalu reconcile.
-- Definisikan precision/rounding policy end-to-end tanpa bergantung pada JS float
-  untuk keputusan finansial kritis.
-- Definisikan backup, point-in-time recovery, retention, dan restore drill.
+### 1.4 Independent review (EXTERNAL GATE)
 
-Exit gate: fresh install dan upgrade migration keduanya lolos; ambiguous broadcast
-recovery dan no-long-transaction design terbukti E2E; restore drill terbukti;
-invariant suite hijau.
+Repository preparation:
 
-### 1.4 Independent review
+- [x] Threat model.
+- [x] Contract/backend audit scope and reproducible commands.
+- [x] Frozen design decisions and deployment checklist.
+- [x] Findings severity/closure policy.
+- [x] Incident, pause/rotation, successor, reconciliation, and recovery runbooks.
 
-- Contract audit eksternal setelah code freeze.
-- Backend focused security review untuk auth, SSRF, signer, ledger, dan worker.
-- Tutup findings berdasarkan severity sebelum lanjut.
+External actions still required:
 
-Exit gate: tidak ada open Critical/High; Medium memiliki fix atau accepted-risk
-record yang eksplisit.
+- [ ] independent smart-contract audit;
+- [ ] independent focused backend security review;
+- [ ] findings entered without filtering;
+- [ ] zero open Critical/High;
+- [ ] every Medium fixed or explicitly accepted with owner and expiry;
+- [ ] reviewed commit SHA frozen.
 
-## Phase 2 — Production-like staging dan observability (LATER)
+Phase 1 release exit gate is not claimable until these external boxes close.
 
-Tujuan: membuktikan sistem operasional, bukan hanya correctness unit/E2E.
+## Phase 2 - Production-like staging and observability (NEXT)
 
-- Buat staging dengan managed Postgres, Redis, dedicated RPC, API, worker, dan
-  frontend SPA fallback.
-- Simpan secrets di provider secret manager/KMS; signer memiliki gas monitor dan
-  minimum-balance alert.
-- Tambahkan structured logs, request/call correlation, error tracking, metrics,
-  health/readiness, dan alert routing.
-- Metric minimum: API latency/error, upstream agent latency/error, DB pool,
-  Redis errors, signer nonce queue, worker cursor lag, safe-head lag, pending
-  event age/count, RPC 429/timeout, dan reconciliation drift.
-- Jalankan real browser-wallet Playwright E2E untuk MetaMask dan minimal satu
-  EIP-6963/injected provider: connect, reject, wrong-chain switch, responsive
-  breakpoints, dan full top-up → call → earnings → claim flow.
-- Jalankan chaos drills: API mati 1 jam, worker mati 1 jam, RPC throttling, DB
-  disconnect, Redis outage, process restart mid-settlement, dan reorg simulation.
-- Tambahkan load test concurrent paid calls dan signer nonce pressure.
+Goal: prove operational behavior, not only local correctness.
 
-Exit gate: staging soak minimal 72 jam tanpa unexplained drift; alert terbukti
-sampai channel operator; one-hour catch-up memenuhi target operasional yang
-disepakati; runbook dipakai dalam drill.
+1. managed Postgres with PITR, Redis, dedicated RPC, API, worker, and TLS frontend;
+2. secret manager/KMS or restricted signer, gas/nonce/balance monitoring, and
+   rotation drill;
+3. structured logs, metrics, error tracking, deep readiness, dashboards, and alert
+   delivery to an operator;
+4. minimum metrics: API/upstream latency/error, DB pool, Redis failure, signer
+   nonce/gas, outbox state/age, worker heartbeat/cursor/safe-head lag, RPC 429/
+   timeout, pending events, drift, solvency;
+5. real MetaMask and at least one injected-wallet E2E: connect/reject/wrong-chain,
+   auth, deposit, paid call, ambiguous recovery, earnings, claim;
+6. load test concurrent paid calls and signer pressure;
+7. chaos drills: API/worker down one hour, DB/Redis disconnect, RPC throttle/failover,
+   restart mid-settlement, known/unknown broadcast ambiguity, and reorg simulation;
+8. managed backup/PITR restore and RPO/RTO measurement;
+9. triage the transitive web moderate advisory;
+10. 72-hour soak with no unexplained drift.
 
-## Phase 3 — Mainnet release (LATER)
+Exit gate: alerts reach an operator, one-hour catch-up meets an agreed SLO, money
+loop and recovery work on staging, restore works, and soak is clean.
 
-Tujuan: release terkontrol dengan nilai dan user terbatas.
+## Phase 3 - Controlled mainnet release (LATER)
 
-1. Deploy audited contract dengan verified bytecode dan final parameters.
-2. Catat deployment block; konfigurasi API dan worker dari block tersebut.
-3. Jalankan worker catch-up dan pastikan drift nol sebelum frontend write action
-   dibuka.
-4. Deploy API + worker, smoke test read-only, lalu deploy frontend.
-5. Buka allowlisted internal canary dengan deposit/claim limit rendah.
-6. Verifikasi ledger, escrow token balance, builder balances, treasury revenue,
-   cursor, dan alerts secara manual.
-7. Buka closed beta bertahap hanya setelah canary exit gate lolos.
+1. deploy/verify the audited frozen contract and record parameters/block;
+2. apply migrations and configure API/worker from the exact block;
+3. require worker catch-up and zero drift before enabling writes;
+4. low-value allowlisted canary;
+5. verify balances, liabilities, calls, claims, revenue, cursor, alerts, and role
+   ownership;
+6. expand only after canary exit gate and incident owner approval.
 
-Exit gate: contract verified, drift nol, canary money loop lolos, recovery drill
-lolos pada deployment nyata, dan rollback/emergency procedure siap.
+## Phase 4 - Closed beta and builder platform (LATER)
 
-## Phase 4 — Closed beta dan builder platform (LATER)
+- JavaScript/Python SDKs for HMAC and typed requests;
+- agent edit/versioning, endpoint test, approval notifications/webhooks;
+- builder analytics, user report creation, moderation workflow;
+- API versioning, cursor pagination, idempotency keys, webhook retries/signatures;
+- privacy retention/delete/export controls and product telemetry classification.
 
-Tujuan: membuat produk bisa dipakai builder eksternal dengan aman.
+## Phase 5 - Scale and product expansion (LATER)
 
-- JavaScript SDK dan Python SDK untuk HMAC verification + request/response types.
-- Agent edit/versioning, secret rotation, endpoint health check, submission test,
-  approval/rejection notifications, dan builder analytics.
-- User report creation, moderation audit trail, multi-admin RBAC.
-- Cursor pagination, API versioning, idempotency keys, documented error codes,
-  webhook delivery with retries/signatures.
-- Product telemetry dan funnel tanpa merekam prompt/output sensitif secara default.
+- distributed worker lease and isolated horizontally scalable signer service;
+- multi-RPC failover, backpressure, autoscaling, cost controls;
+- daily financial/marketplace rollups and reconciliation exports;
+- multi-deployment migration/history tooling;
+- frontend performance budgets/device tiers;
+- evaluate multi-chain only after one deployment is operationally stable.
 
-Exit gate: onboarding builder dapat diselesaikan dari docs tanpa bantuan internal;
-SLO beta tercapai; abuse/moderation flow dapat diaudit.
+## Immediate ordered flow
 
-## Phase 5 — Scale dan product expansion (LATER)
-
-- Horizontal API/worker scaling dengan DB/advisory lock atau leased worker ownership.
-- Multi-RPC failover, backpressure, autoscaling, and cost controls.
-- Daily rollup ke `platform_stats`, analytics time-series, exports, dan finance
-  reconciliation reports.
-- Multi-contract/deployment migration tooling dan historical index strategy.
-- Performance budget frontend, asset telemetry, dan device-tier visual quality.
-- Evaluasi multi-chain hanya setelah satu deployment stabil dan operasional.
-
-## Flow kerja setiap task
-
-Untuk menjaga ritme dan mencegah docs tertinggal:
-
-1. Pilih task teratas dari phase aktif dan tulis acceptance criteria.
-2. Catat invariant/security impact sebelum coding.
-3. Implementasikan code + automated test pada perubahan yang sama.
-4. Jalankan test proporsional: static, unit, integration, E2E, atau chaos drill.
-5. Update doc domain, `STATUS.md`, dan roadmap bila scope berubah.
-6. Review bukti dan exit gate; baru merge/deploy.
-7. Catat follow-up sebagai task terurut, bukan perubahan acak di tengah phase.
-
-## Urutan kerja paling dekat
-
-Backlog berikutnya yang direkomendasikan:
-
-1. Design dan implement separation `SETTLER_ROLE` vs multisig admin/treasury.
-2. Implement durable settlement-attempt/outbox dan ambiguous receipt recovery.
-3. Tambahkan contract pause/solvency tests dan freeze ABI.
-4. Implement SSRF-safe builder egress.
-5. Buat versioned migrations + financial invariant suite.
-6. Pindahkan nonce/secrets ke Redis/KMS-compatible design.
-7. Tambahkan metrics/alerts worker dan production-like staging.
-8. Triage advisory `uuid` transitif MetaMask connector; upgrade/replace dependency
-   atau dokumentasikan accepted risk berdasarkan reachability review.
-9. Jalankan audit, real browser-wallet E2E, load test, dan one-hour outage drill.
-
-Jangan melakukan mainnet deploy sebelum item 1–9 memenuhi exit gate Phase 1–2.
+1. finish local full regression and owner review of the unpushed micro-commits;
+2. freeze the approved commit and engage reviewers with
+   [AUDIT_READINESS.md](./AUDIT_READINESS.md);
+3. while review runs, build Phase 2 staging/observability without mainnet value;
+4. close/re-review findings;
+5. run staging chaos/load/wallet/restore/soak gates;
+6. only then authorize controlled mainnet deployment.

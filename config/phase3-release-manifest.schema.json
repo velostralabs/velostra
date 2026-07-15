@@ -13,6 +13,7 @@
     "generatedAt",
     "repository",
     "chain",
+    "reconciliation",
     "contract",
     "images",
     "policies",
@@ -37,6 +38,7 @@
         "confirmations": { "type": "integer", "minimum": 1 }
       }
     },
+    "reconciliation": { "type": "object" },
     "contract": { "type": "object" },
     "images": { "type": "object" },
     "policies": { "type": "object" },

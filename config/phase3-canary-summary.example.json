@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-phase3-canary-summary",
+  "release": "replace-with-reviewed-40-character-sha",
+  "sourceManifestSha256": "replace-with-deployed-manifest-sha256",
+  "policySha256": "replace-with-canary-policy-sha256",
+  "startedAt": "2026-07-16T01:00:00.000Z",
+  "endedAt": "2026-07-16T01:30:00.000Z",
+  "calls": { "total": 5, "successful": 5, "failed": 0 },
+  "allowlistViolations": 0,
+  "exposure": {
+    "maxGrossPerCallMinor": "1000000",
+    "maxGrossPerWalletMinor": "5000000",
+    "grossTotalMinor": "5000000"
+  },
+  "flowCounts": {
+    "deposit": 1,
+    "paid-call": 1,
+    "earnings-credit": 1,
+    "reconciliation": 1,
+    "builder-claim": 1,
+    "platform-revenue": 1,
+    "zero-drift": 1
+  },
+  "financial": {
+    "duplicateDebits": 0,
+    "duplicateCredits": 0,
+    "unexplainedDriftMinor": "0"
+  },
+  "finalState": {
+    "contractSolvent": true,
+    "cursorLagBlocks": "0",
+    "staleRecoverableOutboxRows": 0,
+    "pendingChainEvents": 0,
+    "unacknowledgedCriticalAlerts": 0,
+    "unexpectedRoleChanges": 0,
+    "unexpectedFeeChanges": 0
+  }
+}

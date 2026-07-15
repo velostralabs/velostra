@@ -9,6 +9,11 @@
     "name": "Robinhood Chain",
     "confirmations": 12
   },
+"reconciliation": {
+    "maxBlockRange": 2000,
+    "rpcRetries": 3,
+    "retryBaseMs": 1000
+  },
   "contract": {
     "source": "contracts/VelostraEscrow.sol",
     "artifact": "contracts/build/VelostraEscrow.json",

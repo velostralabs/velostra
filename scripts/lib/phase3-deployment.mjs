@@ -18,6 +18,8 @@ export function validateCanaryPolicy(policy, stage = 'preparation') {
   check(policy?.kind === 'velostra-phase3-canary-policy', 'canary policy kind is invalid')
   if (stage === 'preparation') {
     check(policy?.enabled === false, 'preparation canary policy must be disabled')
+  } else {
+    check(policy?.enabled === true, 'authorized canary policy must be enabled')
   }
   for (const name of ['wallets', 'agents', 'builders']) {
     check(

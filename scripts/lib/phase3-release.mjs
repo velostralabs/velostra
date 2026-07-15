@@ -183,6 +183,9 @@ export async function createPhase3Manifest({
   check(input?.kind === 'velostra-phase3-release-input', failures, 'input kind is invalid')
   check(PHASE3_STAGES.has(input?.stage), failures, 'input stage is invalid')
   check(input?.chain?.id === PHASE3_CHAIN_ID, failures, 'input chain id must be 4663')
+  for (const name of ['maxBlockRange', 'rpcRetries', 'retryBaseMs']) {
+    check(Number.isInteger(input?.reconciliation?.[name]) && input.reconciliation[name] > 0, failures, 'reconciliation ' + name + ' must be positive')
+  }
   check(
     Number.isInteger(input?.chain?.confirmations) && input.chain.confirmations > 0,
     failures,
@@ -243,6 +246,9 @@ export async function createPhase3Manifest({
     fileEntry(repositoryRoot, 'scripts/lib/phase3-deployment.mjs'),
     fileEntry(repositoryRoot, 'scripts/plan-phase3-deployment.mjs'),
     fileEntry(repositoryRoot, 'scripts/finalize-phase3-deployment.mjs'),
+    fileEntry(repositoryRoot, 'scripts/lib/phase3-gates.mjs'),
+    fileEntry(repositoryRoot, 'scripts/evaluate-phase3-readiness.mjs'),
+    fileEntry(repositoryRoot, 'scripts/evaluate-phase3-canary.mjs'),
     fileEntry(repositoryRoot, 'config/phase3-release-manifest.schema.json'),
   ])
   const externalEvidence = {
@@ -278,6 +284,7 @@ export async function createPhase3Manifest({
       name: input.chain.name ?? 'Robinhood Chain',
       confirmations: input.chain.confirmations,
     },
+    reconciliation: input.reconciliation,
     contract: {
       source: source.path,
       artifact: contractArtifact.path,
@@ -388,6 +395,9 @@ export async function validatePhase3Manifest({
     'generatedAt is invalid'
   )
   check(manifest?.chain?.id === PHASE3_CHAIN_ID, failures, 'chain id must be 4663')
+  for (const name of ['maxBlockRange', 'rpcRetries', 'retryBaseMs']) {
+    check(Number.isInteger(manifest?.reconciliation?.[name]) && manifest.reconciliation[name] > 0, failures, 'reconciliation ' + name + ' must be positive')
+  }
   check(
     Number.isInteger(manifest?.chain?.confirmations) &&
       manifest.chain.confirmations > 0,

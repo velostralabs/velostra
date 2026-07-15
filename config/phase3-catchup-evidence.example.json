@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-phase3-catchup-evidence",
+  "release": "replace-with-reviewed-40-character-sha",
+  "outageDurationMs": 3600000,
+  "catchUpDurationMs": 120000,
+  "maxBlockRange": 2000,
+  "startCursorBlock": "1000",
+  "safeHeadBlock": "5000",
+  "finalCursorBlock": "5000",
+  "queriedRanges": [
+    { "fromBlock": "1001", "toBlock": "3000" },
+    { "fromBlock": "3001", "toBlock": "5000" }
+  ],
+  "cursorCheckpoints": ["3000", "5000"],
+  "restart": {
+    "workerRestarted": true,
+    "resumedFromCheckpoint": true
+  },
+  "rpc": {
+    "exponentialBackoff": true,
+    "adaptiveRangeSplit": true,
+    "fallbackVerified": true
+  },
+  "skippedRanges": 0,
+  "duplicateDebits": 0,
+  "duplicateCredits": 0,
+  "unexplainedDriftMinor": "0"
+}

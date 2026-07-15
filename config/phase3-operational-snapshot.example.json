@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-phase3-operational-snapshot",
+  "release": "replace-with-reviewed-40-character-sha",
+  "environment": "production",
+  "sourceManifestSha256": "replace-with-deployed-manifest-sha256",
+  "capturedAt": "2026-07-16T00:00:00.000Z",
+  "dependencies": {
+    "postgres": { "ok": true, "latencyMs": 5 },
+    "redis": { "ok": true, "latencyMs": 5 },
+    "primaryRpc": { "ok": true, "latencyMs": 5 },
+    "fallbackRpc": { "ok": true, "latencyMs": 5 },
+    "signer": { "ok": true, "latencyMs": 5 },
+    "contract": { "ok": true, "latencyMs": 5 },
+    "operationalState": { "ok": true, "latencyMs": 5 }
+  },
+  "chain": {
+    "chainId": 4663,
+    "rpcAgreement": true,
+    "latestBlock": "1012",
+    "safeHeadBlock": "1000",
+    "cursorBlock": "1000",
+    "lagBlocks": "0",
+    "pendingEvents": 0
+  },
+  "contract": {
+    "address": "0x8000000000000000000000000000000000000008",
+    "deploymentVerified": true,
+    "deploymentBlock": 900,
+    "settlementToken": "0x1000000000000000000000000000000000000001",
+    "platformFeeBps": 1000,
+    "paused": false,
+    "solvent": true,
+    "successorEscrow": null,
+    "roles": {
+      "admin": "0x2000000000000000000000000000000000000002",
+      "settler": "0x3000000000000000000000000000000000000003",
+      "treasury": "0x4000000000000000000000000000000000000004",
+      "pauseGuardian": "0x5000000000000000000000000000000000000005"
+    }
+  },
+  "database": {
+    "journalSha256": "replace-with-journal-sha256",
+    "appliedMigrations": 7,
+    "managedPitrVerified": true
+  },
+  "images": { "verified": true },
+  "paidWritesDisabled": true,
+  "signer": {
+    "address": "0x3000000000000000000000000000000000000003",
+    "balanceWei": "10000000000000000"
+  },
+  "worker": { "ageSeconds": 10 },
+  "backup": { "ageSeconds": 60 },
+  "outbox": {
+    "byStatus": {
+      "PREPARED": 0,
+      "READY": 0,
+      "SUBMITTED": 0,
+      "AMBIGUOUS": 0,
+      "CONFIRMED": 0
+    },
+    "oldestRecoverableAgeSeconds": null
+  },
+  "drift": {
+    "exceedsThreshold": false,
+    "unexplainedMinor": "0"
+  },
+  "alerts": {
+    "unacknowledgedCritical": 0,
+    "operatorDeliveryVerified": true
+  }
+}

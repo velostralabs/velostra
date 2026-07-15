@@ -238,7 +238,12 @@ async function main() {
     () => escrow.connect(replacementSettler).migrateAvailableLiquidity(),
     'settler cannot migrate unencumbered liquidity'
   )
-  await (await escrow.connect(treasury).migrateAvailableLiquidity()).wait()
+  // Ganache can reuse a failed eth_estimateGas result for this no-argument selector
+  // across senders. A fixed limit bypasses that test-node cache; execution still
+  // enforces TREASURY_ROLE and every contract invariant.
+  await (
+    await escrow.connect(treasury).migrateAvailableLiquidity({ gasLimit: 500_000n })
+  ).wait()
   assert((await usd.balanceOf(successorAddress)) === 47_000_000n, 'treasury migrates exactly the unencumbered liquidity to the successor')
   assert((await usd.balanceOf(escrowAddress)) === 1_800_000n, 'predecessor retains exact backing for every outstanding liability')
   assert((await escrow.availableEscrowLiquidity()) === 0n, 'no migratable liquidity remains after migration')

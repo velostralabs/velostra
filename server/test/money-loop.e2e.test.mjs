@@ -983,7 +983,12 @@ async function main() {
     await publicClient.waitForTransactionReceipt({ hash: feeResetHash })
 
     const outageCursorRows = await unknownDb.query(
-      'select last_processed_block from chain_sync_state limit 1'
+      `select last_processed_block
+         from chain_sync_state
+        where chain_id = $1
+          and lower(contract_address) = lower($2)
+        limit 1`,
+      [chain.id, escrowAddress]
     )
     const outageStartBlock = BigInt(outageCursorRows.rows[0].last_processed_block) + 1n
     const loadSubmission = await builderClient('/api/builder/agents', {
@@ -1236,8 +1241,16 @@ async function main() {
        )
        select 'quarantined-claim-event', id, 'CLAIMED', $1, 999, $2, now(), $3, '999.000000'
          from chain_sync_state
+        where chain_id = $4
+          and lower(contract_address) = lower($5)
         limit 1`,
-      [quarantinedClaimHash, quarantineBlock.toString(), builder.address]
+      [
+        quarantinedClaimHash,
+        quarantineBlock.toString(),
+        builder.address,
+        chain.id,
+        escrowAddress,
+      ]
     )
     const quarantineOutput = await runReconcile(
       runtimeEnv,

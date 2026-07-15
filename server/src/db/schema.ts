@@ -153,7 +153,7 @@ export const creditBalances = pgTable(
     created_at: timestamp('created_at').notNull().defaultNow(),
     updated_at: timestamp('updated_at').notNull().defaultNow(),
   },
-  (table) => [
+  (_table) => [
     check('credit_balance_nonnegative', sql.raw('balance_usd >= 0')),
     check('credit_reservation_nonnegative', sql.raw('reserved_usd >= 0')),
     check('credit_reservation_within_balance', sql.raw('reserved_usd <= balance_usd')),

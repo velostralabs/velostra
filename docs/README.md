@@ -2,12 +2,14 @@
 
 > Last verified against the workspace: 2026-07-15.
 
-Start with [STATUS.md](./STATUS.md), then [ROADMAP.md](./ROADMAP.md). Phase 1 code is
-locally complete; independent audit remains the release gate. No mainnet deployment
-is recorded.
+Start with [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md), then [STATUS.md](./STATUS.md)
+and [ROADMAP.md](./ROADMAP.md). Phase 1 implementation is complete; Phase 2 is the
+next active workstream. Independent audit remains a release gate and no mainnet
+deployment is recorded.
 
 | Document | Purpose |
 |---|---|
+| [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Canonical implementation baseline, evidence, closures, and Phase 2 entry rules. |
 | [STATUS.md](./STATUS.md) | Current truth, evidence, and blockers. |
 | [ROADMAP.md](./ROADMAP.md) | Ordered phases and granular Phase 1 completion. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker, and failures. |
@@ -40,4 +42,5 @@ or sequencing changes require a roadmap update.
 
 Local passing tests do not equal an independent audit or production approval.
 Managed infrastructure, KMS, alert delivery, real-wallet automation, load/chaos/
-reorg evidence, and staging soak are explicitly Phase 2.
+reorg evidence, and staging soak are the active Phase 2 scope. Phase 2 can run in
+parallel with external review, but Phase 3 cannot start until both gates close.

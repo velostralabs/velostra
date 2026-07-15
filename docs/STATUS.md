@@ -1,14 +1,17 @@
 # Velostra status
 
 > Last verified against the workspace: 2026-07-15.
+> Phase 1 implementation baseline: [`ea1b61d`](./PHASE_1_HANDOFF.md); Phase 2 is next.
 
 ## Executive status
 
-Velostra Phase 1 implementation is code-complete and locally verified for contract
+Velostra Phase 1 implementation is code-complete and locally/CI verified for contract
 authority/solvency, backend trust boundaries, exact financial state, durable
 outbox/reconciliation, migrations/indexes, and backup restore. It is still **not
 mainnet-ready** because independent contract audit and focused backend review have
-not been performed. No mainnet contract deployment is recorded.
+not been performed. No mainnet contract deployment is recorded. The canonical
+implementation handoff, including the final second-pass closures, is recorded in
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md).
 
 | Area | Status | Evidence |
 |---|---|---|
@@ -20,11 +23,11 @@ not been performed. No mainnet contract deployment is recorded.
 | Financial ledger | Implemented | exact 6-decimal arithmetic, reservations, constraints, no long DB transaction |
 | Outbox/reconciliation | Implemented | seven states, four events, hash-known/hash-unknown recovery, drift, cursor safety |
 | Database release path | Implemented | five versioned migrations, fresh/upgrade tests, indexes, restore verifier |
-| CI | Implemented | web, backend security, contract, migration/money-loop, dump/restore gates |
-| External audit | Open blocker | audit packet ready; independent reviewer/sign-off still required |
-| Production staging/observability | Phase 2 | managed services, KMS, alerts, chaos/load/reorg, wallet automation, soak |
+| CI | Passing | [run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476): web, backend, contract, money-loop, restore |
+| External audit | Open pre-mainnet gate | audit packet ready; independent reviewer/sign-off still required |
+| Production staging/observability | Phase 2 - next | managed services, KMS, alerts, chaos/load/reorg, wallet automation, soak |
 
-## Phase 1 completed implementation
+## Phase 1 implementation handoff (DONE)
 
 ### Contract
 
@@ -108,11 +111,14 @@ Final full regression passed on 2026-07-15:
 - backend and contract production dependency audits report zero vulnerabilities;
 - web audit reports six moderate transitive `uuid` advisories through the MetaMask
   connector tree, with no upstream fix available. CI fails at High and this
-  moderate risk remains explicitly tracked for Phase 2 reachability/upstream review.
+  moderate risk remains explicitly tracked for Phase 2 reachability/upstream review;
+- the pushed implementation baseline is `ea1b61de20613edd3727f90efb86766918152b07`;
+  GitHub Product verification run `29403445476` passed all four jobs on Node.js 22
+  with `actions/checkout@v6` and `actions/setup-node@v6`.
 
-## Honest remaining blockers
+## Honest remaining release gates
 
-### Final Phase 1 sign-off
+### Independent review gate
 
 - Independent contract audit.
 - Independent focused backend review of auth, SSRF, signer, ledger, worker, and
@@ -124,7 +130,7 @@ These cannot be truthfully self-certified by the implementation author. The scop
 commands, frozen decisions, and findings register are ready in
 [AUDIT_READINESS.md](./AUDIT_READINESS.md).
 
-### Phase 2 before mainnet
+### Phase 2 operational proof
 
 - managed Postgres/Redis/RPC and secret-manager/KMS deployment;
 - external metrics/error tracking/alerts and deep readiness;
@@ -142,11 +148,11 @@ returns sustained 429/down responses, catch-up safely pauses and resumes from th
 same cursor; recovery time then depends on provider capacity. A dedicated RPC,
 lag alert, and timed Phase 2 drill are required before promising an SLO.
 
-## Next decision
+## Next workstream
 
-The next authorized work after this local Phase 1 handoff is either:
-
-1. engage external reviewers using the ready packet; and/or
-2. begin Phase 2 staging infrastructure without deploying mainnet value.
+Begin Phase 2 staging and observability without deploying mainnet value. In
+parallel, engage external reviewers using the ready audit packet. Phase 3 remains
+blocked until the independent-review findings policy and every Phase 2 exit gate
+are both satisfied.
 
 See [ROADMAP.md](./ROADMAP.md).

@@ -181,6 +181,7 @@ verification. See [Testing](./docs/TESTING.md).
 
 | Read | Purpose |
 |---|---|
+| [Phase 1 handoff](./docs/PHASE_1_HANDOFF.md) | Verified baseline, final review closures, evidence, and Phase 2 entry rules. |
 | [Status](./docs/STATUS.md) | Implemented truth, evidence, and blockers. |
 | [Roadmap](./docs/ROADMAP.md) | Phase completion and ordered next work. |
 | [Architecture](./docs/ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker. |
@@ -194,9 +195,11 @@ verification. See [Testing](./docs/TESTING.md).
 
 ## Status
 
-Phase 1 contract/backend/database implementation is locally complete and tested.
+Phase 1 implementation is complete and recorded at the verified baseline in the
+[Phase 1 handoff](./docs/PHASE_1_HANDOFF.md). Phase 2 staging and observability is
+the next active workstream and may proceed without mainnet value.
 The contract is **not independently audited and not deployed to mainnet**. External
-contract and focused backend review remain the final Phase 1 sign-off. Managed
+contract and focused backend review remain mandatory before Phase 3/mainnet. Managed
 staging, KMS, alert delivery, real-wallet automation, load/chaos/reorg drills, and
 soak are Phase 2 gates.
 

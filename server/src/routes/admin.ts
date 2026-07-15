@@ -14,6 +14,7 @@ import {
   reports,
   agentCalls,
   reportStatusEnum,
+  userNotifications,
 } from '../db/schema.js'
 import { requireAuth, requireAdminPermission } from '../middleware/auth.js'
 import { AppError } from '../lib/errors.js'
@@ -101,8 +102,28 @@ adminRouter.post(
         action: 'agent.decision',
         targetType: 'agent',
         targetId: updated.id,
-        metadata: { decision: parsed.data.decision },
+        metadata: { decision: parsed.data.decision, revision_id: updated.active_revision_id },
       }))
+      const [owner] = await tx
+        .select({ user_id: builders.user_id })
+        .from(builders)
+        .where(eq(builders.id, updated.builder_id))
+        .limit(1)
+      if (owner) {
+        await tx.insert(userNotifications).values({
+          user_id: owner.user_id,
+          type: parsed.data.decision === 'APPROVE' ? 'agent.approved' : 'agent.rejected',
+          title: parsed.data.decision === 'APPROVE' ? 'Agent approved' : 'Agent revision rejected',
+          body: parsed.data.decision === 'APPROVE'
+            ? `${updated.name} is live in the marketplace.`
+            : `${updated.name} requires another revision before it can go live.`,
+          metadata: {
+            agent_id: updated.id,
+            revision_id: updated.active_revision_id,
+            decision: parsed.data.decision,
+          },
+        })
+      }
       return updated
     })
 

@@ -218,6 +218,7 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
         id: callId,
         agent_id: agent.id,
         user_id: userId,
+        agent_revision_id: agent.active_revision_id,
         input: parsed.data.input,
         status: 'PROCESSING',
         is_free_tier: isFreeTier,

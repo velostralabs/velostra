@@ -9,6 +9,8 @@ build/
 **/build/
 coverage/
 **/coverage/
+__pycache__/
+*.py[cod]
 .nyc_output/
 playwright-report/
 test-results/

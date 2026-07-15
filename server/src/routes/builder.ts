@@ -3,7 +3,15 @@ import { z } from 'zod'
 import { nanoid } from 'nanoid'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
-import { builders, builderEarnings, agents, agentTags, earningsClaims } from '../db/schema.js'
+import {
+  builders,
+  builderEarnings,
+  agents,
+  agentTags,
+  agentRevisions,
+  earningsClaims,
+  userNotifications,
+} from '../db/schema.js'
 import { requireAuth, requireBuilder } from '../middleware/auth.js'
 import { AGENT_CATEGORIES, MIN_PRICE_PER_CALL, priceTierFor } from '../lib/constants.js'
 import { signJWT } from '../lib/auth.js'
@@ -157,27 +165,63 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
   const secretKey = generateAgentSecret()
   const encryptedSecret = encryptAgentSecret(secretKey)
 
-  const [agent] = await db
-    .insert(agents)
-    .values({
-      builder_id: builder.id,
-      name: parsed.data.name,
-      slug,
-      description: parsed.data.description,
-      long_description: parsed.data.long_description,
-      category: parsed.data.category,
-      endpoint_url: parsed.data.endpoint_url,
-      secret_key_ciphertext: encryptedSecret,
-      price_per_call: pricePerCall,
-      price_tier: priceTierFor(parsed.data.price_per_call),
-      logo_url: parsed.data.logo_url,
-      status: 'PENDING',
-    })
-    .returning()
+  const agent = await db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(agents)
+      .values({
+        builder_id: builder.id,
+        name: parsed.data.name,
+        slug,
+        description: parsed.data.description,
+        long_description: parsed.data.long_description,
+        category: parsed.data.category,
+        endpoint_url: parsed.data.endpoint_url,
+        secret_key_ciphertext: encryptedSecret,
+        price_per_call: pricePerCall,
+        price_tier: priceTierFor(parsed.data.price_per_call),
+        logo_url: parsed.data.logo_url,
+        status: 'PENDING',
+      })
+      .returning()
 
-  if (parsed.data.tags?.length) {
-    await db.insert(agentTags).values(parsed.data.tags.map((tag) => ({ agent_id: agent.id, tag })))
-  }
+    const [revision] = await tx
+      .insert(agentRevisions)
+      .values({
+        agent_id: created.id,
+        revision_number: 1,
+        status: 'PUBLISHED',
+        name: created.name,
+        description: created.description,
+        long_description: created.long_description,
+        category: created.category,
+        endpoint_url: created.endpoint_url,
+        price_per_call: created.price_per_call,
+        price_tier: created.price_tier,
+        logo_url: created.logo_url,
+        change_summary: 'Initial agent submission',
+        created_by_user_id: req.auth!.id,
+        published_at: new Date(),
+      })
+      .returning()
+
+    const [activated] = await tx
+      .update(agents)
+      .set({ active_revision_id: revision.id })
+      .where(eq(agents.id, created.id))
+      .returning()
+
+    if (parsed.data.tags?.length) {
+      await tx.insert(agentTags).values(parsed.data.tags.map((tag) => ({ agent_id: created.id, tag })))
+    }
+    await tx.insert(userNotifications).values({
+      user_id: builder.user_id,
+      type: 'agent.submitted',
+      title: 'Agent submitted for review',
+      body: `${created.name} revision 1 is awaiting approval.`,
+      metadata: { agent_id: created.id, revision_id: revision.id, revision_number: 1 },
+    })
+    return activated
+  })
 
   res.json({ agent: serializeAgentMoney(agent), secret_key: secretKey })
 })

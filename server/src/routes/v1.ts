@@ -8,6 +8,7 @@ import { builderRouter } from './builder.js'
 import { dashboardRouter } from './dashboard.js'
 import { adminRouter } from './admin.js'
 import { authRouter } from './auth.js'
+import { platformBuilderRouter } from './platform-builder.js'
 import { cursorScope, decodeCursor, encodeCursor } from '../lib/platform/cursor.js'
 import { sendPage } from '../lib/platform/http.js'
 import { moneyToNumber } from '../lib/money.js'
@@ -82,6 +83,7 @@ v1Router.get('/agents', async (req, res) => {
 
 v1Router.use('/auth', authRouter)
 v1Router.use('/agents', agentsRouter)
+v1Router.use('/builder', platformBuilderRouter)
 v1Router.use('/builder', builderRouter)
 v1Router.use('/dashboard', dashboardRouter)
 v1Router.use('/admin', adminRouter)

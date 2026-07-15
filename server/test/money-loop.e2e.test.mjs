@@ -982,6 +982,250 @@ async function main() {
     })
     await publicClient.waitForTransactionReceipt({ hash: feeResetHash })
 
+    const outageCursorRows = await unknownDb.query(
+      'select last_processed_block from chain_sync_state limit 1'
+    )
+    const outageStartBlock = BigInt(outageCursorRows.rows[0].last_processed_block) + 1n
+    const loadSubmission = await builderClient('/api/builder/agents', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: 'Settlement Pressure Agent',
+        description: 'Exercises concurrent reservations, Redis quotas, and signer serialization',
+        category: 'PRODUCTIVITY',
+        endpoint_url: `http://127.0.0.1:${MOCK_PORT}/run`,
+        price_per_call: 0.3,
+      }),
+    })
+    assert(loadSubmission.status === 200, 'builder creates the isolated load-test agent')
+    expectedAgentSecret = loadSubmission.body.secret_key
+    const loadDecision = await adminClient(
+      `/api/admin/agents/${loadSubmission.body.agent.id}/decision`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ decision: 'APPROVE' }),
+      }
+    )
+    assert(loadDecision.status === 200, 'admin approves the isolated load-test agent')
+
+    const loadBalanceBefore = await userClient('/api/dashboard')
+    const loadEarningsBefore = await builderClient('/api/builder/earnings')
+    const loadStartedAt = performance.now()
+    const loadResults = await Promise.all(
+      Array.from({ length: 12 }, (_, index) =>
+        userClient(`/api/agents/${loadSubmission.body.agent.slug}/run`, {
+          method: 'POST',
+          body: JSON.stringify({ input: `concurrent settlement ${index}` }),
+        })
+      )
+    )
+    const loadDurationMs = performance.now() - loadStartedAt
+    const successfulLoadCalls = loadResults.filter((result) => result.status === 200)
+    const rateLimitedLoadCalls = loadResults.filter((result) => result.status === 429)
+    assert(
+      successfulLoadCalls.length === 10 && rateLimitedLoadCalls.length === 2,
+      'Redis enforces the per-agent quota under 12 concurrent paid calls'
+    )
+    assert(
+      new Set(successfulLoadCalls.map((result) => result.body.call_id)).size === 10 &&
+        new Set(successfulLoadCalls.map((result) => result.body.settlement_tx_hash)).size === 10,
+      'signer pressure produces ten unique correlated settlements'
+    )
+    const loadBalanceAfter = await userClient('/api/dashboard')
+    const loadEarningsAfter = await builderClient('/api/builder/earnings')
+    assert(
+      Math.abs(loadBalanceBefore.body.balance_usd - loadBalanceAfter.body.balance_usd - 3) < 1e-9,
+      'concurrent load debits exactly ten paid calls'
+    )
+    assert(
+      Math.abs(
+        loadEarningsAfter.body.earnings.available -
+          loadEarningsBefore.body.earnings.available -
+          2.7
+      ) < 1e-9,
+      'concurrent load credits the builder exactly ten times'
+    )
+    const loadRows = await unknownDb.query(
+      `select count(*)::int as calls,
+              count(distinct t.tx_hash)::int as transactions
+         from agent_calls ac
+         left join transactions t on t.agent_call_id = ac.id
+        where ac.agent_id = $1 and ac.status = 'SUCCESS'`,
+      [loadSubmission.body.agent.id]
+    )
+    assert(
+      loadRows.rows[0]?.calls === 10 && loadRows.rows[0]?.transactions === 10,
+      'DB pool pressure leaves one ledger transaction per successful paid call'
+    )
+    console.log('LOAD MEASUREMENT', JSON.stringify({
+      concurrent: 12,
+      successful: 10,
+      rateLimited: 2,
+      durationMs: Math.round(loadDurationMs),
+    }))
+
+    const denseCount = 12
+    const denseAmount = parseUnits('1', 6)
+    const denseTotal = parseUnits('12', 6)
+    let recoveryNonce = await publicClient.getTransactionCount({
+      address: recoveryUser.address,
+      blockTag: 'pending',
+    })
+    const denseFundingHash = await recoveryWallet.writeContract({
+      address: tokenAddress,
+      abi: tokenArtifact.abi,
+      functionName: 'mint',
+      args: [recoveryUser.address, parseUnits('20', 6)],
+      nonce: recoveryNonce,
+    })
+    const denseFundingReceipt = await publicClient.waitForTransactionReceipt({ hash: denseFundingHash })
+    assert(denseFundingReceipt.status === 'success', 'test token funding confirms with an explicit nonce')
+    recoveryNonce += 1
+    const denseApproveHash = await recoveryWallet.writeContract({
+      address: tokenAddress,
+      abi: tokenArtifact.abi,
+      functionName: 'approve',
+      args: [escrowAddress, denseTotal],
+      nonce: recoveryNonce,
+    })
+    const denseApproveReceipt = await publicClient.waitForTransactionReceipt({ hash: denseApproveHash })
+    assert(denseApproveReceipt.status === 'success', 'dense allowance confirms with an explicit nonce')
+    recoveryNonce += 1
+    const denseReceipts = []
+    for (let index = 0; index < denseCount; index += 1) {
+      const hash = await recoveryWallet.writeContract({
+        address: escrowAddress,
+        abi: escrowArtifact.abi,
+        functionName: 'depositCredits',
+        args: [denseAmount],
+        nonce: recoveryNonce,
+        gas: 500_000n,
+      })
+      denseReceipts.push(await publicClient.waitForTransactionReceipt({ hash }))
+      recoveryNonce += 1
+    }
+    const denseReceiptEvidence = denseReceipts.map((receipt) => ({
+      blockNumber: receipt.blockNumber.toString(),
+      status: receipt.status,
+      txHash: receipt.transactionHash,
+    }))
+    const denseFixtureValid =
+      denseReceipts.length === denseCount &&
+      denseReceipts.every((receipt) => receipt.status === 'success') &&
+      new Set(denseReceipts.map((receipt) => receipt.transactionHash)).size === denseCount
+    assert(
+      denseFixtureValid,
+      'dense fixture produces twelve unique successful onchain receipts' +
+        (denseFixtureValid ? '' : ': ' + JSON.stringify(denseReceiptEvidence))
+    )
+    const denseEnv = { ...runtimeEnv, RECONCILE_MAX_BLOCK_RANGE: '1' }
+    const denseBalanceBefore = await recoveryClient('/api/dashboard')
+    const denseCatchupStartedAt = performance.now()
+    const denseOutput = await runReconcile(
+      denseEnv,
+      outageStartBlock,
+      denseReceipts.at(-1).blockNumber
+    )
+    const denseCatchupDurationMs = performance.now() - denseCatchupStartedAt
+    const expectedDenseRanges = Number(
+      denseReceipts.at(-1).blockNumber - outageStartBlock + 1n
+    )
+    assert(
+      denseOutput.includes(`"ranges":${expectedDenseRanges}`) &&
+        denseOutput.includes('cursor advanced') &&
+        denseOutput.includes('drift clean'),
+      'dense missed-event range splits into gap-free bounded scans with zero drift'
+    )
+    const denseBalanceAfter = await recoveryClient('/api/dashboard')
+    assert(
+      Math.abs(denseBalanceAfter.body.balance_usd - denseBalanceBefore.body.balance_usd - 12) < 1e-9,
+      'dense catch-up backfills all twelve deposits exactly once'
+    )
+    const denseHashes = denseReceipts.map((receipt) => receipt.transactionHash)
+    const denseRows = await unknownDb.query(
+      'select count(*)::int as count from transactions where tx_hash = any($1::text[])',
+      [denseHashes]
+    )
+    assert(denseRows.rows[0]?.count === denseCount, 'dense catch-up persists every event hash')
+    console.log('CATCH-UP MEASUREMENT', JSON.stringify({
+      simulatedOutageBlocks: Number(denseReceipts.at(-1).blockNumber - outageStartBlock + 1n),
+      ranges: expectedDenseRanges,
+      durationMs: Math.round(denseCatchupDurationMs),
+    }))
+    await runReconcile(denseEnv, outageStartBlock, denseReceipts.at(-1).blockNumber)
+    const denseBalanceAfterReplay = await recoveryClient('/api/dashboard')
+    assert(
+      denseBalanceAfterReplay.body.balance_usd === denseBalanceAfter.body.balance_usd,
+      'dense range replay is financially idempotent'
+    )
+
+    const reorgApproveHash = await recoveryWallet.writeContract({
+      address: tokenAddress,
+      abi: tokenArtifact.abi,
+      functionName: 'approve',
+      args: [escrowAddress, parseUnits('3', 6)],
+      nonce: recoveryNonce,
+    })
+    const reorgApproveReceipt = await publicClient.waitForTransactionReceipt({ hash: reorgApproveHash })
+    recoveryNonce += 1
+    const reorgSnapshot = await evm.provider.request({ method: 'evm_snapshot', params: [] })
+    const forkNonce = recoveryNonce
+    const orphanHash = await recoveryWallet.writeContract({
+      address: escrowAddress,
+      abi: escrowArtifact.abi,
+      functionName: 'depositCredits',
+      args: [parseUnits('1', 6)],
+      nonce: forkNonce,
+      gas: 500_000n,
+    })
+    const orphanReceipt = await publicClient.waitForTransactionReceipt({ hash: orphanHash })
+    const reorgEnv = { ...runtimeEnv, RECONCILE_CONFIRMATIONS: '2' }
+    const preFinalityOutput = await runReconcile(
+      reorgEnv,
+      reorgApproveReceipt.blockNumber,
+      orphanReceipt.blockNumber
+    )
+    assert(
+      preFinalityOutput.includes('"ranges":0'),
+      'confirmation policy excludes the unfinalized fork event without advancing the cursor'
+    )
+    const orphanBeforeRevert = await unknownDb.query(
+      'select count(*)::int as count from transactions where tx_hash = $1',
+      [orphanHash]
+    )
+    assert(orphanBeforeRevert.rows[0]?.count === 0, 'unconfirmed fork event never enters the ledger')
+    assert(
+      await evm.provider.request({ method: 'evm_revert', params: [reorgSnapshot] }),
+      'local EVM reverts the unconfirmed fork'
+    )
+    const replacementHash = await recoveryWallet.writeContract({
+      address: escrowAddress,
+      abi: escrowArtifact.abi,
+      functionName: 'depositCredits',
+      args: [parseUnits('2', 6)],
+      nonce: forkNonce,
+      gas: 500_000n,
+    })
+    const replacementReceipt = await publicClient.waitForTransactionReceipt({ hash: replacementHash })
+    await evm.provider.request({ method: 'evm_mine', params: [] })
+    await evm.provider.request({ method: 'evm_mine', params: [] })
+    const postFinalityOutput = await runReconcile(
+      reorgEnv,
+      reorgApproveReceipt.blockNumber,
+      replacementReceipt.blockNumber
+    )
+    assert(
+      postFinalityOutput.includes('cursor advanced') && postFinalityOutput.includes('drift clean'),
+      'confirmed canonical replacement advances the cursor with zero drift'
+    )
+    const reorgRows = await unknownDb.query(
+      'select tx_hash from transactions where tx_hash = any($1::text[]) order by tx_hash',
+      [[orphanHash, replacementHash]]
+    )
+    assert(
+      reorgRows.rows.length === 1 && reorgRows.rows[0].tx_hash === replacementHash,
+      'reorg drill records only the confirmed canonical transaction'
+    )
+
     try {
       const quarantinedClaimHash = '0x' + 'ab'.repeat(32)
     const quarantineBlock = await publicClient.getBlockNumber({ cacheTime: 0 })
@@ -1064,7 +1308,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+main().then(
+  () => process.exit(0),
+  (error) => {
+    console.error(error)
+    process.exit(1)
+  }
+)

@@ -1,15 +1,16 @@
 # Deployment and operations
 
 > Last verified against build/deploy scripts: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 > No production or mainnet deployment is recorded.
 
 ## Release gates
 
-Phase 1 implementation and local evidence are complete for contract/backend/database.
-The final Phase 1 release gate is independent contract and focused backend review.
-Phase 2 then requires production-like staging, managed secrets, observability,
-real-wallet E2E, load/chaos/reorg drills, and a 72-hour soak. Do not deploy mainnet
-value before both gates close.
+Phase 1 implementation and local/CI evidence are complete for contract/backend/database.
+Independent contract and focused backend review remain the pre-mainnet external gate.
+Phase 2 is now the active workstream: production-like staging, managed secrets,
+observability, real-wallet E2E, load/chaos/reorg drills, and a 72-hour soak. Do not
+deploy mainnet value before both gates close.
 
 ## Target topology
 

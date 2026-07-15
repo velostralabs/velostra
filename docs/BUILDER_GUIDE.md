@@ -1,6 +1,7 @@
 # Builder guide
 
 > Last verified against builder routes, egress policy, and HMAC code: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 
 Velostra accepts framework-agnostic HTTP agents. The platform owns discovery,
 access, metering, reservation, settlement, and recovery; the builder owns execution
@@ -143,6 +144,6 @@ builder plaintext secret unless the builder explicitly rotates it.
 ## Current product gaps
 
 Public JS/Python SDKs, agent edit/versioning, approval webhook, test console,
-time-series analytics, and pagination are later roadmap work. SSRF protection,
+time-series analytics, and pagination are Phase 4 roadmap work. SSRF protection,
 response caps, encrypted secrets, rotation/revoke, recovery correlation, and stable
 errors are implemented.

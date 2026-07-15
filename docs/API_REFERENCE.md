@@ -1,6 +1,7 @@
 # API reference
 
 > Last verified against `server/src/routes` and middleware: 2026-07-15.
+> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
 > Local base URL: `http://localhost:8787`.
 
 ## Conventions
@@ -165,5 +166,5 @@ fresh timestamp, timing-safe equality, and optional call ID replay cache.
 ## Current product API gaps
 
 Public `/api/v1` versioning, cursor pagination, agent edit/versioning, approval
-webhooks, user report creation, and public SDKs are later roadmap work. Error codes,
-secret rotation/revoke, and admin RBAC are implemented.
+webhooks, user report creation, and public SDKs are Phase 4 roadmap work. Error
+codes, secret rotation/revoke, and admin RBAC are implemented.

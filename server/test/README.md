@@ -1,6 +1,7 @@
 # Server test quick reference
 
 > Last verified: 2026-07-15. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
+> Evidence baseline: [Phase 1 implementation handoff](../../docs/PHASE_1_HANDOFF.md); Phase 2 is next.
 
 Run from repository root:
 

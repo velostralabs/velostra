@@ -143,6 +143,7 @@ function assertChain(requireSignerAuthorization: boolean): void {
     httpsUrl('SETTLEMENT_SIGNER_URL')
     secret('SETTLEMENT_SIGNER_AUTH_TOKEN')
     positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', '10000')
+    positiveInteger('SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES', '16384')
   }
 }
 

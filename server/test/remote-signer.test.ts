@@ -11,6 +11,7 @@ const calldata = '0x1234' as Hex
 const token = 'restricted-signer-test-token-32-chars'
 let requestBody: Record<string, unknown> | undefined
 let requestHeaders: http.IncomingHttpHeaders | undefined
+let oversizedResponse = false
 
 const server = http.createServer((request, response) => {
   const chunks: Buffer[] = []
@@ -19,7 +20,13 @@ const server = http.createServer((request, response) => {
     requestHeaders = request.headers
     requestBody = JSON.parse(Buffer.concat(chunks).toString('utf8')) as Record<string, unknown>
     response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(JSON.stringify({ tx_hash: txHash, signer_address: signerAddress }))
+    response.end(
+      JSON.stringify({
+        tx_hash: txHash,
+        signer_address: signerAddress,
+        ...(oversizedResponse ? { padding: 'x'.repeat(2_048) } : {}),
+      })
+    )
   })
 })
 
@@ -33,6 +40,7 @@ const managedKeys = [
   'SETTLEMENT_SIGNER_AUTH_TOKEN',
   'SETTLEMENT_SIGNER_ADDRESS',
   'SETTLEMENT_SIGNER_TIMEOUT_MS',
+  'SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES',
   'SETTLEMENT_SIGNER_MODE',
   'VELOSTRA_ESCROW_ADDRESS',
   'ONCHAIN_SETTLEMENT_MODE',
@@ -45,6 +53,7 @@ try {
   process.env.SETTLEMENT_SIGNER_AUTH_TOKEN = token
   process.env.SETTLEMENT_SIGNER_ADDRESS = signerAddress
   process.env.SETTLEMENT_SIGNER_TIMEOUT_MS = '2000'
+  process.env.SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES = '1024'
   process.env.SETTLEMENT_SIGNER_MODE = 'remote'
   process.env.VELOSTRA_ESCROW_ADDRESS = '0x1111111111111111111111111111111111111111'
   process.env.ONCHAIN_SETTLEMENT_MODE = 'required'
@@ -87,6 +96,18 @@ try {
       idempotencyKey: callId,
     }),
     /does not match SETTLEMENT_SIGNER_ADDRESS/
+  )
+
+  process.env.SETTLEMENT_SIGNER_ADDRESS = signerAddress
+  oversizedResponse = true
+  await assert.rejects(
+    submitRemoteSettlement({
+      chainId: 4663,
+      to: getAddress('0x1111111111111111111111111111111111111111'),
+      data: calldata,
+      idempotencyKey: callId,
+    }),
+    /exceeds configured byte limit/
   )
 
   console.log('RESTRICTED SETTLEMENT SIGNER VERIFIED')

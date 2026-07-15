@@ -37,6 +37,7 @@ function remoteSignerConfiguration(): {
   token: string
   address: Address
   timeoutMs: number
+  maxResponseBytes: number
 } {
   const rawUrl = process.env.SETTLEMENT_SIGNER_URL
   const token = process.env.SETTLEMENT_SIGNER_AUTH_TOKEN
@@ -58,7 +59,32 @@ function remoteSignerConfiguration(): {
     token,
     address: configuredRemoteSignerAddress(),
     timeoutMs: positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', 10_000),
+    maxResponseBytes: positiveInteger('SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES', 16_384),
   }
+}
+
+async function readBoundedJson(response: Response, maxBytes: number): Promise<unknown> {
+  const declaredLength = Number(response.headers.get('content-length'))
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    await response.body?.cancel().catch(() => undefined)
+    throw new Error('Restricted signer response exceeds configured byte limit')
+  }
+  if (!response.body) throw new Error('Restricted signer returned an empty response')
+
+  const reader = response.body.getReader()
+  const chunks: Buffer[] = []
+  let received = 0
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    received += value.byteLength
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined)
+      throw new Error('Restricted signer response exceeds configured byte limit')
+    }
+    chunks.push(Buffer.from(value))
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown
 }
 
 export function getRemoteSettlementSignerAddress(): Address {
@@ -93,7 +119,7 @@ export async function submitRemoteSettlement(input: {
   if (!response.ok) {
     throw new Error(`Restricted signer rejected settlement request with HTTP ${response.status}`)
   }
-  const parsed = responseSchema.parse(await response.json())
+  const parsed = responseSchema.parse(await readBoundedJson(response, config.maxResponseBytes))
   if (getAddress(parsed.signer_address) !== config.address) {
     throw new Error('Restricted signer response does not match SETTLEMENT_SIGNER_ADDRESS')
   }

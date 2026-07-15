@@ -6,6 +6,7 @@ import {
   agents,
   builderEarnings,
   creditBalances,
+  releaseCanaryAdmissions,
   settlementAttempts,
   transactions,
 } from '../../db/schema.js'
@@ -148,6 +149,10 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
           updated_at: new Date(),
         })
         .where(eq(settlementAttempts.id, attempt.id))
+      await tx
+        .update(releaseCanaryAdmissions)
+        .set({ status: 'SETTLED', updated_at: new Date() })
+        .where(eq(releaseCanaryAdmissions.agent_call_id, input.callId))
       return false
     }
 
@@ -233,6 +238,11 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
         updated_at: new Date(),
       })
       .where(eq(settlementAttempts.id, attempt.id))
+
+    await tx
+      .update(releaseCanaryAdmissions)
+      .set({ status: 'SETTLED', updated_at: new Date() })
+      .where(eq(releaseCanaryAdmissions.agent_call_id, input.callId))
 
     return true
   })
@@ -380,6 +390,10 @@ export async function failUnsettledCall(callId: string, error: unknown): Promise
         })
         .where(eq(settlementAttempts.id, attempt.id))
     }
+    await tx
+      .update(releaseCanaryAdmissions)
+      .set({ status: 'FAILED', updated_at: new Date() })
+      .where(eq(releaseCanaryAdmissions.agent_call_id, callId))
     return true
   })
 }

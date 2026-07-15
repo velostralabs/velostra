@@ -14,6 +14,7 @@ const migrations = [
   'drizzle/0004_transaction_indexes.sql',
   'drizzle/0005_earnings_invariants.sql',
   'drizzle/0006_dark_darkstar.sql',
+  'drizzle/0007_phase3_canary_admissions.sql',
 ]
 
 async function loadMigration(path: string, schema: string): Promise<string[]> {
@@ -93,8 +94,8 @@ try {
       where table_schema = $1 and table_type = 'BASE TABLE'`,
     [freshSchema]
   )
-  assert.equal(tableCount.rows[0].count, 19)
-  console.log('✅ fresh install creates the complete Phase 2 operational schema')
+  assert.equal(tableCount.rows[0].count, 20)
+  console.log('✅ fresh install creates the complete Phase 3 operational schema')
 
   const constraints = await client.query(
     `select conname
@@ -112,11 +113,16 @@ try {
           'earnings_claim_amount_positive',
           'operational_heartbeat_status_check',
           'operational_alert_severity_check',
-          'operational_alert_occurrences_positive'
+          'operational_alert_occurrences_positive',
+          'release_canary_release_check',
+          'release_canary_manifest_hash_check',
+          'release_canary_policy_hash_check',
+          'release_canary_gross_positive',
+          'release_canary_status_check'
         )`,
     [freshSchema]
   )
-  assert.equal(constraints.rowCount, 11)
+  assert.equal(constraints.rowCount, 16)
   console.log('✅ fresh install includes all critical money invariants')
 
   await client.query(
@@ -166,11 +172,14 @@ try {
           'transaction_chain_ledger_idx',
           'operational_heartbeat_seen_idx',
           'operational_alert_status_seen_idx',
-          'operational_alert_rule_seen_idx'
+          'operational_alert_rule_seen_idx',
+          'release_canary_release_policy_idx',
+          'release_canary_wallet_idx',
+          'release_canary_status_updated_idx'
         )`,
     [freshSchema]
   )
-  assert.equal(operationalIndexes.rowCount, 10)
+  assert.equal(operationalIndexes.rowCount, 13)
   console.log('PASS: operational ledger, heartbeat, and alert indexes are installed')
 
   const operationalTimestamps = await client.query(

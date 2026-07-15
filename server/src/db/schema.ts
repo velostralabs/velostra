@@ -338,6 +338,39 @@ export const agentCalls = pgTable('agent_calls', {
 // TRANSACTION
 // ─────────────────────────────────────────
 
+export const releaseCanaryAdmissions = pgTable(
+  'release_canary_admissions',
+  {
+    agent_call_id: text('agent_call_id')
+      .primaryKey()
+      .references(() => agentCalls.id, { onDelete: 'cascade' }),
+    release: text('release').notNull(),
+    manifest_sha256: text('manifest_sha256').notNull(),
+    policy_sha256: text('policy_sha256').notNull(),
+    wallet_address: text('wallet_address').notNull(),
+    agent_id: text('agent_id')
+      .notNull()
+      .references(() => agents.id, { onDelete: 'cascade' }),
+    builder_address: text('builder_address').notNull(),
+    gross_amount: numeric('gross_amount', { precision: 20, scale: 6 }).notNull(),
+    status: text('status').notNull().default('ADMITTED'),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+    updated_at: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (table) => [
+    index('release_canary_release_policy_idx').on(table.release, table.policy_sha256),
+    index('release_canary_wallet_idx').on(table.release, table.policy_sha256, table.wallet_address),
+    index('release_canary_status_updated_idx').on(table.status, table.updated_at),
+    check('release_canary_release_check', sql.raw("release ~ '^[0-9a-fA-F]{40}$'")),
+    check('release_canary_manifest_hash_check', sql.raw("manifest_sha256 ~ '^[0-9a-f]{64}$'")),
+    check('release_canary_policy_hash_check', sql.raw("policy_sha256 ~ '^[0-9a-f]{64}$'")),
+    check('release_canary_gross_positive', sql.raw('gross_amount > 0')),
+    check(
+      'release_canary_status_check',
+      sql.raw("status IN ('ADMITTED', 'SETTLED', 'FAILED')")
+    ),
+  ]
+)
 export const transactions = pgTable('transactions', {
   id: id(),
   credit_balance_id: text('credit_balance_id').references(() => creditBalances.id, {

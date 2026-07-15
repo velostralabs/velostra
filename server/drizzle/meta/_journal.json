@@ -50,6 +50,13 @@
       "when": 1784110972959,
       "tag": "0006_dark_darkstar",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784144730536,
+      "tag": "0007_phase3_canary_admissions",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import {
   agentCalls,
   creditBalances,
   settlementAttempts,
+  users,
 } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { buildGatewayHeaders } from '../lib/gateway/hmac.js'
@@ -39,6 +40,12 @@ import {
   markSettlementReady,
   markSettlementSubmitted,
 } from '../lib/gateway/settlement.js'
+import {
+  Phase3AdmissionError,
+  resolvePhase3PaidCallAdmission,
+  type Phase3PaidCallAdmission,
+} from '../lib/phase3-canary.js'
+import { persistPhase3CanaryAdmission } from '../lib/phase3-canary-db.js'
 
 export const agentsRouter = Router()
 
@@ -155,18 +162,44 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
   }
 
   const isFreeTier = await hasFreeTierRemaining(userId)
-  const [builder] = await db
-    .select({ wallet_address: builders.wallet_address })
-    .from(builders)
-    .where(eq(builders.id, agent.builder_id))
-    .limit(1)
+  const [[builder], [caller]] = await Promise.all([
+    db
+      .select({ wallet_address: builders.wallet_address })
+      .from(builders)
+      .where(eq(builders.id, agent.builder_id))
+      .limit(1),
+    db
+      .select({ wallet_address: users.wallet_address })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1),
+  ])
   if (!builder) {
     return res.status(500).json({ error: 'Agent builder profile is missing', code: 'BUILDER_MISSING' })
+  }
+  if (!caller) {
+    return res.status(500).json({ error: 'Authenticated user profile is missing', code: 'USER_MISSING' })
   }
 
   const callId = createId()
   const onchainCallId = isFreeTier ? null : hashAgentCallId(callId)
   const split = splitFee(agent.price_per_call, PLATFORM_FEE_BPS)
+  let phase3Admission: Phase3PaidCallAdmission | null = null
+  if (!isFreeTier) {
+    try {
+      phase3Admission = resolvePhase3PaidCallAdmission({
+        walletAddress: caller.wallet_address,
+        agentId: agent.id,
+        builderAddress: builder.wallet_address,
+        gross: split.gross,
+      })
+    } catch (error) {
+      if (error instanceof Phase3AdmissionError) {
+        return res.status(error.statusCode).json({ error: error.message, code: error.code })
+      }
+      throw error
+    }
+  }
   const body = JSON.stringify({ input: parsed.data.input, user_id: userId, call_id: callId })
   const headers = buildGatewayHeaders(
     body,
@@ -192,6 +225,10 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
       })
 
       if (!isFreeTier) {
+        if (phase3Admission?.mode === 'canary') {
+          await persistPhase3CanaryAdmission(tx, callId, phase3Admission)
+        }
+
         const [reserved] = await tx
           .update(creditBalances)
           .set({
@@ -454,6 +491,9 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
         settlement_tx_hash: settlementTxHash,
         reconciliation_pending: true,
       })
+    }
+    if (error instanceof Phase3AdmissionError) {
+      return res.status(error.statusCode).json({ error: error.message, code: error.code })
     }
     if (error instanceof Error && error.name === 'InsufficientCreditsError') {
       return res.status(402).json({

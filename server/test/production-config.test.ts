@@ -50,7 +50,16 @@ const managedKeys = new Set([
   ...Object.keys(validProductionEnv),
   'AGENT_SECRET_DECRYPTION_KEYS',
   'BACKEND_SIGNER_PRIVATE_KEY',
-  'PHASE2_ALLOW_MAINNET',
+  'PHASE3_MAINNET_STARTUP_APPROVAL',
+  'PHASE3_RELEASE_MANIFEST',
+  'PHASE3_RELEASE_MANIFEST_SHA256',
+  'PHASE3_PAID_WRITES_MODE',
+  'PHASE3_CANARY_POLICY_PATH',
+  'PHASE3_CANARY_POLICY_SHA256',
+  'PHASE3_CANARY_STARTED_AT',
+  'PHASE3_CANARY_EXIT_APPROVAL',
+  'PHASE3_CANARY_EXIT_EVIDENCE',
+  'PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
 ])
 const original = new Map<string, string | undefined>()
 for (const key of managedKeys) original.set(key, process.env[key])
@@ -116,9 +125,9 @@ try {
   rejects({ READINESS_REQUIRE_WORKER: 'false' }, /READINESS_REQUIRE_WORKER/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_REQUIRE_BACKUP_HEARTBEAT: 'false' }, /ALERT_REQUIRE_BACKUP_HEARTBEAT/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_SIGNER_MIN_BALANCE_WEI: '-1' }, /ALERT_SIGNER_MIN_BALANCE_WEI/)
-  rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 2 blocks production\/mainnet/)
-  rejects({ VELOSTRA_ENVIRONMENT: 'mainnet' }, /Phase 2 blocks production\/mainnet/)
-  rejects({ VELOSTRA_ENVIRONMENT: 'robinhood-mainnet' }, /Phase 2 blocks production\/mainnet/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 3 blocks production\/mainnet/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'mainnet' }, /Phase 3 blocks production\/mainnet/)
+  rejects({ VELOSTRA_ENVIRONMENT: 'robinhood-mainnet' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'unknown' }, /VELOSTRA_PROCESS_ROLE/)
 
   configure({
@@ -147,11 +156,6 @@ try {
     SETTLEMENT_SIGNER_URL: undefined,
     SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
     METRICS_AUTH_TOKEN: undefined,
-  })
-  assert.doesNotThrow(() => assertProductionConfiguration())
-  configure({
-    VELOSTRA_ENVIRONMENT: 'production',
-    PHASE2_ALLOW_MAINNET: 'explicitly-approved',
   })
   assert.doesNotThrow(() => assertProductionConfiguration())
 

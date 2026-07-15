@@ -1,3 +1,5 @@
+import { assertPhase3RuntimeConfiguration } from './phase3-canary.js'
+
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
 
 export type DeploymentProcessRole =
@@ -79,7 +81,7 @@ export function deploymentProcessRole(): DeploymentProcessRole {
   return role
 }
 
-function assertCommon(): void {
+function assertCommon(role: DeploymentProcessRole): void {
   if (required('VELOSTRA_SECRET_PROVIDER') !== 'managed-injection') {
     throw new Error('Production VELOSTRA_SECRET_PROVIDER must be managed-injection')
   }
@@ -99,15 +101,11 @@ function assertCommon(): void {
     throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase identifier')
   }
   const mainnetLike = environment === 'production' || /(^|-)mainnet($|-)/.test(environment)
-  if (mainnetLike && process.env.PHASE2_ALLOW_MAINNET !== 'explicitly-approved') {
-    throw new Error(
-      'Phase 2 blocks production/mainnet environment startup without explicit release approval'
-    )
-  }
   const release = required('VELOSTRA_RELEASE')
   if (!/^[0-9a-f]{40}$/i.test(release)) {
     throw new Error('Production VELOSTRA_RELEASE must be a full 40-character commit SHA')
   }
+  if (mainnetLike) assertPhase3RuntimeConfiguration(role, environment, release)
 }
 
 function assertRedis(): void {
@@ -197,7 +195,7 @@ export function assertDeploymentConfiguration(
   role: DeploymentProcessRole,
   origins: string[]
 ): void {
-  assertCommon()
+  assertCommon(role)
   if (role === 'migration') return
   if (role === 'api') assertApi(origins)
   else if (role === 'reconciliation-worker') assertWorker()

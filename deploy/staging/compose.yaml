@@ -13,6 +13,9 @@ x-server-common: &server-common
   read_only: true
   tmpfs:
     - /tmp:size=32m,mode=1777
+  volumes:
+    - ${PHASE3_ARTIFACTS_DIR:-../../artifacts/phase3/input}:/run/velostra/phase3-input:ro
+    - ${PHASE3_EVIDENCE_DIR:-../../artifacts/phase3/evidence}:/run/velostra/phase3-evidence
   deploy:
     resources:
       limits:

@@ -467,6 +467,8 @@ export function evaluateCanary({
   const output = result('velostra-phase3-canary-decision', manifest?.release, checks, {
     evaluatedAt,
     decision: 'STOP',
+    sourceManifestSha256: manifest?.integrity?.manifestSha256,
+    policySha256: manifest?.policies?.canary?.sha256,
     expansionAuthorized: false,
     operatorApprovalRequired: true,
   })

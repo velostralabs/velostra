@@ -32,6 +32,8 @@
     "test:ssrf": "tsx test/ssrf.e2e.test.ts",
     "test:http-security": "tsx test/http-security.e2e.test.ts",
     "test:config": "tsx test/production-config.test.ts",
+    "test:phase3-canary": "tsx test/phase3-canary.test.ts",
+    "test:phase3-canary-db": "tsx test/phase3-canary-db.e2e.test.ts",
     "test:secrets": "tsx test/secrets.e2e.test.ts",
     "test:admin-policy": "tsx test/admin-policy.test.ts",
     "test:money-unit": "tsx test/money.test.ts",
@@ -53,7 +55,8 @@
     "test:resilience": "tsx test/rpc-resilience.test.ts && tsx test/chain-policy.test.ts",
     "test:observability-db": "tsx test/observability-db.e2e.test.ts",
     "heartbeat:record": "tsx src/scripts/record-heartbeat.ts",
-    "phase3:snapshot": "tsx src/scripts/capture-phase3-readiness.ts"
+    "phase3:snapshot": "tsx src/scripts/capture-phase3-readiness.ts",
+    "phase3:canary-summary": "tsx src/scripts/capture-phase3-canary.ts"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

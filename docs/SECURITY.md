@@ -24,12 +24,13 @@ Velostra never requests or stores a wallet private key or seed phrase.
 
 ### Builder egress and HMAC
 
-- only allowed HTTP(S) scheme and ports;
+- production endpoints are HTTPS-only; HTTP is restricted to local/test mocks, and
+  ports remain allowlisted;
 - DNS A/AAAA resolution with private, loopback, link-local, multicast,
   documentation, and reserved ranges blocked;
 - requests connect to the validated resolved address while retaining TLS host/SNI;
 - every redirect is revalidated and redirect count is capped;
-- connect/read timeout and maximum response bytes;
+- absolute request deadline, socket timeout, and maximum response bytes;
 - test-only loopback exception is disabled by default;
 - outbound payload uses per-agent HMAC-SHA256 over timestamp + raw body.
 

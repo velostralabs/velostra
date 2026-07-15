@@ -94,7 +94,7 @@ to its call.
 | Lost RPC response after broadcast | AMBIGUOUS state, reservation retention, correlated event recovery | signed-raw-tx persistence is a future resilience option |
 | Live/worker race | shared conditional transition inside one DB transaction | proven by concurrent E2E |
 | SSRF / DNS rebinding | pinned resolved address, blocked ranges, redirect revalidation, port/scheme policy, caps | infrastructure egress firewall still required |
-| Large/slow builder response | connect/read timeout and byte cap | builder availability remains external |
+| Large/slow builder response | absolute deadline, socket timeout, and byte cap | builder availability remains external |
 | Auth replay / multi-instance race | Redis atomic compare-and-delete | Redis outage fails closed in production |
 | Admin privilege abuse | granular roles, audit log, last-admin guard | approval quorum is not implemented |
 | Secret disclosure in DB | authenticated encryption and response omission | encryption key still needs managed custody |

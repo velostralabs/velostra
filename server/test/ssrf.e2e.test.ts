@@ -92,6 +92,13 @@ async function main(): Promise<void> {
     'AGENT_ENDPOINT_PORT_BLOCKED',
     'unapproved port'
   )
+  process.env.NODE_ENV = 'production'
+  await assertRejects(
+    () => Promise.resolve(parseAgentEndpoint('http://agent.example/run')),
+    'AGENT_ENDPOINT_HTTPS_REQUIRED',
+    'production plaintext HTTP endpoint'
+  )
+  process.env.NODE_ENV = 'test'
   await assertRejects(
     () => resolveSafeAgentEndpoint('https://agent.example/run', async () => [
       { address: '93.184.216.34', family: 4 },
@@ -160,6 +167,27 @@ async function main(): Promise<void> {
     'slow endpoint'
   )
   await close(slow.server)
+
+  const slowDrip = await listen((_request, response) => {
+    response.writeHead(200, { 'content-type': 'text/plain' })
+    const interval = setInterval(() => response.write('x'), 20)
+    const finish = setTimeout(() => {
+      clearInterval(interval)
+      response.end()
+    }, 250)
+    response.once('close', () => {
+      clearInterval(interval)
+      clearTimeout(finish)
+    })
+  })
+  process.env.AGENT_ALLOWED_PORTS = '80,443,' + slowDrip.port
+  process.env.AGENT_TIMEOUT_MS = '60'
+  await assertRejects(
+    () => safeFetchAgent('http://127.0.0.1:' + slowDrip.port + '/run'),
+    'AGENT_ENDPOINT_TIMEOUT',
+    'slow-drip endpoint exceeds the absolute deadline'
+  )
+  await close(slowDrip.server)
 
   console.log('\n🎉 SSRF AND AGENT EGRESS POLICY VERIFIED\n')
 }

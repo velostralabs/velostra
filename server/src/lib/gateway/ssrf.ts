@@ -2,6 +2,7 @@ import dns from 'node:dns/promises'
 import http from 'node:http'
 import https from 'node:https'
 import net from 'node:net'
+import { isProduction } from '../config.js'
 import { AppError } from '../errors.js'
 
 export class EndpointSecurityError extends AppError {
@@ -112,6 +113,12 @@ export function parseAgentEndpoint(rawUrl: string): URL {
 
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
     throw new EndpointSecurityError('AGENT_ENDPOINT_SCHEME_BLOCKED', 'Agent endpoint must use HTTPS or HTTP')
+  }
+  if (isProduction() && url.protocol !== 'https:') {
+    throw new EndpointSecurityError(
+      'AGENT_ENDPOINT_HTTPS_REQUIRED',
+      'Production agent endpoints must use HTTPS'
+    )
   }
   if (url.username || url.password) {
     throw new EndpointSecurityError('AGENT_ENDPOINT_CREDENTIALS_BLOCKED', 'Agent endpoint cannot contain URL credentials')
@@ -226,6 +233,12 @@ function requestOnce(
         }
       )
 
+      const deadline = setTimeout(() => {
+        request.destroy(
+          new AgentEndpointError('AGENT_ENDPOINT_TIMEOUT', 'Agent endpoint timed out', 504)
+        )
+      }, options.timeoutMs)
+      request.once('close', () => clearTimeout(deadline))
       request.on('timeout', () => {
         request.destroy(new AgentEndpointError('AGENT_ENDPOINT_TIMEOUT', 'Agent endpoint timed out', 504))
       })

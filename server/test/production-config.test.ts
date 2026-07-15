@@ -42,6 +42,7 @@ const validProductionEnv: Record<string, string> = {
   RECONCILE_MAX_BLOCK_RANGE: '2000',
   RECONCILE_RPC_RETRIES: '3',
   ROBINHOOD_RPC_URL: 'https://rpc.mainnet.chain.robinhood.com',
+  ROBINHOOD_RPC_FALLBACK_URLS: 'https://rpc-backup.staging.internal',
 }
 
 const managedKeys = new Set([
@@ -102,6 +103,7 @@ try {
   rejects({ SETTLEMENT_TOKEN_DECIMALS: '18' }, /SETTLEMENT_TOKEN_DECIMALS/)
   rejects({ VELOSTRA_DEPLOYMENT_BLOCK: '0' }, /VELOSTRA_DEPLOYMENT_BLOCK/)
   rejects({ ROBINHOOD_RPC_URL: 'http://rpc.internal' }, /ROBINHOOD_RPC_URL/)
+  rejects({ ROBINHOOD_RPC_FALLBACK_URLS: 'https://rpc-ok.internal,http://rpc-unsafe.internal' }, /ROBINHOOD_RPC_FALLBACK_URLS/)
   rejects({ VELOSTRA_ENVIRONMENT: 'Invalid Environment' }, /VELOSTRA_ENVIRONMENT/)
   rejects({ VELOSTRA_RELEASE: 'dev' }, /VELOSTRA_RELEASE/)
   rejects({ METRICS_AUTH_TOKEN: 'weak' }, /METRICS_AUTH_TOKEN/)

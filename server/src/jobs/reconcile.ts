@@ -29,6 +29,7 @@ import {
 import { compareMoney, money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
 import { recordHeartbeat } from '../lib/observability/heartbeats.js'
 import { logger } from '../lib/observability/logger.js'
+import { confirmedSafeHead, planBlockRanges } from '../lib/chain-policy.js'
 import {
   failUnsettledCall,
   finalizeSettlement,
@@ -821,7 +822,7 @@ export async function runReconciliation(options: ReconcileOptions = {}) {
   const latestBlock = await withRpcRetry('getBlockNumber', () =>
     getVelostraPublicClient().getBlockNumber()
   )
-  const safeHead = latestBlock > confirmations ? latestBlock - confirmations : 0n
+  const safeHead = confirmedSafeHead(latestBlock, confirmations)
   let fromBlock = options.fromBlock ?? state.last_processed_block + 1n
   if (fromBlock < deploymentBlock) fromBlock = deploymentBlock
   const requestedTo = options.toBlock ?? safeHead
@@ -831,10 +832,10 @@ export async function runReconciliation(options: ReconcileOptions = {}) {
   let scannedEvents = 0
   let ranges = 0
 
-  let cursorAdvanceEnabled = fromBlock === state.last_processed_block + 1n
-  for (let cursor = fromBlock; cursor <= toBlock; cursor += maxBlockRange) {
-    const rangeEnd =
-      cursor + maxBlockRange - 1n < toBlock ? cursor + maxBlockRange - 1n : toBlock
+  const cursorAdvanceEnabled = fromBlock === state.last_processed_block + 1n
+  for (const range of planBlockRanges(fromBlock, toBlock, maxBlockRange)) {
+    const cursor = range.fromBlock
+    const rangeEnd = range.toBlock
     scannedEvents += await ingestRange(syncId, cursor, rangeEnd, cursorAdvanceEnabled)
     ranges += 1
     console.info(

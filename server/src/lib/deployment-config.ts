@@ -42,6 +42,20 @@ function httpsUrl(name: string): URL {
   return value
 }
 
+function optionalHttpsUrls(name: string): URL[] {
+  const raw = process.env[name]?.trim()
+  if (!raw) return []
+  return raw.split(',').map((entry) => {
+    const value = entry.trim()
+    if (!value) throw new Error('Production ' + name + ' contains an empty URL')
+    const parsed = new URL(value)
+    if (parsed.protocol !== 'https:' || parsed.username || parsed.password) {
+      throw new Error('Production ' + name + ' must use HTTPS without embedded credentials')
+    }
+    return parsed
+  })
+}
+
 function exact32ByteSecret(name: string): void {
   const value = required(name)
   const decoded = /^[0-9a-fA-F]{64}$/.test(value)
@@ -111,6 +125,7 @@ function assertChain(requireSignerAuthorization: boolean): void {
   }
   positiveInteger('VELOSTRA_DEPLOYMENT_BLOCK')
   httpsUrl('ROBINHOOD_RPC_URL')
+  optionalHttpsUrls('ROBINHOOD_RPC_FALLBACK_URLS')
   if (process.env.ONCHAIN_SETTLEMENT_MODE !== 'required') {
     throw new Error('Production ONCHAIN_SETTLEMENT_MODE must be required')
   }

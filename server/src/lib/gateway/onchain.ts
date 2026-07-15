@@ -5,7 +5,6 @@ import {
   encodeFunctionData,
   defineChain,
   getAddress,
-  http,
   keccak256,
   isAddress,
   parseUnits,
@@ -25,6 +24,7 @@ import {
   type MoneyInput,
 } from '../money.js'
 import { settlementSignerMode, submitRemoteSettlement } from './signer.js'
+import { createResilientRpcTransport, parseRpcUrls } from '../rpc.js'
 
 export const velostraEscrowAbi = [
   {
@@ -91,8 +91,11 @@ export class OnchainVerificationError extends Error {
 
 export const settlementTokenDecimals = Number(process.env.SETTLEMENT_TOKEN_DECIMALS ?? 6)
 export const velostraChainId = Number(process.env.ROBINHOOD_CHAIN_ID ?? 4663)
-export const velostraRpcUrl =
-  process.env.ROBINHOOD_RPC_URL ?? 'https://rpc.mainnet.chain.robinhood.com'
+export const velostraRpcUrls = parseRpcUrls(
+  process.env.ROBINHOOD_RPC_URL ?? 'https://rpc.mainnet.chain.robinhood.com',
+  process.env.ROBINHOOD_RPC_FALLBACK_URLS
+)
+export const velostraRpcUrl = velostraRpcUrls[0]
 export const velostraRpcTimeoutMs = Number(process.env.ROBINHOOD_RPC_TIMEOUT_MS ?? 10_000)
 
 if (settlementTokenDecimals !== 6) {
@@ -106,7 +109,7 @@ const robinhoodChain = defineChain({
   id: velostraChainId,
   name: velostraChainId === 4663 ? 'Robinhood Chain' : `Velostra EVM (${velostraChainId})`,
   nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-  rpcUrls: { default: { http: [velostraRpcUrl] } },
+  rpcUrls: { default: { http: velostraRpcUrls } },
 })
 
 let publicClient: ReturnType<typeof createPublicClient> | undefined
@@ -114,7 +117,7 @@ let publicClient: ReturnType<typeof createPublicClient> | undefined
 export function getVelostraPublicClient() {
   publicClient ??= createPublicClient({
     chain: robinhoodChain,
-    transport: http(velostraRpcUrl, { timeout: velostraRpcTimeoutMs }),
+    transport: createResilientRpcTransport(velostraRpcUrls, velostraRpcTimeoutMs),
   })
   return publicClient
 }
@@ -330,7 +333,7 @@ async function submitBuilderCredit(
   const walletClient = createWalletClient({
     account,
     chain: robinhoodChain,
-    transport: http(velostraRpcUrl, { timeout: velostraRpcTimeoutMs }),
+    transport: createResilientRpcTransport(velostraRpcUrls, velostraRpcTimeoutMs),
   })
   return walletClient.writeContract({
     address,

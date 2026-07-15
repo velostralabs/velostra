@@ -50,6 +50,7 @@
     "monitor:worker": "tsx src/jobs/monitor.ts --watch",
     "alert:ack": "tsx src/scripts/acknowledge-alert.ts",
     "test:observability": "tsx test/observability.test.ts",
+    "test:resilience": "tsx test/rpc-resilience.test.ts && tsx test/chain-policy.test.ts",
     "test:observability-db": "tsx test/observability-db.e2e.test.ts",
     "heartbeat:record": "tsx src/scripts/record-heartbeat.ts"
   },

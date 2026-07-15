@@ -1,0 +1,26 @@
+.platform-studio { display: grid; gap: 20px; margin-top: 24px; }
+.platform-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.platform-card { min-width: 0; padding: 22px; }
+.platform-card--wide { padding: 22px; }
+.platform-card__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.platform-card__heading h3 { margin: 5px 0 0; font-size: 1.2rem; }
+.platform-card__heading .mono { color: var(--lime, #c4ff63); font-size: .67rem; letter-spacing: .13em; }
+.platform-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: rgba(9,14,18,.72); }
+.platform-metrics > div { display: grid; gap: 8px; padding: 18px; border-right: 1px solid var(--line); }
+.platform-metrics > div:last-child { border-right: 0; }
+.platform-metrics span { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; }
+.platform-metrics strong { font-size: 1.12rem; }
+.platform-form-grid { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 12px 0; }
+.event-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 12px 0 16px; }
+.event-grid label { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--muted); font-size: .76rem; }
+.event-grid span { overflow: hidden; text-overflow: ellipsis; }
+.platform-list { display: grid; gap: 8px; margin-top: 16px; }
+.platform-list__row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 0; border-top: 1px solid var(--line); }
+.platform-list__row > div:first-child { display: grid; gap: 4px; min-width: 0; }
+.platform-list__row strong, .platform-list__row span { overflow-wrap: anywhere; }
+.platform-list__row span { color: var(--muted); font-size: .75rem; }
+.notification-row { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: inherit; text-align: left; }
+.notification-row--unread { border-color: rgba(196,255,99,.38); background: rgba(196,255,99,.045); }
+.notification-row > span { display: grid; gap: 5px; }
+.notification-row small, .notification-row time { color: var(--muted); }
+@media (max-width: 1100px) { .platform-columns { grid-template-columns: 1fr; } .platform-metrics { grid-template-columns: repeat(2, 1fr); } .platform-metrics > div { border-bottom: 1px solid var(--line); } }

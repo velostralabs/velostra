@@ -3,7 +3,7 @@ import { ArrowLeft, BadgeCheck, Play, Star } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
-import { api } from '../lib/api'
+import { api, createIdempotencyKey, v1 } from '../lib/api'
 
 interface AgentDetailData {
   id: string
@@ -26,6 +26,11 @@ export default function AgentDetail() {
   const [running, setRunning] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
+  const [lastCallId, setLastCallId] = useState<string | null>(null)
+  const [reportReason, setReportReason] = useState('NOT_WORKING')
+  const [reportDescription, setReportDescription] = useState('')
+  const [reporting, setReporting] = useState(false)
+  const [reportMessage, setReportMessage] = useState<string | null>(null)
 
   useEffect(() => {
     if (!slug) return
@@ -49,8 +54,13 @@ export default function AgentDetail() {
     setRunError(null)
     setOutput(null)
     try {
-      const response = await api.post<{ output: unknown }>('/api/agents/' + slug + '/run', { input })
-      setOutput(JSON.stringify(response.output, null, 2))
+      const response = await v1.post<{ call_id: string; output: unknown }>(
+        '/agents/' + slug + '/run',
+        { input },
+        createIdempotencyKey()
+      )
+      setLastCallId(response.data.call_id)
+      setOutput(JSON.stringify(response.data.output, null, 2))
     } catch (error) {
       setRunError(error instanceof Error ? error.message : 'Run failed')
     } finally {
@@ -58,6 +68,24 @@ export default function AgentDetail() {
     }
   }
 
+  async function submitReport() {
+    if (!agent || reportDescription.trim().length < 10) return
+    setReporting(true)
+    setReportMessage(null)
+    try {
+      await v1.post(`/trust/agents/${agent.id}/reports`, {
+        reason: reportReason,
+        description: reportDescription.trim(),
+        evidence: lastCallId ? { call_id: lastCallId } : {},
+      })
+      setReportDescription('')
+      setReportMessage('Report submitted securely for moderation.')
+    } catch (error) {
+      setReportMessage(error instanceof Error ? error.message : 'Report submission failed.')
+    } finally {
+      setReporting(false)
+    }
+  }
   if (loadError) {
     return (
       <PageShell>
@@ -139,6 +167,37 @@ export default function AgentDetail() {
           )}
         </aside>
       </div>
+
+      <SignInGate>
+        {() => (
+          <section className="panel panel--spaced" aria-labelledby="report-agent-title">
+            <div className="panel-heading">
+              <div><span className="mono">TRUST SIGNAL</span><h2 id="report-agent-title">Report this agent</h2></div>
+              <span className="badge badge--warn">Evidence-safe</span>
+            </div>
+            <div className="form-grid">
+              <div className="field-row">
+                <label htmlFor="report-reason">Reason</label>
+                <select id="report-reason" value={reportReason} onChange={(event) => setReportReason(event.target.value)}>
+                  <option value="NOT_WORKING">Not working</option>
+                  <option value="MISLEADING">Misleading</option>
+                  <option value="HARMFUL_CONTENT">Harmful content</option>
+                  <option value="SPAM">Spam</option>
+                  <option value="INAPPROPRIATE">Inappropriate</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div className="field-row">
+                <label htmlFor="report-description">What happened</label>
+                <textarea id="report-description" rows={3} maxLength={4000} value={reportDescription} onChange={(event) => setReportDescription(event.target.value)} placeholder="Describe the observable issue. Never include a secret or private key." />
+              </div>
+            </div>
+            <button type="button" className="btn btn--ghost" disabled={reporting || reportDescription.trim().length < 10} onClick={() => void submitReport()}>{reporting ? 'Submitting…' : 'Submit report'}</button>
+            {lastCallId && <p className="form-message form-message--notice">Your latest correlated call ID will be attached; the prompt and output will not.</p>}
+            {reportMessage && <p className="form-message" role="status">{reportMessage}</p>}
+          </section>
+        )}
+      </SignInGate>
     </PageShell>
   )
 }

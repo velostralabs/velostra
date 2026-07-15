@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
+import GovernanceConsole from '../components/GovernanceConsole'
 import { api } from '../lib/api'
 
 interface Stats {
@@ -96,6 +97,8 @@ function AdminConsole() {
           </div>
         )}
       </section>
+
+      <GovernanceConsole />
     </>
   )
 }

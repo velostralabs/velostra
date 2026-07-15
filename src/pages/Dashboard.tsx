@@ -4,6 +4,7 @@ import { parseUnits } from 'viem'
 import { Link } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
+import PrivacyCenter from '../components/PrivacyCenter'
 import { api } from '../lib/api'
 import {
   settlementTokenAbi,
@@ -262,6 +263,8 @@ function DashboardContent() {
           </table>
         )}
       </div>
+
+      <PrivacyCenter />
     </>
   )
 }

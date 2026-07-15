@@ -4,6 +4,7 @@ import { parseUnits } from 'viem'
 import { Link } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
+import BuilderPlatform from '../components/BuilderPlatform'
 import { api } from '../lib/api'
 import { velostraEscrowAbi, VELOSTRA_ESCROW_ADDRESS } from '../lib/contract'
 
@@ -440,6 +441,7 @@ function BuilderConsole() {
       </div>
 
       <SubmitAgentForm onDone={() => void load()} />
+      <BuilderPlatform agents={data.agents} />
     </>
   )
 }

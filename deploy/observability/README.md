@@ -43,4 +43,8 @@ replace it.
 - suppress the backup heartbeat and receive backup_stale.
 
 Record detection time, delivery time, acknowledgement, escalation, runbook action,
-recovery time, and final RESOLVED state for the Phase 2 evidence packet.
+recovery time, and final `RESOLVED` state. Summarize all required scenarios in the
+`alerts` artifact, bind it to the same environment/release, hash it in the Phase 2
+manifest, and retain provider delivery IDs outside the public repository. Local rule
+and lifecycle tests prove implementation behavior but do not prove real operator
+receipt.

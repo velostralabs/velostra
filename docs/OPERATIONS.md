@@ -1,14 +1,14 @@
 # Operations and incident runbook
 
 > Last verified against the workspace: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 > No mainnet deployment is recorded in this repository.
 
 ## Production process model
 
 Run the API and reconciliation worker as separate supervised processes from the
 same immutable backend build. Use managed PostgreSQL with PITR, managed Redis,
-dedicated HTTPS RPC, TLS at the edge, and a secret manager.
+dedicated primary/fallback HTTPS RPCs, TLS at the edge, and a secret manager.
 
 ```bash
 # release schema first
@@ -70,11 +70,11 @@ A one-hour API/worker outage does not lose confirmed events. On restart:
 8. emit a drift report.
 
 At an illustrative 100 ms block interval, one hour is about 36,000 blocks or 18
-default chunks. A 429 is not recursively split; the iteration retries, then the
-watch loop waits its interval and resumes from the unchanged cursor. This is safe
-for correctness, but the recovery time cannot be guaranteed under sustained RPC
-throttling. Dedicated RPC, cursor-lag metrics, and a measured one-hour staging drill
-are Phase 2 gates.
+default chunks. A 429 is not recursively split; viem first fails over through the
+configured `ROBINHOOD_RPC_FALLBACK_URLS`, then iteration-level retry/backoff applies. If every
+endpoint remains unavailable, the watch loop resumes from the unchanged cursor. Local
+load/reorg evidence proves correctness, but only the pending managed-staging one-hour
+drill may freeze the catch-up SLO.
 
 ## Required alerts
 
@@ -92,8 +92,9 @@ Alert on:
 - unexpected role grant/revoke, pause, fee update, successor declaration, or
   liquidity migration.
 
-Logs already expose clear worker warnings; external metric transport and alert
-routing are Phase 2 work and must be proven end-to-end before mainnet.
+Metrics, durable alert state, webhook transport, dedupe, acknowledgement, resolution,
+severity, and runbook links are implemented. Delivery of every injected scenario to a
+real operator remains an external Phase 2 exit artifact.
 
 ## Incident: drift warning
 
@@ -165,10 +166,11 @@ pg_restore --no-owner --no-privileges --dbname="$RESTORED_DATABASE_URL" velostra
 SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restore:verify
 ```
 
-`restore:verify` compares every public table row count, migration history, exact
-transaction/claim/credit/earnings/call/outbox aggregates, critical constraints,
-and indexes. The Phase 1 disposable restore drill passed; managed PITR configuration
-and timed drill remain environment-specific Phase 2 work.
+`restore:verify` compares all 19 public tables, seven migrations, exact transaction/
+claim/credit/earnings/call/outbox aggregates, critical constraints, and indexes. When
+`RESTORE_DRILL_STARTED_AT`, `BACKUP_CAPTURED_AT`, and `RESTORE_EVIDENCE_PATH` are set,
+it writes a redacted RPO/RTO evidence artifact. The disposable timed drill passed; the
+provider-native managed PITR drill remains an external Phase 2 exit gate.
 
 ## Secret rotation
 
@@ -181,6 +183,35 @@ and timed drill remain environment-specific Phase 2 work.
   its secret version, and its builder-rotation timestamp.
 - Admin bootstrap wallets are only a bootstrap mechanism; production authorization
   lives in `admin_role_assignments`.
+
+## Phase 2 staging evidence commands
+
+All commands below fail closed unless the explicit isolated-staging approval and
+attestation variables are present. Never point them at production/mainnet value.
+
+```bash
+# measured paid-call load; writes artifacts/phase2/load-*.json
+PHASE2_DRILL_APPROVED=isolated-staging-only \
+PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_SESSION_COOKIE=... PHASE2_AGENT_SLUG=... npm run phase2:load
+
+# minimum 72 hours; writes interrupt-safe JSONL checkpoints and summary
+PHASE2_SOAK_APPROVED=isolated-staging-72h \
+PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_METRICS_TOKEN=... PHASE2_SESSION_COOKIE=... PHASE2_AGENT_SLUG=... \
+PHASE2_WORKER_RESTART_EVIDENCE_PATH=... PHASE2_FINDINGS_EVIDENCE_PATH=... \
+npm run phase2:soak
+
+# validate signed, SHA-256-bound release packet
+PHASE2_EVIDENCE_MANIFEST=artifacts/phase2/evidence-manifest.json \
+npm run phase2:evidence
+```
+
+The load/soak logs must not include cookies, metrics tokens, database URLs, RPC
+credentials, or signer authorization. Use
+[`config/phase2-evidence-manifest.example.json`](../config/phase2-evidence-manifest.example.json)
+as the packet contract. Hash artifacts only after the frozen run completes; any later
+change intentionally invalidates the manifest.
 
 ## Release evidence
 

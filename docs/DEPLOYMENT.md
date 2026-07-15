@@ -1,16 +1,16 @@
 # Deployment and operations
 
 > Last verified against build/deploy scripts: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 > No production or mainnet deployment is recorded.
 
 ## Release gates
 
-Phase 1 implementation and local/CI evidence are complete for contract/backend/database.
-Independent contract and focused backend review remain the pre-mainnet external gate.
-Phase 2 is now the active workstream: production-like staging, managed secrets,
-observability, real-wallet E2E, load/chaos/reorg drills, and a 72-hour soak. Do not
-deploy mainnet value before both gates close.
+Phase 1 and Phase 2 repository implementation are complete. Independent contract/
+backend review and the managed-staging Phase 2 evidence packet remain external gates.
+Provision only isolated non-mainnet-value staging, execute the real-wallet/alert/outage/
+PITR/72-hour drills, and pass the signed evidence validator. Do not deploy mainnet
+value before both external gates close.
 
 ## Target topology
 
@@ -73,11 +73,16 @@ Both processes run strict production configuration validation.
 | `AGENT_SECRET_DECRYPTION_KEYS` | optional JSON old-key map during rotation |
 | `ADMIN_BOOTSTRAP_WALLETS` | initial governance wallets only |
 | `VELOSTRA_ESCROW_ADDRESS` | non-zero deployed escrow |
-| `BACKEND_SIGNER_PRIVATE_KEY` | valid secp256k1 key from managed custody |
+| `BACKEND_SIGNER_PRIVATE_KEY` | forbidden in production; startup rejects it |
+| `SETTLEMENT_SIGNER_MODE` | exactly `remote` |
+| `SETTLEMENT_SIGNER_URL` | restricted HTTPS signer endpoint |
+| `SETTLEMENT_SIGNER_AUTH_TOKEN` | managed secret, at least 32 characters |
+| `SETTLEMENT_SIGNER_ADDRESS` | non-zero authorized settler |
 | `ONCHAIN_SETTLEMENT_MODE` | exactly `required` |
 | `ROBINHOOD_CHAIN_ID` | `4663` |
 | `SETTLEMENT_TOKEN_DECIMALS` | `6` |
-| `ROBINHOOD_RPC_URL` | dedicated HTTPS endpoint |
+| `ROBINHOOD_RPC_URL` | dedicated primary HTTPS endpoint |
+| `ROBINHOOD_RPC_FALLBACK_URLS` | optional comma-separated credential-free HTTPS fallbacks |
 | `VELOSTRA_DEPLOYMENT_BLOCK` | positive exact deployment block |
 
 Operational tuning is documented in `server/.env.example`: HTTP size/proxy, Redis
@@ -148,7 +153,7 @@ Contract incidents use pause, settler revoke/rotation, and successor procedure f
 ## One-hour catch-up
 
 Correctness is safe because failed ranges do not advance the cursor. Default 2,000
-block chunks, retry/backoff, and adaptive splitting let the worker catch up from a
-large gap. Sustained RPC throttling may make recovery slow, so the production SLO
-must be established by a Phase 2 staging outage drill with lag metrics and alert
-routing; no fixed recovery time is claimed before that evidence exists.
+block chunks, retry/backoff, adaptive splitting, and ordered multi-RPC failover let the
+worker resume a large gap without skipping. The local 27-block drill passed with zero
+drift; sustained failure across every provider can still delay recovery. Freeze no
+one-hour SLO until the managed-staging outage artifact passes.

@@ -1,7 +1,7 @@
 # Local quickstart
 
 > Last verified against package scripts and env templates: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 ## Prerequisites
 
@@ -58,6 +58,9 @@ Invoke-RestMethod http://localhost:8787/health
 Paid flow additionally needs a local/test escrow, settler key, RPC, chain ID,
 token decimals 6, and deployment block. `ONCHAIN_SETTLEMENT_MODE=disabled` is only
 for isolated UI work and does not prove a money loop; production rejects it.
+Multiple RPCs can be exercised with `ROBINHOOD_RPC_URL` as primary and a
+comma-separated `ROBINHOOD_RPC_FALLBACK_URLS` list. Production signer authority
+must use the restricted HTTPS signer adapter; raw process private keys are rejected.
 
 ## Frontend
 
@@ -115,6 +118,9 @@ Isolated gates:
 ```powershell
 npm run lint
 npm run build
+npm run test:browser
+npm run audit:metamask
+npm run test:phase2-evidence
 npm --prefix server run build
 npm --prefix server run db:check
 npm --prefix server run test:config
@@ -122,6 +128,10 @@ npm --prefix server run test:auth
 npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
 npm --prefix server run test:secrets
+npm --prefix server run test:signer
+npm --prefix server run test:authority
+npm --prefix server run test:resilience
+npm --prefix server run test:observability
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 npm test --prefix contracts
@@ -133,6 +143,7 @@ Disposable Postgres gates:
 $env:DATABASE_URL='postgresql://postgres:velostra@127.0.0.1:5432/velostra_test'
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
+npm --prefix server run test:observability-db
 npm --prefix server run test:money
 ```
 

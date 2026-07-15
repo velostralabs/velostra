@@ -1,7 +1,7 @@
 # Testing and release evidence
 
 > Last verified against test files and scripts: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 ## Automated matrix
 
@@ -9,13 +9,20 @@
 |---|---|---|---|
 | Web lint | `npm run lint` | none | source/static checks |
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
+| Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
+| Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
 | API build | `npm --prefix server run build` | none | strict server compile |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
+| Resilience policy | `npm --prefix server run test:resilience` | local HTTP | RPC 429 failover and confirmation/range policy |
+| Observability | `npm --prefix server run test:observability` | none | alert rules, metrics, readiness policy |
+| Observability DB | `npm --prefix server run test:observability-db` | disposable Postgres | heartbeat and alert lifecycle persistence |
 | Auth | `npm --prefix server run test:auth` | none | bound challenge, Redis-style atomic multi-instance replay defense |
 | SSRF | `npm --prefix server run test:ssrf` | local sockets/DNS doubles | blocked ranges, redirect/DNS/size/timeout boundary |
 | HTTP security | `npm --prefix server run test:http-security` | none | origin, headers, request IDs, body/JSON/404 codes |
 | Secret envelope | `npm --prefix server run test:secrets` | none | encrypt/decrypt/tamper/rotation/revoke behavior |
+| Restricted signer | `npm --prefix server run test:signer` | local HTTP double | allowlist, idempotency, auth, timeout, and response validation |
+| Authority policy | `npm --prefix server run test:authority` | none | distinct owned multisig roles and restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
 | Contract E2E | `npm test --prefix contracts` | in-process Ganache | 10 Phase 1 authority/solvency/migration groups |
@@ -26,10 +33,11 @@
 
 ## CI
 
-`.github/workflows/ci.yml` has four jobs:
+`.github/workflows/ci.yml` has five jobs:
 
-- web: lockfile install, production audit at high threshold, lint, build;
-- server: lockfile install, production audit, build, migration check, all isolated
+- web: lockfile install, production audit, MetaMask reachability, evidence-validator, lint, build;
+- browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
+- server: lockfile install, production audit, build, migration check, resilience and all isolated
   security/unit suites;
 - contract: compile and local-EVM E2E;
 - money-loop: Postgres 16 service, versioned migrate, fresh/upgrade migration test,
@@ -61,9 +69,15 @@ Express API and HMAC-validating builder, and invokes the real worker. It proves:
     anticipated 90/10 split;
 12. a claim waits while earlier earnings remain unresolved instead of silently
     clamping available earnings;
-13. zero drift after every normal recovery and one reservation release/application.
+13. zero drift after every normal recovery and one reservation release/application;
+14. twelve concurrent calls enforce ten unique settlements plus two intentional Redis limits;
+15. DB reservations, signer serialization, call/transaction uniqueness, and exact money under load;
+16. twelve unique unreported deposits catch up from a 27-block worker gap and replay idempotently;
+17. an unconfirmed fork event is excluded, reverted, and replaced by the canonical event after two confirmations;
+18. final deep readiness, zero drift, solvency, no reservation residue, and deterministic process exit.
 
-The suite intentionally uses tiny block ranges so multi-chunk behavior executes.
+The local-EVM dense scan uses one-block ranges to avoid Ganache batch-query variance;
+planBlockRanges separately proves larger bounded ranges are contiguous and gap-free.
 
 ## Migration and restore evidence
 
@@ -74,7 +88,7 @@ The suite intentionally uses tiny block ranges so multi-chunk behavior executes.
 - all settlement states installed in order;
 - money constraints reject invalid reservation/splits, negative earnings, and
   non-positive claims;
-- fresh install creates 17 tables and required indexes.
+- fresh install creates 19 tables and required indexes.
 
 The completed Phase 1 restore drill used a disposable PostgreSQL 16 database,
 custom-format dump, clean restore, and `restore:verify`. Exact tables, row counts,
@@ -87,10 +101,15 @@ matched.
 npm run lint
 npm run build
 npm audit --omit=dev --audit-level=high
+npm run audit:metamask
+npm run test:browser
+npm run test:phase2-evidence
 
 npm --prefix server run build
 npm --prefix server run db:check
 npm --prefix server run test:config
+npm --prefix server run test:resilience
+npm --prefix server run test:observability
 npm --prefix server run test:auth
 npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
@@ -108,42 +127,47 @@ npm --prefix server run test:migrations
 npm --prefix server run test:money
 ```
 
-## Manual browser evidence
+## Browser, wallet, and performance evidence
 
-Desktop product QA has covered canonical routes, no horizontal overflow, lazy
-surfaces, offline marketplace state, execution/settlement controls, and provider
-picker layout/deduplication. It did not grant a real extension permission or submit
-real target-chain value.
+`npm run test:browser` builds a deterministic production fixture and runs 17 Chromium
+tests with one worker so performance observations are isolated. Sixteen pass locally;
+the guarded real-MetaMask isolated-staging test is skipped unless its explicit approval,
+extension path, dedicated profile, base URL, and low-value inputs are supplied. The
+passing suite includes eight serious/critical axe scans, keyboard focus containment/
+restoration, desktop overflow/collision assertions, home/marketplace baselines,
+canonical route history, an injected-wallet money/recovery path, and three route
+performance budgets.
+
+Real MetaMask is therefore automated but not yet evidenced. Execute
+`npm run test:wallet:metamask` only against isolated staging and attach its report to
+the Phase 2 evidence manifest.
 
 ## Current dependency audit
 
-Final `npm audit --omit=dev --audit-level=high` results on 2026-07-15:
+`npm audit --omit=dev --audit-level=high` reports no High/Critical production finding.
+The web tree reports six Moderate entries propagated from one transitive `uuid`
+advisory in the MetaMask connector tree, with no supported upstream fix. The two
+installed reviewed call sites use `uuid.v4()` without a caller-supplied buffer, so the
+advisory's v3/v5/v6 buffer condition is not reachable through the current application
+path. `npm run audit:metamask` fails if that assumption changes. The decision is
+time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPOSITION.md).
 
-- backend: 0 vulnerabilities;
-- contract package: 0 vulnerabilities;
-- web: 6 moderate vulnerabilities from transitive `uuid <11.1.1` inside the
-  MetaMask connector dependency tree; npm reports no fix available.
+## Phase 2 operational evidence still required
 
-The web command exits successfully at the CI High threshold, but the moderate
-finding remains an explicit pre-production reachability/upstream/accepted-risk
-review item. It is not silently treated as fixed.
+- real MetaMask journey and frozen managed-staging performance baseline;
+- managed secret/signer/authority rotation and compromise drills;
+- real operator delivery/acknowledgement for every required injected alert;
+- one-hour API/worker outage plus managed DB, Redis, RPC, restart, and ambiguity faults;
+- provider-native managed PITR with measured RPO/RTO;
+- minimum 72-hour soak with restart, daily reconciliation, zero drift/stale rows/
+  High-Critical findings/unowned alerts;
+- signed SHA-256-bound release packet accepted by `npm run phase2:evidence`;
+- independent contract and focused backend review before Phase 3.
 
-The final local regression also ran `npm --prefix server run test:platform`
-against the local API and mock builder. The complete legacy marketplace path
-passed: builder signup, registration, submission, admin approval, public
-marketplace, real free call, review, admin stats, and user dashboard.
+The RPC failover, concurrent load, dense local catch-up, reorg, browser, disposable
+restore, soak-runner, and evidence-validator implementations are complete and locally
+verified. They do not substitute for the external items above.
 
-## Remaining Phase 2 evidence
-
-- external audit and focused review are the final Phase 1 sign-off;
-- real MetaMask + one injected provider automation;
-- visual regression and accessibility automation;
-- one-hour API/worker/RPC outage timing;
-- RPC 429/failover and dense-event scan;
-- reorg rollback decision/drill;
-- concurrent signer/load/DB pool pressure;
-- managed PITR and timed restore;
-- alert delivery to an operator and 72-hour staging soak.
-
-Warnings from Ganache's optional native µWS fallback or Node test listener count do
-not represent a product test failure; assertions and process exit remain the gate.
+Warnings from Ganache's optional native µWS fallback or listener count are test-runtime
+fallback notices; receipt assertions, financial invariants, and process exit remain the
+gate.

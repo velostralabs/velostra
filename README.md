@@ -155,6 +155,9 @@ bounded, retried with backoff, and adaptively split.
 ```bash
 npm run lint
 npm run build
+npm run test:browser
+npm run audit:metamask
+npm run test:phase2-evidence
 
 npm --prefix server run build
 npm --prefix server run db:check
@@ -163,6 +166,10 @@ npm --prefix server run test:auth
 npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
 npm --prefix server run test:secrets
+npm --prefix server run test:signer
+npm --prefix server run test:authority
+npm --prefix server run test:resilience
+npm --prefix server run test:observability
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 
@@ -174,8 +181,35 @@ npm --prefix server run test:migrations
 npm --prefix server run test:money
 ```
 
-CI additionally performs production dependency audits and PostgreSQL dump/restore
-verification. See [Testing](./docs/TESTING.md).
+CI additionally performs production dependency audits, browser/accessibility/
+performance verification, evidence-validator tamper tests, and PostgreSQL
+dump/restore verification. See [Testing](./docs/TESTING.md).
+
+Guarded Phase 2 staging runners are available only for an approved isolated
+environment:
+
+```bash
+PHASE2_DRILL_APPROVED=isolated-staging-only \
+PHASE2_BASE_URL=https://staging.example \
+PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
+PHASE2_AGENT_SLUG=<synthetic-agent> npm run phase2:load
+
+PHASE2_SOAK_APPROVED=isolated-staging-72h \
+PHASE2_BASE_URL=https://staging.example \
+PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_METRICS_TOKEN='<managed-token>' \
+PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
+PHASE2_AGENT_SLUG=<synthetic-agent> \
+PHASE2_WORKER_RESTART_EVIDENCE_PATH=<restart.json> \
+PHASE2_FINDINGS_EVIDENCE_PATH=<findings.json> npm run phase2:soak
+
+npm run phase2:evidence -- --manifest=artifacts/phase2/evidence-manifest.json
+```
+
+The load and soak commands require their documented approval sentinels. The final
+validator hashes every required artifact and fails closed if evidence is missing,
+tampered, cross-release, or unsigned.
 
 ## Documentation
 
@@ -195,13 +229,16 @@ verification. See [Testing](./docs/TESTING.md).
 
 ## Status
 
-Phase 1 implementation is complete and recorded at the verified baseline in the
-[Phase 1 handoff](./docs/PHASE_1_HANDOFF.md). Phase 2 staging and observability is
-the next active workstream and may proceed without mainnet value.
+Phase 1 implementation is recorded at the verified baseline in the
+[Phase 1 handoff](./docs/PHASE_1_HANDOFF.md). Phase 2 repository implementation is
+complete: isolated topology, restricted signer adapter, durable observability,
+browser/wallet gates, RPC failover/finality policy, load/reorg/restore drills, and
+the guarded soak/evidence pipeline are present and locally verified.
 The contract is **not independently audited and not deployed to mainnet**. External
-contract and focused backend review remain mandatory before Phase 3/mainnet. Managed
-staging, KMS, alert delivery, real-wallet automation, load/chaos/reorg drills, and
-soak are Phase 2 gates.
+contract and focused backend review remain mandatory before Phase 3/mainnet. A real
+managed-staging run—restricted signer custody, operator alert delivery, MetaMask,
+load/outage/PITR evidence, and at least 72 hours of soak—remains an open Phase 2
+exit gate.
 
 Do not put real value behind this repository until a reviewed release explicitly
 closes those gates.

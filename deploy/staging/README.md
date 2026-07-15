@@ -33,6 +33,41 @@ resources.
 6. Start API and worker, verify `/health`, then run the Phase 2 deep-readiness and
    synthetic smoke gates before exposing staging to testers.
 
+## Phase 2 evidence run
+
+Freeze `VELOSTRA_RELEASE` to the full 40-character reviewed commit and use only a
+synthetic user/agent/value. The guarded runners read secrets from environment
+injection and refuse production/mainnet targets:
+
+```bash
+PHASE2_DRILL_APPROVED=isolated-staging-only \
+PHASE2_BASE_URL=https://staging.example \
+PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
+PHASE2_AGENT_SLUG=<synthetic-agent> npm run phase2:load
+
+PHASE2_SOAK_APPROVED=isolated-staging-72h \
+PHASE2_BASE_URL=https://staging.example \
+PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_METRICS_TOKEN='<managed-token>' \
+PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
+PHASE2_AGENT_SLUG=<synthetic-agent> \
+PHASE2_WORKER_RESTART_EVIDENCE_PATH=<restart.json> \
+PHASE2_FINDINGS_EVIDENCE_PATH=<findings.json> npm run phase2:soak
+```
+
+Complete every artifact listed in
+`config/phase2-evidence-manifest.example.json`, compute its SHA-256, add accountable
+operator sign-off, and run:
+
+```bash
+npm run phase2:evidence -- --manifest=artifacts/phase2/evidence-manifest.json
+```
+
+Passing local tests or starting the compose topology does not close Phase 2. The
+managed outage/PITR, real-wallet, alert-delivery, restart, 72-hour soak, findings,
+configuration, dashboard, dependency, and sign-off records must all be present.
+
 The compose manifest is also a portable topology specification. A managed platform
 may translate each service into its native service definition as long as the listed
 invariants and resource boundaries remain intact and the translated configuration is

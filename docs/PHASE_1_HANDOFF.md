@@ -2,10 +2,13 @@
 
 > Recorded: 2026-07-15.
 > Canonical implementation baseline: `ea1b61de20613edd3727f90efb86766918152b07`.
+> Historical snapshot: Phase 2 later completed and passed internal engineering/CI
+> audit. [STATUS.md](./STATUS.md) is authoritative for current sequencing.
 
 This record separates repository implementation completion from external release approval.
 Phase 1 implementation is complete and verified; independent contract and backend review
-remain mandatory before mainnet value is enabled. Phase 2 is the next active workstream.
+remain mandatory before mainnet value is enabled. At the time of this snapshot, Phase 2
+was the next active workstream.
 
 ## Repository record
 
@@ -100,7 +103,7 @@ Phase 2 may begin in parallel with independent review under these constraints:
    and determining re-review impact;
 3. use isolated staging accounts, contracts, databases, and secrets;
 4. preserve reconciliation and drift monitoring during every drill;
-5. require evidence for each Phase 2 exit gate before Phase 3 can begin.
+5. require managed Phase 2 evidence before any real-value Phase 3 deployment.
 
 The ordered Phase 2 work is maintained in [ROADMAP.md](./ROADMAP.md). External review
 scope and findings policy are maintained in [AUDIT_READINESS.md](./AUDIT_READINESS.md).

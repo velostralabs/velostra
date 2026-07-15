@@ -1,17 +1,18 @@
 # Velostra documentation
 
-> Last verified against the workspace: 2026-07-15.
+> Last verified against the workspace: 2026-07-16.
 
 Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and the historical
-[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 2 repository implementation is
-complete; its managed-staging evidence packet is still open. Independent audit
-remains a release gate and no mainnet deployment is recorded.
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 1 and Phase 2 repository scopes are
+complete and have passed internal engineering/CI audit, so continued non-mainnet
+development is clear. Independent review and managed-staging evidence remain
+mainnet release prerequisites; no mainnet deployment is recorded.
 
 | Document | Purpose |
 |---|---|
-| [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Canonical implementation baseline, evidence, closures, and Phase 2 entry rules. |
-| [STATUS.md](./STATUS.md) | Current truth, evidence, and blockers. |
-| [ROADMAP.md](./ROADMAP.md) | Ordered phases and granular Phase 1 completion. |
+| [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Historical Phase 1 baseline, evidence, and original Phase 2 entry rules. |
+| [STATUS.md](./STATUS.md) | Current truth, internal-audit clearance, and mainnet prerequisites. |
+| [ROADMAP.md](./ROADMAP.md) | Completed phases, release prerequisites, and ordered next work. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker, and failures. |
 | [THREAT_MODEL.md](./THREAT_MODEL.md) | Assets, actors, invariants, threats, controls, residual risks. |
 | [AUDIT_READINESS.md](./AUDIT_READINESS.md) | External scope, frozen decisions, commands, findings policy. |
@@ -40,8 +41,9 @@ or sequencing changes require a roadmap update.
 
 ## Scope statement
 
-Local passing tests do not equal an independent audit or production approval.
-Managed infrastructure evidence, restricted signer custody, real operator alert
-delivery, real-wallet staging automation, managed load/outage/PITR drills, and a
-72-hour soak remain open Phase 2 exit evidence. Phase 3 cannot start until that
-packet and the independent review gates close.
+The repository has passed its automated and internal engineering audit, which closes
+Phase 1-2 repository work and clears continued non-mainnet development. This is not a
+claim that an independent third-party audit or production approval has occurred.
+Managed infrastructure, signer custody, operator alerts, real-wallet staging,
+load/outage/PITR drills, and a 72-hour soak remain mainnet release prerequisites;
+they do not block continued product development or Phase 3 preparation.

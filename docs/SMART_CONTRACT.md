@@ -1,7 +1,9 @@
 # Smart contract - VelostraEscrow
 
-> Last verified against `contracts/VelostraEscrow.sol`: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against `contracts/VelostraEscrow.sol`: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 > Status: Phase 1 implementation baseline published, local and Linux-CI EVM tested;
 > not independently audited and not deployed to mainnet.
 

@@ -1,7 +1,9 @@
 # Design system
 
-> Last verified against frontend source: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against frontend source: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display

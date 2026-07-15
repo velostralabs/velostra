@@ -1,7 +1,9 @@
 # Velostra threat model
 
-> Last verified against the workspace: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against the workspace: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 > Scope: verified Phase 1 baseline plus Phase 2 pre-mainnet operational proof.
 
 ## Security objective
@@ -124,8 +126,9 @@ to its call.
 
 ## Review status
 
-Phase 1 and repository-side Phase 2 controls/adversarial tests are implemented. This
-document is still an internal threat model, not an independent audit. Managed-staging
-Phase 2 evidence and independent contract/focused-backend review remain mandatory
-before Phase 3/mainnet; see [STATUS.md](./STATUS.md) and
+Phase 1 and repository-side Phase 2 controls/adversarial tests have passed internal
+engineering/CI review. This document is still an internal threat model, not an
+independent audit. Managed-staging evidence and independent contract/focused-backend
+review remain mandatory before real-value/mainnet release, but do not block continued
+development or Phase 3 preparation; see [STATUS.md](./STATUS.md) and
 [AUDIT_READINESS.md](./AUDIT_READINESS.md).

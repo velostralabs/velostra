@@ -215,8 +215,8 @@ tampered, cross-release, or unsigned.
 
 | Read | Purpose |
 |---|---|
-| [Phase 1 handoff](./docs/PHASE_1_HANDOFF.md) | Verified baseline, final review closures, evidence, and Phase 2 entry rules. |
-| [Status](./docs/STATUS.md) | Implemented truth, evidence, and blockers. |
+| [Phase 1 handoff](./docs/PHASE_1_HANDOFF.md) | Historical verified Phase 1 baseline and original Phase 2 entry rules. |
+| [Status](./docs/STATUS.md) | Current implementation truth, audit clearance, and mainnet prerequisites. |
 | [Roadmap](./docs/ROADMAP.md) | Phase completion and ordered next work. |
 | [Architecture](./docs/ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker. |
 | [Threat model](./docs/THREAT_MODEL.md) | Assets, threats, controls, residual risks. |
@@ -229,19 +229,19 @@ tampered, cross-release, or unsigned.
 
 ## Status
 
-Phase 1 implementation is recorded at the verified baseline in the
-[Phase 1 handoff](./docs/PHASE_1_HANDOFF.md). Phase 2 repository implementation is
-complete: isolated topology, restricted signer adapter, durable observability,
-browser/wallet gates, RPC failover/finality policy, load/reorg/restore drills, and
-the guarded soak/evidence pipeline are present and locally verified.
+Phase 1 and Phase 2 repository scopes are complete and have passed the internal
+engineering/CI audit: isolated topology, restricted signing, durable observability,
+browser/wallet gates, RPC failover/finality, load/reorg/restore drills, and the
+guarded soak/evidence pipeline are implemented and verified. The project is
+**clear for continued non-mainnet development and Phase 3 preparation**.
+
 The contract is **not independently audited and not deployed to mainnet**. External
-contract and focused backend review remain mandatory before Phase 3/mainnet. A real
-managed-staging run—restricted signer custody, operator alert delivery, MetaMask,
-load/outage/PITR evidence, and at least 72 hours of soak—remains an open Phase 2
-exit gate.
+contract/backend review plus managed-staging signer, alert, MetaMask, outage, PITR,
+and 72-hour-soak evidence remain mandatory before real-value/mainnet release. They
+are release prerequisites, not blockers for continued product development.
 
 Do not put real value behind this repository until a reviewed release explicitly
-closes those gates.
+closes those prerequisites.
 
 ## Security
 

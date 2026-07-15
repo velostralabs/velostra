@@ -1,7 +1,9 @@
 # Testing and release evidence
 
-> Last verified against test files and scripts: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against test files and scripts: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 
 ## Automated matrix
 
@@ -162,7 +164,7 @@ time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPO
 - minimum 72-hour soak with restart, daily reconciliation, zero drift/stale rows/
   High-Critical findings/unowned alerts;
 - signed SHA-256-bound release packet accepted by `npm run phase2:evidence`;
-- independent contract and focused backend review before Phase 3.
+- independent contract and focused backend review before real-value/mainnet release.
 
 The RPC failover, concurrent load, dense local catch-up, reorg, browser, disposable
 restore, soak-runner, and evidence-validator implementations are complete and locally

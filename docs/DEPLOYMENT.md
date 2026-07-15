@@ -1,16 +1,19 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against build/deploy scripts: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 > No production or mainnet deployment is recorded.
 
 ## Release gates
 
-Phase 1 and Phase 2 repository implementation are complete. Independent contract/
-backend review and the managed-staging Phase 2 evidence packet remain external gates.
-Provision only isolated non-mainnet-value staging, execute the real-wallet/alert/outage/
-PITR/72-hour drills, and pass the signed evidence validator. Do not deploy mainnet
-value before both external gates close.
+Phase 1 and Phase 2 repository scopes are complete and have passed internal
+engineering/CI audit; continued development and Phase 3 preparation are clear.
+Independent contract/backend review and the managed-staging evidence packet remain
+mainnet release gates. Provision only isolated non-mainnet-value staging, execute the
+real-wallet/alert/outage/PITR/72-hour drills, and pass the signed evidence validator.
+Do not deploy mainnet value before both external gates close.
 
 ## Target topology
 

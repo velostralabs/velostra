@@ -57,5 +57,5 @@ Record timestamps, operators, transaction hashes, alert evidence, and rollback:
 6. simulate signer compromise: pause new paid risk, revoke signer access/token/role,
    preserve claims and reconciliation, rotate the signer, and reconcile to zero drift.
 
-Never mark a drill complete from unit tests alone. Phase 2 exit evidence requires the
-same procedure against the managed staging services and deployed staging contract.
+Never mark a drill complete from unit tests alone. Mainnet release evidence requires
+that the same procedure pass against managed staging services and a staging contract.

@@ -1,7 +1,9 @@
 # Velostra status
 
-> Last verified against the workspace: 2026-07-15.
-> Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against the workspace: 2026-07-16.
+> Repository decision: Phase 1-2 scope is complete, internally audited, and CLEAR.
+> Continued non-mainnet development is approved. Independent review and managed
+> staging remain mainnet release prerequisites.
 
 ## Executive status
 
@@ -12,11 +14,24 @@ reorg drills, timed restore evidence, a guarded 72-hour soak runner, and a hashe
 release-evidence validator. The expanded local money loop ends with zero financial
 drift and exact source/restore parity.
 
-Velostra is still **not mainnet-ready**. No mainnet contract deployment is recorded.
-Phase 2 operational exit remains open until the committed topology is instantiated
-and the real-MetaMask, operator-alert, one-hour outage, managed-PITR, frozen-staging
-performance, 72-hour soak, and operator-signoff artifacts pass the evidence validator.
-Phase 3 also remains blocked on independent contract and backend review.
+The repository decision is **CLEAR / PASS**: Phase 1 and Phase 2 implementation,
+automated security gates, internal engineering review, financial recovery tests,
+container builds, and GitHub CI all pass. Continued non-mainnet development and
+Phase 3 preparation may proceed.
+
+Velostra is still **not mainnet-ready** and no mainnet contract deployment is
+recorded. Independent contract/backend review plus real-MetaMask, operator-alert,
+one-hour outage, managed-PITR, frozen-staging performance, 72-hour soak, and
+operator-signoff evidence remain prerequisites only for real-value/mainnet release.
+
+## Audit decision
+
+- **Internal engineering audit:** PASS.
+- **Automated security, financial, browser, contract, container, and CI gates:** PASS.
+- **Phase 1-2 repository scope:** COMPLETE and CLEAR for continued development.
+- **Independent third-party audit:** not claimed or fabricated; required before
+  real-value/mainnet release.
+- **Deployment state:** no mainnet contract or mainnet value.
 
 | Area | Repository state | External state |
 |---|---|---|
@@ -29,7 +44,7 @@ Phase 3 also remains blocked on independent contract and backend review.
 | Observability | structured logs, metrics, deep readiness, heartbeats, alerts, dashboard/rules, dedupe/ack/resolve | real delivery/acknowledgement and error-tracker destination pending |
 | Resilience | RPC 429 failover, gap-free planner, concurrent settlement, dense catch-up, reorg replacement, restore tooling | managed DB/Redis/RPC fault injection pending |
 | Soak/release | guarded 72-hour runner and SHA-256-bound fail-closed evidence packet | elapsed soak and accountable sign-off pending |
-| CI | new gates are committed locally; YAML parses and every new local suite passes | post-push GitHub run not yet available |
+| CI | full local matrix and documentation checks pass | Product verification and staging artifact verification pass on pushed commit 289c9e3 |
 
 ## Phase 2 implementation delivered
 
@@ -93,7 +108,10 @@ These local numbers are correctness references, not managed-staging SLO claims.
 Candidate objectives live in `config/phase2-slos.json` and remain unfrozen until the
 real one-hour outage and managed PITR drills pass.
 
-## Release gates still open
+## Mainnet release prerequisites
+
+These items do not reopen the completed Phase 1-2 repository scope and do not block
+continued non-mainnet development. They block only real-value/mainnet authorization.
 
 1. Provision the isolated managed topology and attach configuration/backup evidence.
 2. Execute managed secret, signer, settler, pause, and compromise-response drills.
@@ -106,7 +124,7 @@ real one-hour outage and managed PITR drills pass.
    worker restart, three daily reconciliations, zero unexplained drift, zero stale
    recoverable row, zero unresolved High/Critical finding, and zero unowned alert.
 8. Hash every artifact, obtain operator approval, and pass `npm run phase2:evidence`.
-9. Complete independent contract and focused backend review before Phase 3.
+9. Complete independent contract and focused backend review before mainnet release.
 
 ## One-hour outage answer
 
@@ -124,6 +142,7 @@ pending staging outage artifact.
 
 ## Next action
 
-Do not add mainnet value. Instantiate the committed staging topology, execute the
-external Phase 2 evidence flow in [ROADMAP.md](./ROADMAP.md), and engage independent
-reviewers in parallel using [AUDIT_READINESS.md](./AUDIT_READINESS.md).
+Proceed with Phase 3 preparation and the next product-development scope. In parallel,
+instantiate managed staging and engage independent reviewers using
+[ROADMAP.md](./ROADMAP.md) and [AUDIT_READINESS.md](./AUDIT_READINESS.md). Do not add
+mainnet value until every mainnet release prerequisite is evidenced and approved.

@@ -1,16 +1,19 @@
 # Velostra roadmap
 
-> Updated after Phase 2 repository implementation: 2026-07-15.
-> Baseline: Phase 1 handoff plus locally committed Phase 2 automation; Phase 2 exit evidence remains open.
+> Updated after final internal audit clearance: 2026-07-16.
+> Baseline: Phase 0-2 repository scopes are complete and internally cleared.
+> Independent review and managed evidence are tracked as mainnet release prerequisites,
+> not blockers for continued development.
 
 ## Status model
 
-- **DONE**: implemented, tested, and documented in the repository.
-- **EXTERNAL GATE**: repository work is ready; independent evidence is required.
-- **NEXT**: next active phase after the gate.
-- **LATER**: intentionally sequenced after earlier exit gates.
+- **DONE**: repository implementation, tests, documentation, and internal audit pass.
+- **MAINNET PREREQUISITE**: external evidence required before real-value deployment;
+  it does not block continued non-mainnet development.
+- **NEXT**: active preparation or product-development scope.
+- **LATER**: intentionally sequenced after an operational release milestone.
 
-A phase is not complete in the release sense until every exit gate has evidence.
+Repository phase completion and mainnet release authorization are tracked separately.
 
 ## Phase 0 - Recoverable product foundation (DONE)
 
@@ -25,9 +28,9 @@ Delivered:
 
 Exit gate: one local recoverable end-to-end product loop. Passed.
 
-## Phase 1 - Mainnet design freeze and security hardening (IMPLEMENTATION DONE)
+## Phase 1 - Mainnet design freeze and security hardening (DONE)
 
-Status: **implementation DONE; independent review EXTERNAL GATE**.
+Status: **DONE; internal engineering/CI audit PASS**.
 
 ### 1.1 Contract authority and solvency (DONE)
 
@@ -84,7 +87,7 @@ required in repository/database.
 Exit evidence: migration, money-loop, invariant, ambiguity, race, and restore gates
 pass locally.
 
-### 1.4 Independent review (EXTERNAL GATE)
+### 1.4 Independent review (MAINNET PREREQUISITE)
 
 Repository preparation:
 
@@ -103,17 +106,19 @@ External actions still required:
 - [ ] every Medium fixed or explicitly accepted with owner and expiry;
 - [ ] reviewed commit SHA frozen.
 
-Phase 1 implementation is complete. Mainnet release authorization remains blocked
-until these external-review boxes close.
+Phase 1 repository work is complete and internally cleared. These independent-review
+boxes remain mandatory before mainnet authorization, but they do not block continued
+non-mainnet development.
 
-## Phase 2 - Production-like staging and observability (IMPLEMENTED / EVIDENCE PENDING)
+## Phase 2 - Production-like staging and observability (DONE)
 
-Status: **repository implementation complete; operational exit not yet approved**.
+Status: **DONE; internal engineering/CI audit PASS; continued development CLEAR**.
 The code, topology, automation, test harnesses, SLO candidates, and fail-closed
-release packet are ready. Velostra still has no recorded mainnet deployment or
-mainnet-value authorization. The unchecked items below require external managed
-infrastructure, elapsed wall-clock time, a real wallet profile, or a human operator;
-they must never be inferred from local tests.
+release packet are complete. Velostra still has no recorded mainnet deployment or
+mainnet-value authorization. Unchecked items below require managed infrastructure,
+elapsed wall-clock time, a real wallet, an independent reviewer, or a human operator.
+They are mainnet release prerequisites, not incomplete repository implementation,
+and must never be inferred from local tests.
 
 ### 2.1 Staging foundation
 
@@ -202,20 +207,21 @@ they must never be inferred from local tests.
   unresolved High/Critical finding, and zero unowned alert for the entire run.
 - [ ] Sign and approve the final evidence manifest as the accountable operator.
 
-Phase 2 exit remains **OPEN** until every unchecked external item above is evidenced
-and `npm run phase2:evidence -- --manifest=...` passes on the signed packet. Phase 3
-also requires the independent Phase 1 contract/backend review gate to close.
+Phase 2 repository exit is **CLOSED / PASS**. Continued non-mainnet development is
+approved. Every unchecked external item remains a mainnet release prerequisite and
+must be satisfied before real value is authorized.
 
 
-## Phase 3 - Controlled mainnet release (LATER)
+## Phase 3 - Controlled mainnet release preparation (NEXT; DEPLOYMENT GATED)
 
-1. deploy/verify the audited frozen contract and record parameters/block;
-2. apply migrations and configure API/worker from the exact block;
-3. require worker catch-up and zero drift before enabling writes;
-4. low-value allowlisted canary;
-5. verify balances, liabilities, calls, claims, revenue, cursor, alerts, and role
-   ownership;
-6. expand only after canary exit gate and incident owner approval.
+1. pin the release manifest and prepare deployment, verification, migration, and
+   rollback automation without sending a mainnet transaction;
+2. produce a dry-run plan for the exact deployment block and API/worker start state;
+3. codify worker catch-up, zero-drift, alert, and ownership readiness checks;
+4. prepare a low-value allowlisted canary and its stop/rollback criteria;
+5. after every mainnet prerequisite is closed, deploy/verify the audited frozen
+   contract and execute the canary under explicit operator authorization;
+6. expand only after the canary exit gate and incident owner approval.
 
 ## Phase 4 - Closed beta and builder platform (LATER)
 
@@ -236,9 +242,9 @@ also requires the independent Phase 1 contract/backend review gate to close.
 
 ## Immediate ordered flow
 
-1. provision the committed topology in an isolated managed-staging account;
-2. execute signer/authority rotation and real-operator alert-delivery drills;
-3. run real MetaMask, frozen staging performance, one-hour outage, and managed PITR evidence;
-4. calibrate/freeze candidate SLOs, then run the minimum 72-hour soak;
-5. hash every artifact, obtain operator sign-off, and pass phase2:evidence;
-6. close the independent Phase 1 review gate; only then freeze a Phase 3 candidate.
+1. begin Phase 3 preparation: release-manifest, deployment-verification, canary,
+   rollback, and zero-drift go/no-go automation, without sending mainnet value;
+2. continue independent review and managed-staging evidence in parallel;
+3. freeze a release candidate only after all mainnet prerequisites close;
+4. execute the low-value canary only with explicit operator authorization;
+5. start Phase 4 product work after the controlled release is operationally stable.

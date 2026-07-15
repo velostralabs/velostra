@@ -1,7 +1,9 @@
 # Operations and incident runbook
 
-> Last verified against the workspace: 2026-07-15.
-> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
+> Last verified against the workspace: 2026-07-16.
+> Phase state: Phase 2 repository scope is complete and has passed internal
+> engineering/CI audit; continued development is clear. Managed-staging evidence
+> remains a mainnet release prerequisite.
 > No mainnet deployment is recorded in this repository.
 
 ## Production process model
@@ -94,7 +96,7 @@ Alert on:
 
 Metrics, durable alert state, webhook transport, dedupe, acknowledgement, resolution,
 severity, and runbook links are implemented. Delivery of every injected scenario to a
-real operator remains an external Phase 2 exit artifact.
+real operator remains an external mainnet release artifact.
 
 ## Incident: drift warning
 
@@ -170,7 +172,7 @@ SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restor
 claim/credit/earnings/call/outbox aggregates, critical constraints, and indexes. When
 `RESTORE_DRILL_STARTED_AT`, `BACKUP_CAPTURED_AT`, and `RESTORE_EVIDENCE_PATH` are set,
 it writes a redacted RPO/RTO evidence artifact. The disposable timed drill passed; the
-provider-native managed PITR drill remains an external Phase 2 exit gate.
+provider-native managed PITR drill remains an external mainnet release prerequisite.
 
 ## Secret rotation
 

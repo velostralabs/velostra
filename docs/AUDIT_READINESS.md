@@ -1,7 +1,9 @@
 # Phase 1 audit readiness packet
 
-> Prepared: 2026-07-15.
-> Status: Phase 1 baseline published; Phase 2 implementation added; independent review not yet performed.
+> Prepared: 2026-07-16.
+> Status: internal engineering/CI audit passed and the repository is clear for
+> continued development; independent third-party review has not yet been performed
+> and remains a mainnet release prerequisite.
 >
 > Phase 2 note: the repository now includes restricted signing, RPC failover/finality,
 > durable observability, browser gates, and recovery/evidence automation. The reviewer

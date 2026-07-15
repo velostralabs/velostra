@@ -1,16 +1,26 @@
 ## What changed
 
-Describe the product behavior or invariant changed by this pull request.
+Describe the product behavior, authority boundary, schema, or invariant changed by
+this pull request.
 
 ## Verification
 
 - [ ] Frontend lint/build passed when affected
-- [ ] Backend build/tests passed when affected
-- [ ] Contract tests passed when affected
-- [ ] Financial/reconciliation invariants were considered
-- [ ] Documentation was updated
-- [ ] No secrets, personal data, `.env`, build output, or local paths were added
+- [ ] Backend build and relevant security/unit suites passed
+- [ ] Contract tests passed when contract/ABI/deployment behavior changed
+- [ ] `db:check`, fresh/upgrade migration, and restore impact were considered
+- [ ] Paid-call reservation/outbox/reconciliation failure paths were considered
+- [ ] Financial arithmetic, idempotency, and live/worker race safety were considered
+- [ ] Threat model, status, roadmap, and domain documentation were updated
+- [ ] No secrets, personal data, `.env`, dumps, build output, or local paths were added
 
 ## Risk and rollback
 
-Describe security, settlement, migration, and rollback implications.
+Describe security, settlement, migration, chain irreversibility, operational alerts,
+and rollback implications. A database/application rollback never reverses a
+confirmed chain effect; state how reconciliation remains active.
+
+## External review
+
+If this changes frozen Phase 1 contract or security scope, state whether re-review
+is required and update `docs/AUDIT_READINESS.md`.

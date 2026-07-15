@@ -54,9 +54,9 @@ CI has read-only repository permission and cancels superseded runs. The canonica
 Phase 1 handoff run is [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476):
 all four jobs passed against implementation baseline
 `ea1b61de20613edd3727f90efb86766918152b07`. The complete Phase 3 handoff is
-verified by [Product verification run 29453186373](https://github.com/velostralabs/velostra/actions/runs/29453186373)
-and [staging artifact run 29453186416](https://github.com/velostralabs/velostra/actions/runs/29453186416);
-both passed on `c10c0ed3746529ddc2d4686356c46be0fe414954`. CI uses Node.js 22 with
+verified by [Product verification run 29453341985](https://github.com/velostralabs/velostra/actions/runs/29453341985)
+and [staging artifact run 29453341987](https://github.com/velostralabs/velostra/actions/runs/29453341987);
+both passed on `da63b45882ff9f02a4dc237bffa5e3dcaf9f38f9`. CI uses Node.js 22 with
 `actions/checkout@v6` and `actions/setup-node@v6`.
 
 ## Money-loop coverage
@@ -114,6 +114,7 @@ npm audit --omit=dev --audit-level=high
 npm run audit:metamask
 npm run test:browser
 npm run test:phase2-evidence
+npm run test:phase3-release
 
 npm --prefix server run build
 npm --prefix server run db:check
@@ -124,6 +125,9 @@ npm --prefix server run test:auth
 npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
 npm --prefix server run test:secrets
+npm --prefix server run test:signer
+npm --prefix server run test:authority
+npm --prefix server run test:phase3-canary
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 npm audit --prefix server --omit=dev --audit-level=high
@@ -134,19 +138,21 @@ npm audit --prefix contracts --omit=dev --audit-level=high
 # disposable migrated Postgres
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
+npm --prefix server run test:observability-db
+npm --prefix server run test:phase3-canary-db
 npm --prefix server run test:money
 ```
 
 ## Browser, wallet, and performance evidence
 
-`npm run test:browser` builds a deterministic production fixture and runs 17 Chromium
-tests with one worker so performance observations are isolated. Sixteen pass locally;
+`npm run test:browser` builds a deterministic production fixture and runs 18 Chromium
+tests with one worker so performance observations are isolated. Seventeen pass locally;
 the guarded real-MetaMask isolated-staging test is skipped unless its explicit approval,
 extension path, dedicated profile, base URL, and low-value inputs are supplied. The
 passing suite includes eight serious/critical axe scans, keyboard focus containment/
 restoration, desktop overflow/collision assertions, home/marketplace baselines,
-canonical route history, an injected-wallet money/recovery path, and three route
-performance budgets.
+canonical route history, rapid multi-filter URL-state preservation, an injected-wallet
+money/recovery path, and three route performance budgets.
 
 Real MetaMask is therefore automated but not yet evidenced. Execute
 `npm run test:wallet:metamask` only against isolated staging and attach its report to

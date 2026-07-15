@@ -22,8 +22,9 @@ builder subjects and uses a transaction-scoped Postgres advisory lock plus a dur
 admission ledger to enforce duration, call, per-call, per-wallet, and total exposure
 caps under concurrency. Claims and reconciliation stay available during a stop.
 
-Repository implementation and local verification are **CLEAR / PASS**. This is not
-mainnet authorization. Independent review, managed-staging evidence, an actual
+Repository implementation and local verification are **CLEAR / PASS**. Phase 4 is
+the next non-mainnet repository focus. This is not mainnet authorization. Independent
+review, managed-staging evidence, an actual
 one-hour outage/PITR/72-hour soak, real operator alert delivery, mainnet deployment
 verification, and a low-value canary still require external infrastructure and human
 approval.
@@ -51,7 +52,7 @@ approval.
 | Signer/secrets | raw production key rejected; remote signer/authority policy tested | managed KMS/secret rotations and drills pending |
 | Observability | metrics, deep readiness, heartbeats, durable alerts, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
-| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29453186373](https://github.com/velostralabs/velostra/actions/runs/29453186373) and [staging artifact run 29453186416](https://github.com/velostralabs/velostra/actions/runs/29453186416) passed on `c10c0ed` |
+| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29453341985](https://github.com/velostralabs/velostra/actions/runs/29453341985) and [staging artifact run 29453341987](https://github.com/velostralabs/velostra/actions/runs/29453341987) passed on `da63b45` |
 
 ## Phase 2 implementation delivered
 
@@ -81,10 +82,10 @@ approval.
 - Chromium gates cover eight critical-route accessibility scans, keyboard-contained
   wallet focus, desktop collision/overflow assertions, approved visual baselines,
   canonical URL/history behavior, injected-wallet money/recovery flow, and three
-  route performance budgets. Result: **16 passed, 1 intentionally skipped**; the skip
+  route performance budgets. Result: **17 passed, 1 intentionally skipped**; the skip
   is the guarded real-MetaMask staging harness.
-- Build reference: initial entry 160,661 gzip bytes, largest async chunk 235,837,
-  total JavaScript 677,510; all are within committed budgets.
+- Build reference: initial entry 160,671 gzip bytes, largest async chunk 235,837,
+  total JavaScript 677,588; all are within committed budgets.
 - The six Moderate MetaMask-tree findings are one `uuid` advisory. Reviewed installed
   call sites use `uuid.v4()` without caller buffers; the time-bounded disposition and
   invalidation conditions are in `METAMASK_DEPENDENCY_DISPOSITION.md`.
@@ -107,7 +108,7 @@ approval.
   row count, financial aggregate, outbox state, constraint, and index. The measured
   disposable restore path completed in 1,542 ms with zero synthetic RPO.
 - Final second-pass review also bounded staging load requests, rebuilt both non-root
-  release images, reran the browser suite (16 passed, one guarded real-MetaMask
+  release images, reran the browser suite (17 passed, one guarded real-MetaMask
   scenario skipped), and repeated the full money loop on fresh disposable databases
   without financial drift.
 
@@ -142,9 +143,40 @@ real one-hour outage and managed PITR drills pass.
 - Public mode additionally requires hash-bound passing evidence and separate
   explicit operator approval.
 
+## Pre-Phase 4 repository closeout
+
+The final 2026-07-16 local re-audit found and fixed one rapid-interaction routing
+race: marketplace search/category/sort changes could overwrite sibling URL params.
+The query-state writer now serializes changes through one current parameter snapshot,
+and a regression test proves fast consecutive changes retain all filters and reset
+cleanly.
+
+Closeout evidence:
+
+- lint, TypeScript/Vite build, Phase 2 evidence, MetaMask reachability, Phase 3
+  release/readiness/canary, server security/resilience, and all 10 contract groups pass;
+- the browser matrix now runs 18 scenarios: 17 pass and only the explicitly guarded
+  real-MetaMask staging journey is skipped;
+- fresh/upgrade migrations, durable observability, concurrent canary admission, and
+  the full local-EVM money loop pass on a disposable database;
+- reconciliation again proves missed-event backfill, correlated paid-call repair,
+  live/worker exact-once races, ambiguous/unknown broadcast recovery, dense catch-up,
+  confirmation-window reorg handling, and zero final drift;
+- production dependency audits have no High/Critical finding; the six Moderate web
+  entries remain the reviewed, time-bounded MetaMask/UUID advisory;
+- tracked Markdown links resolve, tracked paths have no case collisions, secret-pattern
+  scanning finds no credential material, and the Git author/remote remain Velostra;
+- Three.js remains isolated in a lazy chunk. Vite's raw warning threshold now matches
+  that intentional split, while the stricter committed gzip budgets still fail builds
+  on meaningful entry, async, or total JavaScript regressions.
+
+This closes the actionable repository cleanup before Phase 4. External audit,
+managed-staging, operator, deployment, and canary evidence remain truthful release
+prerequisites rather than unfinished local code.
+
 ## Mainnet release prerequisites
 
-These items do not reopen the completed Phase 1-2 repository scope and do not block
+These items do not reopen the completed Phase 0-3 repository scope and do not block
 continued non-mainnet development. They block only real-value/mainnet authorization.
 
 1. Provision the isolated managed topology and attach configuration/backup evidence.
@@ -176,8 +208,8 @@ pending staging outage artifact.
 
 ## Next action
 
-Repository-side Phase 3 preparation is complete. Close the independent-review and
-managed Phase 2 evidence prerequisites, freeze a clean release candidate, generate a
-`broadcast-approved` manifest, and execute guarded deployment/readiness/canary with
-named operators. Do not start Phase 4 broad beta work or put real value at risk until
-the canary is operationally stable and explicit exit approval is recorded.
+Begin Phase 4 repository work in the ordered roadmap, starting with versioned API,
+identity, pagination, idempotency, migration, and SDK contracts. In parallel, close
+the independent-review and managed evidence prerequisites before any mainnet or
+closed-beta activation. Do not put real value or public users at risk until the Phase 3
+canary is operationally stable and explicit exit approval is recorded.

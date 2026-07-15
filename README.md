@@ -159,6 +159,7 @@ npm run build
 npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
+npm run test:phase3-release
 
 npm --prefix server run build
 npm --prefix server run db:check
@@ -171,6 +172,7 @@ npm --prefix server run test:signer
 npm --prefix server run test:authority
 npm --prefix server run test:resilience
 npm --prefix server run test:observability
+npm --prefix server run test:phase3-canary
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 
@@ -179,6 +181,8 @@ npm test --prefix contracts
 # disposable migrated PostgreSQL
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
+npm --prefix server run test:observability-db
+npm --prefix server run test:phase3-canary-db
 npm --prefix server run test:money
 ```
 
@@ -257,6 +261,9 @@ Phase 0-3 repository preparation is implemented and locally verified: product,
 security, exactly-once recovery, staging/observability, immutable release identity,
 guarded deployment/verification, readiness/catch-up decisions, and a bounded
 transaction-safe canary control plane.
+
+Phase 4 versioned platform, SDK, builder lifecycle, reliable integration, moderation,
+and privacy work is the next non-mainnet repository focus.
 
 No mainnet deployment or real-value authorization is recorded. Independent review,
 managed MetaMask/alert/outage/PITR/72-hour evidence, accountable approvals, actual

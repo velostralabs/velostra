@@ -124,6 +124,7 @@ npm run build
 npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
+npm run test:phase3-release
 npm --prefix server run build
 npm --prefix server run db:check
 npm --prefix server run test:config
@@ -135,6 +136,7 @@ npm --prefix server run test:signer
 npm --prefix server run test:authority
 npm --prefix server run test:resilience
 npm --prefix server run test:observability
+npm --prefix server run test:phase3-canary
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 npm test --prefix contracts
@@ -147,6 +149,7 @@ $env:DATABASE_URL='postgresql://postgres:velostra@127.0.0.1:5432/velostra_test'
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
+npm --prefix server run test:phase3-canary-db
 npm --prefix server run test:money
 ```
 

@@ -132,3 +132,19 @@ test('canonical routes survive direct refresh and browser history', async ({ pag
   await page.reload()
   await expect(page.getByLabel('Search agents')).toHaveValue('flowbook')
 })
+
+test('rapid marketplace filter changes preserve the complete URL state', async ({ page }) => {
+  await page.goto('/marketplace')
+
+  await page.getByLabel('Search agents').fill('flow')
+  await page.getByLabel('Category').selectOption('TRADING')
+  await page.getByLabel('Sort by').selectOption('price')
+
+  await expect(page).toHaveURL('/marketplace?category=TRADING&sort=price&q=flow')
+  await expect(page.getByLabel('Search agents')).toHaveValue('flow')
+  await expect(page.getByLabel('Category')).toHaveValue('TRADING')
+  await expect(page.getByLabel('Sort by')).toHaveValue('price')
+
+  await page.getByRole('button', { name: 'Reset filters' }).click()
+  await expect(page).toHaveURL('/marketplace')
+})

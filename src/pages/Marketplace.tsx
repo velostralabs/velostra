@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -28,6 +28,7 @@ const SORTS = [
 
 export default function Marketplace() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const searchParamsRef = useRef(searchParams)
   const rawQ = searchParams.get('q') ?? ''
   const qParam = rawQ.trim()
   const rawCategory = searchParams.get('category') ?? ''
@@ -40,21 +41,30 @@ export default function Marketplace() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    searchParamsRef.current = searchParams
+  }, [searchParams])
+
+  const updateSearchParams = useCallback((update: (next: URLSearchParams) => void, replace = false) => {
+    const next = new URLSearchParams(searchParamsRef.current)
+    update(next)
+    searchParamsRef.current = next
+    setSearchParams(next, { replace })
+  }, [setSearchParams])
+
   useEffect(() => setQ(qParam), [qParam])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const nextQuery = q.trim()
       if (nextQuery === qParam) return
-      setSearchParams((previous) => {
-        const next = new URLSearchParams(previous)
+      updateSearchParams((next) => {
         if (nextQuery) next.set('q', nextQuery)
         else next.delete('q')
-        return next
-      }, { replace: true })
+      }, true)
     }, 260)
     return () => window.clearTimeout(timer)
-  }, [q, qParam, setSearchParams])
+  }, [q, qParam, updateSearchParams])
 
   useEffect(() => {
     const alreadyClean =
@@ -64,17 +74,15 @@ export default function Marketplace() {
       !(searchParams.has('category') && !category) &&
       !(searchParams.has('sort') && sort === 'featured')
     if (alreadyClean) return
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous)
+    updateSearchParams((next) => {
       if (qParam) next.set('q', qParam)
       else next.delete('q')
       if (category) next.set('category', category)
       else next.delete('category')
       if (sort !== 'featured') next.set('sort', sort)
       else next.delete('sort')
-      return next
-    }, { replace: true })
-  }, [category, qParam, rawCategory, rawQ, rawSort, searchParams, setSearchParams, sort])
+    }, true)
+  }, [category, qParam, rawCategory, rawQ, rawSort, searchParams, sort, updateSearchParams])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -101,17 +109,19 @@ export default function Marketplace() {
   }, [qParam, category, sort])
 
   function setFilter(key: 'category' | 'sort', value: string) {
-    setSearchParams((previous) => {
-      const next = new URLSearchParams(previous)
+    updateSearchParams((next) => {
       if (value && !(key === 'sort' && value === 'featured')) next.set(key, value)
       else next.delete(key)
-      return next
     })
   }
 
   function clearFilters() {
     setQ('')
-    setSearchParams({}, { replace: true })
+    updateSearchParams((next) => {
+      next.delete('q')
+      next.delete('category')
+      next.delete('sort')
+    }, true)
   }
 
   const hasFilters = Boolean(qParam || category || sort !== 'featured')

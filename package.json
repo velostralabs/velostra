@@ -38,6 +38,7 @@
     "test:performance": "npm run build:browser-fixture && npm run performance:build && playwright test tests/browser/performance.spec.ts",
     "performance:build": "node scripts/check-performance-budget.mjs",
     "audit:metamask": "node scripts/check-metamask-advisory-reachability.mjs",
+    "phase2:load": "node scripts/run-phase2-load.mjs",
     "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {

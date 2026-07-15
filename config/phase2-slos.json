@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate-requires-managed-staging-calibration",
+  "scope": "isolated non-mainnet-value staging",
+  "objectives": {
+    "paidCallP95Ms": 3000,
+    "paidCallErrorRateMax": 0.01,
+    "rpcFailoverMs": 15000,
+    "recoverableOutboxAgeMs": 120000,
+    "oneHourLagCatchUpMs": 300000,
+    "restoreRtoMs": 1800000,
+    "restoreRpoMs": 300000,
+    "unexplainedDriftUsd": 0
+  },
+  "localReference": {
+    "capturedAt": "2026-07-15T11:45:00Z",
+    "concurrentRequests": 12,
+    "successfulPaidCalls": 10,
+    "intentionalRateLimits": 2,
+    "batchDurationMs": 2837,
+    "catchUpBlocks": 27,
+    "catchUpDurationMs": 2529,
+    "financialDriftUsd": 0,
+    "notes": "Local EVM reference is a correctness baseline, not managed-staging SLO evidence. Freeze these objectives only after the one-hour lag, real RPC, and managed PITR drills pass."
+  }
+}

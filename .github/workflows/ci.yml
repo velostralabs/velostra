@@ -78,6 +78,7 @@ jobs:
       - run: npm run test:signer
       - run: npm run test:authority
       - run: npm run test:observability
+      - run: npm run test:resilience
       - run: npm run authority:validate -- ../deploy/staging/authority-policy.example.json
       - run: npm run test:admin-policy
       - run: npm run test:money-unit
@@ -142,6 +143,8 @@ jobs:
       - run: npm --prefix server run test:migrations
       - run: npm --prefix server run test:observability-db
       - run: npm --prefix server run test:money
+      - name: Start restore drill timer
+        run: echo "RESTORE_DRILL_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
       - name: Dump migrated source database
         run: >-
           docker run --rm --network host -e PGPASSWORD=velostra
@@ -156,4 +159,12 @@ jobs:
         env:
           SOURCE_DATABASE_URL: postgresql://postgres:velostra@127.0.0.1:5432/velostra_test
           RESTORED_DATABASE_URL: postgresql://postgres:velostra@127.0.0.1:5432/velostra_restore
+          RESTORE_EVIDENCE_PATH: ${{ runner.temp }}/restore-evidence.json
         run: npm --prefix server run restore:verify
+      - name: Upload restore evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-evidence
+          path: ${{ runner.temp }}/restore-evidence.json
+          if-no-files-found: ignore

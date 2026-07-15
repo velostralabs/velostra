@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 import pg from 'pg'
 
 const { Client } = pg
@@ -8,6 +10,15 @@ if (!sourceUrl || !restoredUrl) {
   throw new Error('SOURCE_DATABASE_URL and RESTORED_DATABASE_URL are required')
 }
 if (sourceUrl === restoredUrl) throw new Error('Restore verification requires two different databases')
+
+const startedAt = new Date(process.env.RESTORE_DRILL_STARTED_AT ?? Date.now())
+if (Number.isNaN(startedAt.getTime())) throw new Error('RESTORE_DRILL_STARTED_AT must be ISO-8601')
+const backupCapturedAt = process.env.BACKUP_CAPTURED_AT
+  ? new Date(process.env.BACKUP_CAPTURED_AT)
+  : null
+if (backupCapturedAt && Number.isNaN(backupCapturedAt.getTime())) {
+  throw new Error('BACKUP_CAPTURED_AT must be ISO-8601')
+}
 
 const source = new Client({ connectionString: sourceUrl })
 const restored = new Client({ connectionString: restoredUrl })
@@ -98,14 +109,41 @@ async function snapshot(client: pg.Client) {
 try {
   const [before, after] = await Promise.all([snapshot(source), snapshot(restored)])
   assert.deepEqual(after, before)
-  assert.equal(after.tables.length, 17)
-  assert(after.migrations.length >= 5)
+  assert.equal(after.tables.length, 19)
+  assert(after.migrations.length >= 7)
   assert(
     after.constraints.some((row) => row.conname === 'credit_reservation_within_balance')
   )
   assert(
     after.indexes.some((row) => row.indexname === 'settlement_attempt_status_updated_idx')
   )
+  const completedAt = new Date()
+  const evidence = {
+    schemaVersion: 1,
+    kind: 'postgres-restore-integrity',
+    startedAt: startedAt.toISOString(),
+    completedAt: completedAt.toISOString(),
+    durationMs: completedAt.getTime() - startedAt.getTime(),
+    rpoMs: backupCapturedAt ? startedAt.getTime() - backupCapturedAt.getTime() : null,
+    tableCount: after.tables.length,
+    migrationCount: after.migrations.length,
+    rowCounts: after.rowCounts,
+    financialAggregates: {
+      transactions: after.transactions,
+      claims: after.claims,
+      credits: after.credits,
+      earnings: after.earnings,
+      calls: after.calls,
+      attempts: after.attempts,
+    },
+    passed: true,
+  }
+  const evidencePath = process.env.RESTORE_EVIDENCE_PATH?.trim()
+  if (evidencePath) {
+    fs.mkdirSync(path.dirname(evidencePath), { recursive: true })
+    fs.writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n')
+  }
+  console.log(JSON.stringify({ restoreEvidence: evidence }))
   console.log('✅ table inventory and every row count match')
   console.log('✅ exact financial aggregates and settlement states match')
   console.log('✅ migration history, constraints, and operational indexes match')

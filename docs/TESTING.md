@@ -117,6 +117,11 @@ The web command exits successfully at the CI High threshold, but the moderate
 finding remains an explicit pre-production reachability/upstream/accepted-risk
 review item. It is not silently treated as fixed.
 
+The final local regression also ran `npm --prefix server run test:platform`
+against the local API and mock builder. The complete legacy marketplace path
+passed: builder signup, registration, submission, admin approval, public
+marketplace, real free call, review, admin stats, and user dashboard.
+
 ## Remaining Phase 2 evidence
 
 - external audit and focused review are the final Phase 1 sign-off;

@@ -99,6 +99,9 @@ Final full regression passed on 2026-07-15:
 - frontend lint is warning-free and production build passes; Vite reports only the
   documented large async/main chunk performance warnings;
 - every isolated backend security/unit gate passes;
+- the legacy full-platform smoke passes end to end against the local API and mock
+  builder: builder signup, registration, submission, admin approval, marketplace,
+  real free call, review, admin stats, and user dashboard;
 - contract, migration, expanded money-loop, and final dump/clean-restore gates pass;
 - backend and contract production dependency audits report zero vulnerabilities;
 - web audit reports six moderate transitive `uuid` advisories through the MetaMask

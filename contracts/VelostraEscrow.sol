@@ -1,37 +1,39 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/access/extensions/AccessControlDefaultAdminRules.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title VelostraEscrow
-/// @notice Settlement + escrow contract for the Velostra AI agent marketplace,
-///         deployed on Robinhood Chain (Arbitrum Orbit L2, chainId 4663).
-/// @dev EVM port of the original Solana/Anchor `velostra` program. Same
-///      economics (90/10 builder/platform split), same account shapes,
-///      re-expressed as Solidity storage + ERC20 stablecoin transfers
-///      instead of SPL token CPIs.
-contract VelostraEscrow is Ownable, ReentrancyGuard {
+/// @notice Correlated settlement and escrow for the Velostra execution market.
+/// @dev User credit is an immutable cumulative deposit audit counter. Spendable
+///      credit is held in the offchain ledger and reconciled against chain events.
+contract VelostraEscrow is AccessControlDefaultAdminRules, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    // ─────────────────────────────────────
-    // Config
-    // ─────────────────────────────────────
+    bytes32 public constant SETTLER_ROLE = keccak256("SETTLER_ROLE");
+    bytes32 public constant TREASURY_ROLE = keccak256("TREASURY_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
 
-    /// @notice Settlement stablecoin (e.g. USDG/USDC bridged to Robinhood Chain)
+    uint48 public constant ADMIN_TRANSFER_DELAY = 2 days;
+    uint8 public constant SUPPORTED_TOKEN_DECIMALS = 6;
+    uint256 public constant MIN_TOPUP = 1e6;
+
     IERC20 public immutable settlementToken;
-
-    /// @notice Platform fee in basis points (1000 = 10%)
     uint16 public platformFeeBps;
 
-    /// @notice Minimum top-up / call price, in token's smallest unit
-    uint256 public constant MIN_TOPUP = 1e6; // $1.00 assuming 6-decimal stablecoin
-
+    uint256 public totalDeposited;
     uint256 public totalVolume;
     uint256 public totalPlatformRevenue;
     uint256 public platformRevenueAvailable;
+    uint256 public totalBuilderLiability;
+
+    address public successorEscrow;
 
     struct BuilderAccount {
         uint256 totalEarned;
@@ -50,10 +52,6 @@ contract VelostraEscrow is Ownable, ReentrancyGuard {
     mapping(address => uint256) public userCreditBalance;
     mapping(bytes32 => bool) public settledCallIds;
 
-    // ─────────────────────────────────────
-    // Events
-    // ─────────────────────────────────────
-
     event Deposit(address indexed user, uint256 amount, uint256 timestamp);
     event BuilderInitialized(address indexed builder);
     event EarningsCredited(
@@ -64,118 +62,181 @@ contract VelostraEscrow is Ownable, ReentrancyGuard {
     );
     event Claimed(address indexed builder, uint256 amount, uint256 timestamp);
     event PlatformRevenueWithdrawn(address indexed to, uint256 amount);
-    event PlatformFeeUpdated(uint16 newFeeBps);
-
-    // ─────────────────────────────────────
-    // Errors
-    // ─────────────────────────────────────
+    event PlatformFeeUpdated(uint16 previousFeeBps, uint16 newFeeBps);
+    event SuccessorEscrowDeclared(address indexed successor);
 
     error AmountTooLow();
     error InvalidAmount();
+    error InvalidAddress();
     error InsufficientEarnings();
     error InsufficientPlatformRevenue();
+    error InsufficientEscrowLiquidity();
     error BuilderNotInitialized();
+    error BuilderAlreadyInitialized();
     error InvalidCallId();
     error CallAlreadySettled();
     error FeeTooHigh();
+    error UnsupportedTokenDecimals(uint8 actual);
+    error UnsupportedTokenBehavior();
+    error SuccessorAlreadyDeclared();
+    error ContractDeprecated();
 
-    constructor(address _settlementToken, uint16 _platformFeeBps, address _owner) Ownable(_owner) {
-        if (_platformFeeBps > 5000) revert FeeTooHigh(); // hard cap at 50%
-        settlementToken = IERC20(_settlementToken);
-        platformFeeBps = _platformFeeBps;
+    modifier whenActive() {
+        if (successorEscrow != address(0)) revert ContractDeprecated();
+        _;
     }
 
-    // ─────────────────────────────────────
-    // User: deposit credits (top up)
-    // ─────────────────────────────────────
+    constructor(
+        address settlementToken_,
+        uint16 platformFeeBps_,
+        address admin_,
+        address settler_,
+        address treasury_,
+        address pauseGuardian_
+    ) AccessControlDefaultAdminRules(ADMIN_TRANSFER_DELAY, admin_) {
+        if (
+            settlementToken_ == address(0) || admin_ == address(0) ||
+            settler_ == address(0) || treasury_ == address(0) ||
+            pauseGuardian_ == address(0)
+        ) revert InvalidAddress();
+        if (platformFeeBps_ > 5000) revert FeeTooHigh();
 
-    /// @notice User deposits stablecoin into platform escrow to top up call credits.
-    function depositCredits(uint256 amount) external nonReentrant {
+        uint8 decimals = IERC20Metadata(settlementToken_).decimals();
+        if (decimals != SUPPORTED_TOKEN_DECIMALS) {
+            revert UnsupportedTokenDecimals(decimals);
+        }
+
+        settlementToken = IERC20(settlementToken_);
+        platformFeeBps = platformFeeBps_;
+
+        _grantRole(SETTLER_ROLE, settler_);
+        _grantRole(TREASURY_ROLE, treasury_);
+        _grantRole(PAUSER_ROLE, pauseGuardian_);
+        _grantRole(FEE_MANAGER_ROLE, admin_);
+    }
+
+    /// @notice Deposit audit counter. Spending is authoritative in the database,
+    ///         while this cumulative value never decreases or claims to be spendable.
+    function depositCredits(uint256 amount) external nonReentrant whenNotPaused whenActive {
         if (amount < MIN_TOPUP) revert AmountTooLow();
 
+        uint256 balanceBefore = settlementToken.balanceOf(address(this));
         settlementToken.safeTransferFrom(msg.sender, address(this), amount);
+        if (settlementToken.balanceOf(address(this)) - balanceBefore != amount) {
+            revert UnsupportedTokenBehavior();
+        }
 
+        totalDeposited += amount;
         userCreditBalance[msg.sender] += amount;
         lastDeposit[msg.sender] = DepositRecord({ amount: amount, timestamp: block.timestamp });
 
         emit Deposit(msg.sender, amount, block.timestamp);
     }
 
-    // ─────────────────────────────────────
-    // Builder lifecycle
-    // ─────────────────────────────────────
-
-    function initializeBuilder() external {
-        BuilderAccount storage b = builders[msg.sender];
-        require(!b.initialized, "already initialized");
-        b.initialized = true;
+    function initializeBuilder() external whenNotPaused whenActive {
+        BuilderAccount storage builder = builders[msg.sender];
+        if (builder.initialized) revert BuilderAlreadyInitialized();
+        builder.initialized = true;
         emit BuilderInitialized(msg.sender);
     }
 
-    /// @notice Called by the platform authority after a metered agent call settles.
-    /// @param builder Address of the agent builder being credited.
-    /// @param grossAmount Full call price paid by the user, before split.
-    /// @param callId keccak256 hash of the durable backend agent_calls.id.
     function creditBuilderEarnings(
-        address builder,
+        address builderAddress,
         uint256 grossAmount,
         bytes32 callId
-    ) external onlyOwner {
-        BuilderAccount storage b = builders[builder];
-        if (!b.initialized) revert BuilderNotInitialized();
+    ) external onlyRole(SETTLER_ROLE) nonReentrant whenNotPaused whenActive {
+        BuilderAccount storage builder = builders[builderAddress];
+        if (!builder.initialized) revert BuilderNotInitialized();
         if (grossAmount == 0) revert InvalidAmount();
         if (callId == bytes32(0)) revert InvalidCallId();
         if (settledCallIds[callId]) revert CallAlreadySettled();
+        if (settlementToken.balanceOf(address(this)) < totalLiabilities() + grossAmount) {
+            revert InsufficientEscrowLiquidity();
+        }
 
         settledCallIds[callId] = true;
 
         uint256 platformCut = (grossAmount * platformFeeBps) / 10_000;
         uint256 builderCut = grossAmount - platformCut;
 
-        b.totalEarned += builderCut;
-        b.availableToClaim += builderCut;
+        builder.totalEarned += builderCut;
+        builder.availableToClaim += builderCut;
+        totalBuilderLiability += builderCut;
 
         totalVolume += grossAmount;
         totalPlatformRevenue += platformCut;
         platformRevenueAvailable += platformCut;
 
-        emit EarningsCredited(builder, callId, builderCut, platformCut);
+        emit EarningsCredited(builderAddress, callId, builderCut, platformCut);
     }
 
-    /// @notice Builder claims available earnings to their own wallet.
+    /// @notice Claims remain available while paused so emergency controls cannot
+    ///         trap already-earned builder funds.
     function claimEarnings(uint256 amount) external nonReentrant {
-        BuilderAccount storage b = builders[msg.sender];
+        BuilderAccount storage builder = builders[msg.sender];
         if (amount == 0) revert InvalidAmount();
-        if (amount > b.availableToClaim) revert InsufficientEarnings();
+        if (amount > builder.availableToClaim) revert InsufficientEarnings();
 
-        b.availableToClaim -= amount;
-        b.totalClaimed += amount;
+        builder.availableToClaim -= amount;
+        builder.totalClaimed += amount;
+        totalBuilderLiability -= amount;
 
         settlementToken.safeTransfer(msg.sender, amount);
-
         emit Claimed(msg.sender, amount, block.timestamp);
     }
 
-    // ─────────────────────────────────────
-    // Platform admin
-    // ─────────────────────────────────────
-
-    function withdrawPlatformRevenue(address to, uint256 amount) external onlyOwner nonReentrant {
+    function withdrawPlatformRevenue(
+        address to,
+        uint256 amount
+    ) external onlyRole(TREASURY_ROLE) nonReentrant {
+        if (to == address(0)) revert InvalidAddress();
+        if (amount == 0) revert InvalidAmount();
         if (amount > platformRevenueAvailable) revert InsufficientPlatformRevenue();
+
         platformRevenueAvailable -= amount;
         settlementToken.safeTransfer(to, amount);
         emit PlatformRevenueWithdrawn(to, amount);
     }
 
-    function setPlatformFeeBps(uint16 newFeeBps) external onlyOwner {
+    function setPlatformFeeBps(uint16 newFeeBps) external onlyRole(FEE_MANAGER_ROLE) {
         if (newFeeBps > 5000) revert FeeTooHigh();
+        uint16 previousFeeBps = platformFeeBps;
         platformFeeBps = newFeeBps;
-        emit PlatformFeeUpdated(newFeeBps);
+        emit PlatformFeeUpdated(previousFeeBps, newFeeBps);
     }
 
-    // ─────────────────────────────────────
-    // Views
-    // ─────────────────────────────────────
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
+    /// @notice Announces a replacement while the old escrow remains claims-only.
+    ///         Existing liabilities stay collateralized and are never swept.
+    function declareSuccessorEscrow(
+        address successor
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenPaused {
+        if (successor == address(0) || successor == address(this)) revert InvalidAddress();
+        if (successorEscrow != address(0)) revert SuccessorAlreadyDeclared();
+        successorEscrow = successor;
+        emit SuccessorEscrowDeclared(successor);
+    }
+
+    function totalLiabilities() public view returns (uint256) {
+        return totalBuilderLiability + platformRevenueAvailable;
+    }
+
+    function availableEscrowLiquidity() external view returns (uint256) {
+        uint256 balance = settlementToken.balanceOf(address(this));
+        uint256 liabilities = totalLiabilities();
+        return balance > liabilities ? balance - liabilities : 0;
+    }
+
+    function isSolvent() external view returns (bool) {
+        return settlementToken.balanceOf(address(this)) >= totalLiabilities();
+    }
 
     function getBuilderAccount(address builder) external view returns (BuilderAccount memory) {
         return builders[builder];

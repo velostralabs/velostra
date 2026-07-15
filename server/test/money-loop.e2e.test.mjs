@@ -208,7 +208,7 @@ async function main() {
     const escrowDeployHash = await adminWallet.deployContract({
       abi: escrowArtifact.abi,
       bytecode: escrowArtifact.bytecode,
-      args: [tokenAddress, 1000, admin.address],
+      args: [tokenAddress, 1000, admin.address, admin.address, admin.address, admin.address],
     })
     const escrowDeployReceipt = await publicClient.waitForTransactionReceipt({ hash: escrowDeployHash })
     const escrowAddress = escrowDeployReceipt.contractAddress

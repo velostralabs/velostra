@@ -254,7 +254,8 @@ export async function markSettlementConfirmed(
     .where(
       and(
         eq(settlementAttempts.agent_call_id, callId),
-        eq(settlementAttempts.tx_hash, txHash)
+        eq(settlementAttempts.tx_hash, txHash),
+        inArray(settlementAttempts.status, ['SUBMITTED', 'AMBIGUOUS', 'CONFIRMED'])
       )
     )
 }
@@ -273,7 +274,12 @@ export async function markSettlementAmbiguous(
       last_error: error instanceof Error ? error.message : String(error),
       updated_at: new Date(),
     })
-    .where(eq(settlementAttempts.agent_call_id, callId))
+    .where(
+      and(
+        eq(settlementAttempts.agent_call_id, callId),
+        inArray(settlementAttempts.status, ['PREPARED', 'READY', 'SUBMITTED', 'AMBIGUOUS'])
+      )
+    )
 }
 
 export async function failUnsettledCall(callId: string, error: unknown): Promise<boolean> {

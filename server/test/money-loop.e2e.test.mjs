@@ -133,6 +133,32 @@ async function runReconcile(env, fromBlock, toBlock) {
   })
 }
 
+async function attemptLateTerminalRegression(env, callId, txHash) {
+  const code = [
+    "const settlement = await import('./src/lib/gateway/settlement.ts')",
+    "const database = await import('./src/db/client.ts')",
+    "await settlement.markSettlementAmbiguous(process.env.TEST_CALL_ID, new Error('late timeout'))",
+    "await settlement.markSettlementConfirmed(process.env.TEST_CALL_ID, process.env.TEST_TX_HASH, 1n)",
+    "await database.pool.end()",
+  ].join(';')
+
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--import', 'tsx', '--input-type=module', '--eval', code], {
+      cwd: new URL('..', import.meta.url),
+      env: { ...env, TEST_CALL_ID: callId, TEST_TX_HASH: txHash },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let output = ''
+    child.stdout.on('data', (chunk) => (output += chunk.toString()))
+    child.stderr.on('data', (chunk) => (output += chunk.toString()))
+    child.once('error', reject)
+    child.once('exit', (exitCode) => {
+      if (exitCode === 0) resolve()
+      else reject(new Error('Late terminal-state regression probe failed:\n' + output))
+    })
+  })
+}
+
 async function main() {
   let expectedAgentSecret = ''
   let hmacVerified = false
@@ -894,7 +920,6 @@ async function main() {
         group by ac.status, sa.status, sa.tx_hash, cb.reserved_usd`,
       [unknownBroadcastRun.body.call_id]
     )
-    await unknownDb.end()
     assert(
       unknownAfter.rows[0]?.call_status === 'SUCCESS' &&
         unknownAfter.rows[0].attempt_status === 'APPLIED' &&
@@ -902,6 +927,21 @@ async function main() {
         Math.abs(Number(unknownAfter.rows[0].reserved_usd)) < 1e-9 &&
         unknownAfter.rows[0].transaction_count === 1,
       'worker records the authoritative event hash and closes unknown broadcast recovery'
+    )
+
+    await attemptLateTerminalRegression(
+      runtimeEnv,
+      unknownBroadcastRun.body.call_id,
+      unknownBroadcastLog.transactionHash
+    )
+    const terminalState = await unknownDb.query(
+      'select status from settlement_attempts where agent_call_id = $1',
+      [unknownBroadcastRun.body.call_id]
+    )
+    await unknownDb.end()
+    assert(
+      terminalState.rows[0]?.status === 'APPLIED',
+      'late ambiguous/confirmed callbacks cannot regress an APPLIED settlement'
     )
     console.log(
       'MONEY LOOP VERIFIED: outbox recovery + idempotent rescan + concurrent live/worker finalization'

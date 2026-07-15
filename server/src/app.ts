@@ -9,6 +9,7 @@ import { agentsRouter } from './routes/agents.js'
 import { builderRouter } from './routes/builder.js'
 import { adminRouter } from './routes/admin.js'
 import { dashboardRouter } from './routes/dashboard.js'
+import { v1Router } from './routes/v1.js'
 import {
   assertProductionConfiguration,
   isProduction,
@@ -19,6 +20,8 @@ import {
 import { AppError } from './lib/errors.js'
 import { metricsHandler, readinessHandler, requestObservability } from './lib/observability/http.js'
 import { logger } from './lib/observability/logger.js'
+import { apiV1Headers, legacyApiHeaders } from './lib/platform/http.js'
+import { durableIdempotency } from './lib/platform/idempotency.js'
 
 export function createApp(): express.Express {
   assertProductionConfiguration()
@@ -72,11 +75,13 @@ export function createApp(): express.Express {
   app.get('/ready', readinessHandler)
   app.get('/metrics', metricsHandler)
 
-  app.use('/api/auth', authRouter)
-  app.use('/api/agents', agentsRouter)
-  app.use('/api/builder', builderRouter)
-  app.use('/api/admin', adminRouter)
-  app.use('/api/dashboard', dashboardRouter)
+  app.use('/api/v1', apiV1Headers, durableIdempotency, v1Router)
+
+  app.use('/api/auth', legacyApiHeaders('/api/v1/auth'), authRouter)
+  app.use('/api/agents', legacyApiHeaders('/api/v1/agents'), agentsRouter)
+  app.use('/api/builder', legacyApiHeaders('/api/v1/builder'), builderRouter)
+  app.use('/api/admin', legacyApiHeaders('/api/v1/admin'), adminRouter)
+  app.use('/api/dashboard', legacyApiHeaders('/api/v1/dashboard'), dashboardRouter)
 
   app.use((_req, _res, next) => {
     next(new AppError(404, 'ROUTE_NOT_FOUND', 'Route not found'))

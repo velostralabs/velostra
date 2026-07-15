@@ -34,6 +34,7 @@
     "test:config": "tsx test/production-config.test.ts",
     "test:phase3-canary": "tsx test/phase3-canary.test.ts",
     "test:phase3-canary-db": "tsx test/phase3-canary-db.e2e.test.ts",
+    "test:phase4-platform": "tsx test/phase4-platform.test.ts",
     "test:secrets": "tsx test/secrets.e2e.test.ts",
     "test:admin-policy": "tsx test/admin-policy.test.ts",
     "test:money-unit": "tsx test/money.test.ts",

@@ -1,5 +1,30 @@
 import type { CookieOptions } from 'express'
 
+const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
+const PRIVATE_KEY = /^0x[0-9a-fA-F]{64}$/
+const SECP256K1_ORDER = BigInt('0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141')
+
+function requireProductionEnv(name: string): string {
+  const value = process.env[name]?.trim()
+  if (!value) throw new Error(`Production ${name} is required`)
+  return value
+}
+
+function positiveInteger(name: string, value: string): number {
+  const parsed = Number(value)
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`Production ${name} must be a positive integer`)
+  }
+  return parsed
+}
+
+function assert32ByteSecret(name: string, value: string): void {
+  const decoded = /^[0-9a-fA-F]{64}$/.test(value)
+    ? Buffer.from(value, 'hex')
+    : Buffer.from(value, 'base64')
+  if (decoded.length !== 32) throw new Error(`Production ${name} must encode exactly 32 bytes`)
+}
+
 export function isProduction(): boolean {
   return process.env.NODE_ENV === 'production'
 }
@@ -51,18 +76,73 @@ export function clearAuthCookieOptions(): CookieOptions {
 }
 
 export function assertProductionConfiguration(): void {
-  webOrigins()
+  const origins = webOrigins()
   if (!isProduction()) return
 
-  const jwtSecret = process.env.JWT_SECRET ?? ''
+  const databaseUrl = new URL(requireProductionEnv('DATABASE_URL'))
+  if (!['postgres:', 'postgresql:'].includes(databaseUrl.protocol)) {
+    throw new Error('Production DATABASE_URL must use postgres or postgresql')
+  }
+
+  const jwtSecret = requireProductionEnv('JWT_SECRET')
   if (jwtSecret.length < 32 || jwtSecret === 'dev-secret-change-me') {
     throw new Error('Production JWT_SECRET must be at least 32 characters and non-default')
   }
-  if (!process.env.REDIS_URL) throw new Error('Production REDIS_URL is required')
+  const gatewaySecret = requireProductionEnv('GATEWAY_HMAC_SECRET')
+  if (gatewaySecret.length < 32 || gatewaySecret === 'replace-with-a-long-random-string') {
+    throw new Error('Production GATEWAY_HMAC_SECRET must be at least 32 characters and non-default')
+  }
+
+  const authUri = new URL(requireProductionEnv('AUTH_PUBLIC_URI'))
+  if (authUri.protocol !== 'https:' || authUri.origin !== authUri.toString().replace(/\/$/, '')) {
+    throw new Error('Production AUTH_PUBLIC_URI must be a canonical HTTPS origin')
+  }
+  if (!origins.includes(authUri.origin)) {
+    throw new Error('Production AUTH_PUBLIC_URI must be included in WEB_ORIGIN')
+  }
+
+  const redisUrl = new URL(requireProductionEnv('REDIS_URL'))
+  if (!['redis:', 'rediss:'].includes(redisUrl.protocol)) {
+    throw new Error('Production REDIS_URL must use redis or rediss')
+  }
   if (process.env.REDIS_FAILURE_MODE === 'open') {
     throw new Error('Production REDIS_FAILURE_MODE cannot be open')
   }
-  if (!process.env.AGENT_SECRET_ENCRYPTION_KEY) {
-    throw new Error('Production AGENT_SECRET_ENCRYPTION_KEY is required')
+  if (process.env.AUTH_NONCE_STORE === 'memory') {
+    throw new Error('Production AUTH_NONCE_STORE cannot be memory')
+  }
+
+  const encryptionKey = requireProductionEnv('AGENT_SECRET_ENCRYPTION_KEY')
+  assert32ByteSecret('AGENT_SECRET_ENCRYPTION_KEY', encryptionKey)
+  const encryptionKeyId = process.env.AGENT_SECRET_ENCRYPTION_KEY_ID ?? 'primary'
+  if (!/^[a-zA-Z0-9_-]{1,32}$/.test(encryptionKeyId)) {
+    throw new Error('Production AGENT_SECRET_ENCRYPTION_KEY_ID is invalid')
+  }
+
+  const escrowAddress = requireProductionEnv('VELOSTRA_ESCROW_ADDRESS')
+  if (!EVM_ADDRESS.test(escrowAddress) || /^0x0{40}$/i.test(escrowAddress)) {
+    throw new Error('Production VELOSTRA_ESCROW_ADDRESS must be a non-zero EVM address')
+  }
+  const signerKey = requireProductionEnv('BACKEND_SIGNER_PRIVATE_KEY')
+  const signerValue = PRIVATE_KEY.test(signerKey) ? BigInt(signerKey) : 0n
+  if (signerValue <= 0n || signerValue >= SECP256K1_ORDER) {
+    throw new Error('Production BACKEND_SIGNER_PRIVATE_KEY must be a valid secp256k1 private key')
+  }
+  if (process.env.ONCHAIN_SETTLEMENT_MODE !== 'required') {
+    throw new Error('Production ONCHAIN_SETTLEMENT_MODE must be required')
+  }
+  if (positiveInteger('ROBINHOOD_CHAIN_ID', requireProductionEnv('ROBINHOOD_CHAIN_ID')) !== 4663) {
+    throw new Error('Production ROBINHOOD_CHAIN_ID must be 4663')
+  }
+  if (positiveInteger('SETTLEMENT_TOKEN_DECIMALS', requireProductionEnv('SETTLEMENT_TOKEN_DECIMALS')) !== 6) {
+    throw new Error('Production SETTLEMENT_TOKEN_DECIMALS must be 6')
+  }
+  positiveInteger('VELOSTRA_DEPLOYMENT_BLOCK', requireProductionEnv('VELOSTRA_DEPLOYMENT_BLOCK'))
+  positiveInteger('RECONCILE_MAX_BLOCK_RANGE', process.env.RECONCILE_MAX_BLOCK_RANGE ?? '2000')
+  positiveInteger('RECONCILE_RPC_RETRIES', process.env.RECONCILE_RPC_RETRIES ?? '3')
+
+  const rpcUrl = new URL(requireProductionEnv('ROBINHOOD_RPC_URL'))
+  if (rpcUrl.protocol !== 'https:') {
+    throw new Error('Production ROBINHOOD_RPC_URL must use HTTPS')
   }
 }

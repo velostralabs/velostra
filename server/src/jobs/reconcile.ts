@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url'
 import { asc, and, eq, inArray, sql } from 'drizzle-orm'
 import { decodeEventLog, getAddress, type Address, type Hash, type Log } from 'viem'
 import { db, pool } from '../db/client.js'
+import { assertProductionConfiguration } from '../lib/config.js'
 import {
   agentCalls,
   agents,
@@ -832,6 +833,7 @@ function parseBlockArgument(name: string): bigint | undefined {
 }
 
 async function main(): Promise<void> {
+  assertProductionConfiguration()
   const watch = process.argv.includes('--watch')
   const options = {
     fromBlock: parseBlockArgument('from-block'),

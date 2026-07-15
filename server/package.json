@@ -31,6 +31,7 @@
     "test:auth": "tsx test/auth.e2e.test.ts",
     "test:ssrf": "tsx test/ssrf.e2e.test.ts",
     "test:http-security": "tsx test/http-security.e2e.test.ts",
+    "test:config": "tsx test/production-config.test.ts",
     "test:secrets": "tsx test/secrets.e2e.test.ts",
     "test:admin-policy": "tsx test/admin-policy.test.ts",
     "test:money-unit": "tsx test/money.test.ts",

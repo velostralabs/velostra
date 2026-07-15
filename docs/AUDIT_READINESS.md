@@ -48,7 +48,7 @@ addresses must be explicit and distinct; token decimals must be 6.
 ## In-scope backend security boundary
 
 - `server/src/lib/auth.ts`, `config.ts`, `redis.ts`, `security-readiness.ts`;
-- `server/src/lib/safe-http.ts` and gateway HMAC/secrets/onchain/settlement files;
+- `server/src/lib/gateway/ssrf.ts` and gateway HMAC/secrets/onchain/settlement files;
 - `server/src/routes/agents.ts`, `dashboard.ts`, `builder.ts`, `admin.ts`;
 - `server/src/jobs/reconcile.ts`;
 - `server/src/db/schema.ts` and `server/drizzle/*.sql`;

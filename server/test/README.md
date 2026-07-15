@@ -32,8 +32,10 @@ post-chain DB failure, exact call recovery, receipt ambiguity, lost broadcast
 response without a DB hash, idempotent retroactive scan/cursor preservation, drift,
 and concurrent live/worker exactly-once finalization.
 
-`test:platform` is a legacy running-stack smoke and requires Postgres, Redis, API,
-mock agent, and `TEST_ADMIN_PK` for a bootstrap/admin wallet. It is not part of the
+`test:platform` is a legacy running-stack smoke and requires Postgres, the API,
+mock agent, and `TEST_ADMIN_PK` for a bootstrap/admin wallet. Redis is required
+under the production fail-closed policy; a test/development run can deliberately
+exercise the documented fail-open quota fallback. It is not part of the
 self-contained money-loop gate.
 
 Reconciliation:

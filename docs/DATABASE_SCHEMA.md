@@ -108,6 +108,7 @@ an unscanned gap.
 0002_settlement_outbox.sql
 0003_query_indexes.sql
 0004_transaction_indexes.sql
+0005_earnings_invariants.sql
 ```
 
 Use:
@@ -119,7 +120,8 @@ npm --prefix server run test:migrations
 ```
 
 `test:migrations` proves both fresh install and upgrade path, exact balance
-preservation, reservation initialization, state enum order, money constraints, 17
+preservation, reservation initialization, state enum order, non-negative earnings and
+positive-claim constraints, 17
 tables, and operational indexes. `db:push` is local prototyping only and must not
 be used on persistent staging/production data.
 

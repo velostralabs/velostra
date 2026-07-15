@@ -25,7 +25,7 @@ import {
   velostraChainId,
   velostraEscrowAbi,
 } from '../lib/gateway/onchain.js'
-import { money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
+import { compareMoney, money, moneyToMinor, subtractMoney, type Money } from '../lib/money.js'
 import {
   failUnsettledCall,
   finalizeSettlement,
@@ -401,13 +401,22 @@ async function reconcileStoredEvent(txHash: string, logIndex: number): Promise<b
           .insert(builderEarnings)
           .values({ builder_id: builder.id })
           .onConflictDoNothing({ target: builderEarnings.builder_id })
-        await tx
-          .select({ id: builderEarnings.id })
+        const [earnings] = await tx
+          .select({
+            id: builderEarnings.id,
+            available: builderEarnings.available,
+          })
           .from(builderEarnings)
           .where(eq(builderEarnings.builder_id, builder.id))
           .for('update')
           .limit(1)
-
+        if (!earnings) throw new Error('Unable to create builder earnings for claim')
+        if (compareMoney(earnings.available, event.amount) < 0) {
+          await markUnmatched(
+            'Claim exceeds reconciled builder earnings; waiting for earlier earnings events'
+          )
+          return false
+        }
         const [inserted] = await tx
           .insert(earningsClaims)
           .values({
@@ -431,7 +440,7 @@ async function reconcileStoredEvent(txHash: string, logIndex: number): Promise<b
             .update(builderEarnings)
             .set({
               available:
-                sql`greatest(${builderEarnings.available} - ${event.amount}, 0)`,
+                sql`${builderEarnings.available} - ${event.amount}`,
               total_claimed:
                 sql`${builderEarnings.total_claimed} + ${event.amount}`,
               updated_at: new Date(),

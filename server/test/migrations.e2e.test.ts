@@ -12,6 +12,7 @@ const migrations = [
   'drizzle/0002_settlement_outbox.sql',
   'drizzle/0003_query_indexes.sql',
   'drizzle/0004_transaction_indexes.sql',
+  'drizzle/0005_earnings_invariants.sql',
 ]
 
 async function loadMigration(path: string, schema: string): Promise<string[]> {
@@ -103,12 +104,50 @@ try {
           'credit_balance_nonnegative',
           'credit_reservation_nonnegative',
           'credit_reservation_within_balance',
-          'settlement_amounts_balance'
+          'settlement_amounts_balance',
+          'builder_earnings_total_nonnegative',
+          'builder_earnings_available_nonnegative',
+          'builder_earnings_claimed_nonnegative',
+          'earnings_claim_amount_positive'
         )`,
     [freshSchema]
   )
-  assert.equal(constraints.rowCount, 4)
+  assert.equal(constraints.rowCount, 8)
   console.log('✅ fresh install includes all critical money invariants')
+
+  await client.query(
+    'insert into users (id, wallet_address) values ($1, $2)',
+    ['constraint-user', '0x0000000000000000000000000000000000000002']
+  )
+  await client.query(
+    'insert into builders (id, user_id, wallet_address, display_name) values ($1, $2, $3, $4)',
+    [
+      'constraint-builder',
+      'constraint-user',
+      '0x0000000000000000000000000000000000000002',
+      'Constraint Builder',
+    ]
+  )
+  await assert.rejects(
+    client.query(
+      'insert into builder_earnings (id, builder_id, available) values ($1, $2, $3)',
+      ['negative-earnings', 'constraint-builder', '-0.000001']
+    ),
+    /builder_earnings_available_nonnegative/
+  )
+  await assert.rejects(
+    client.query(
+      'insert into earnings_claims (id, builder_id, amount, wallet_address) values ($1, $2, $3, $4)',
+      [
+        'zero-claim',
+        'constraint-builder',
+        '0.000000',
+        '0x0000000000000000000000000000000000000002',
+      ]
+    ),
+    /earnings_claim_amount_positive/
+  )
+  console.log('✅ database rejects negative earnings and non-positive claims')
   const operationalIndexes = await client.query(
     `select indexname
        from pg_indexes

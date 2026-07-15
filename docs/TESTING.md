@@ -62,7 +62,8 @@ The suite intentionally uses tiny block ranges so multi-chunk behavior executes.
 - upgrade data preserved exactly;
 - `reserved_usd` initialized safely;
 - all settlement states installed in order;
-- money constraints reject invalid reservation/splits;
+- money constraints reject invalid reservation/splits, negative earnings, and
+  non-positive claims;
 - fresh install creates 17 tables and required indexes.
 
 The completed Phase 1 restore drill used a disposable PostgreSQL 16 database,

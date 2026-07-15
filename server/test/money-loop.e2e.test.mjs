@@ -938,11 +938,49 @@ async function main() {
       'select status from settlement_attempts where agent_call_id = $1',
       [unknownBroadcastRun.body.call_id]
     )
-    await unknownDb.end()
     assert(
       terminalState.rows[0]?.status === 'APPLIED',
       'late ambiguous/confirmed callbacks cannot regress an APPLIED settlement'
     )
+
+    try {
+      const quarantinedClaimHash = '0x' + 'ab'.repeat(32)
+    const quarantineBlock = await publicClient.getBlockNumber({ cacheTime: 0 })
+    await unknownDb.query(
+      `insert into chain_events (
+         id, sync_state_id, event_type, tx_hash, log_index, block_number,
+         block_timestamp, actor_address, amount
+       )
+       select 'quarantined-claim-event', id, 'CLAIMED', $1, 999, $2, now(), $3, '999.000000'
+         from chain_sync_state
+        limit 1`,
+      [quarantinedClaimHash, quarantineBlock.toString(), builder.address]
+    )
+    const quarantineOutput = await runReconcile(
+      runtimeEnv,
+      quarantineBlock + 1n,
+      quarantineBlock
+    )
+    const quarantinedClaim = await unknownDb.query(
+      `select ce.reconciled, ce.reconciliation_error, ec.id as claim_id
+         from chain_events ce
+         left join earnings_claims ec on ec.tx_hash = ce.tx_hash
+        where ce.tx_hash = $1`,
+      [quarantinedClaimHash]
+    )
+    assert(
+      quarantineOutput.includes('DRIFT WARNING') &&
+        quarantinedClaim.rows[0]?.reconciled === false &&
+        quarantinedClaim.rows[0]?.claim_id == null &&
+        quarantinedClaim.rows[0]?.reconciliation_error?.includes(
+          'waiting for earlier earnings events'
+        ),
+      'claim backfill waits instead of clamping when earlier earnings are unresolved'
+    )
+      await unknownDb.query('delete from chain_events where tx_hash = $1', [quarantinedClaimHash])
+    } finally {
+      await unknownDb.end()
+    }
     console.log(
       'MONEY LOOP VERIFIED: outbox recovery + idempotent rescan + concurrent live/worker finalization'
     )

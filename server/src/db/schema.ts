@@ -190,25 +190,32 @@ export const builders = pgTable('builders', {
 // BUILDER EARNINGS
 // ─────────────────────────────────────────
 
-export const builderEarnings = pgTable('builder_earnings', {
-  id: id(),
-  builder_id: text('builder_id')
-    .notNull()
-    .unique()
-    .references(() => builders.id, { onDelete: 'cascade' }),
-  total_earned: numeric('total_earned', { precision: 20, scale: 6 })
-    .notNull()
-    .default('0.000000'),
-  available: numeric('available', { precision: 20, scale: 6 })
-    .notNull()
-    .default('0.000000'),
-  total_claimed: numeric('total_claimed', { precision: 20, scale: 6 })
-    .notNull()
-    .default('0.000000'),
-  created_at: timestamp('created_at').notNull().defaultNow(),
-  updated_at: timestamp('updated_at').notNull().defaultNow(),
-})
-
+export const builderEarnings = pgTable(
+  'builder_earnings',
+  {
+    id: id(),
+    builder_id: text('builder_id')
+      .notNull()
+      .unique()
+      .references(() => builders.id, { onDelete: 'cascade' }),
+    total_earned: numeric('total_earned', { precision: 20, scale: 6 })
+      .notNull()
+      .default('0.000000'),
+    available: numeric('available', { precision: 20, scale: 6 })
+      .notNull()
+      .default('0.000000'),
+    total_claimed: numeric('total_claimed', { precision: 20, scale: 6 })
+      .notNull()
+      .default('0.000000'),
+    created_at: timestamp('created_at').notNull().defaultNow(),
+    updated_at: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (_table) => [
+    check('builder_earnings_total_nonnegative', sql.raw('total_earned >= 0')),
+    check('builder_earnings_available_nonnegative', sql.raw('available >= 0')),
+    check('builder_earnings_claimed_nonnegative', sql.raw('total_claimed >= 0')),
+  ]
+)
 // ─────────────────────────────────────────
 // EARNINGS CLAIM
 // ─────────────────────────────────────────
@@ -232,6 +239,7 @@ export const earningsClaims = pgTable('earnings_claims', {
   (table) => [
     index('earnings_claim_builder_created_idx').on(table.builder_id, table.created_at),
     index('earnings_claim_status_created_idx').on(table.status, table.created_at),
+    check('earnings_claim_amount_positive', sql.raw('amount > 0')),
   ]
 )
 

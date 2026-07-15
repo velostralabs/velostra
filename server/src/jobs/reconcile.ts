@@ -259,6 +259,7 @@ async function reconcileEarningsEvent(event: ChainEventRow): Promise<boolean> {
       confirmedAt: event.block_timestamp,
       builderAmount: event.amount,
       platformAmount: event.secondary_amount ?? money(0),
+      authoritativeEvent: true,
     })
     await db
       .update(chainEvents)
@@ -591,7 +592,7 @@ export async function recoverSettlementAttempts(limit = 500): Promise<number> {
     }
 
     if (receipt.status !== 'success') {
-      if (attempt.last_error === 'RECOVERY_REBROADCAST') {
+      if (attempt.attempt_count > 1 || attempt.last_error === 'RECOVERY_REBROADCAST') {
         await markSettlementAmbiguous(
           attempt.agent_call_id,
           new Error('Recovery rebroadcast reverted; waiting for correlated event'),
@@ -619,7 +620,12 @@ export async function recoverSettlementAttempts(limit = 500): Promise<number> {
 
   return recovered
 }
-async function ingestRange(syncId: string, fromBlock: bigint, toBlock: bigint): Promise<number> {
+async function ingestRange(
+  syncId: string,
+  fromBlock: bigint,
+  toBlock: bigint,
+  advanceCursor: boolean
+): Promise<number> {
   const rawLogs = await fetchLogsAdaptive(fromBlock, toBlock)
   const events = rawLogs
     .map(parseLog)
@@ -662,14 +668,16 @@ async function ingestRange(syncId: string, fromBlock: bigint, toBlock: bigint): 
     await reconcileStoredEvent(event.txHash, event.logIndex)
   }
 
-  await db
-    .update(chainSyncState)
-    .set({
-      last_processed_block:
-        sql`greatest(${chainSyncState.last_processed_block}, ${toBlock})`,
-      updated_at: new Date(),
-    })
-    .where(eq(chainSyncState.id, syncId))
+  if (advanceCursor) {
+    await db
+      .update(chainSyncState)
+      .set({
+        last_processed_block:
+          sql`greatest(${chainSyncState.last_processed_block}, ${toBlock})`,
+        updated_at: new Date(),
+      })
+      .where(eq(chainSyncState.id, syncId))
+  }
 
   return events.length
 }
@@ -796,12 +804,16 @@ export async function runReconciliation(options: ReconcileOptions = {}) {
   let scannedEvents = 0
   let ranges = 0
 
+  let cursorAdvanceEnabled = fromBlock === state.last_processed_block + 1n
   for (let cursor = fromBlock; cursor <= toBlock; cursor += maxBlockRange) {
     const rangeEnd =
       cursor + maxBlockRange - 1n < toBlock ? cursor + maxBlockRange - 1n : toBlock
-    scannedEvents += await ingestRange(syncId, cursor, rangeEnd)
+    scannedEvents += await ingestRange(syncId, cursor, rangeEnd, cursorAdvanceEnabled)
     ranges += 1
-    console.info('[reconcile] processed blocks ' + cursor + '-' + rangeEnd)
+    console.info(
+      '[reconcile] processed blocks ' + cursor + '-' + rangeEnd +
+        (cursorAdvanceEnabled ? ' (cursor advanced)' : ' (retroactive cursor preserved)')
+    )
   }
 
   const retriedAfterScan = await retryPendingEvents()

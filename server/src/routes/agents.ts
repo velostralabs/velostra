@@ -305,6 +305,28 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
         split.gross,
         onchainCallId!
       )
+      if (
+        process.env.NODE_ENV === 'test' &&
+        process.env.RECONCILE_TEST_AMBIGUOUS_BROADCAST_INPUT === parsed.data.input
+      ) {
+        const transmittedHash = settlementTxHash
+        await markSettlementAmbiguous(
+          callId,
+          new Error('Injected lost broadcast response after transaction transmission')
+        )
+        settlementTxHash = null
+        console.error('[agent-call] injected unknown broadcast outcome; reconciliation pending', {
+          callId,
+          onchainCallId,
+          transmittedHash,
+        })
+        return res.status(503).json({
+          error: 'Settlement broadcast outcome is uncertain; reconciliation is pending',
+          code: 'SETTLEMENT_AMBIGUOUS',
+          call_id: callId,
+          reconciliation_pending: true,
+        })
+      }
     } catch (error) {
       await markSettlementAmbiguous(callId, error)
       console.error('[agent-call] broadcast outcome is ambiguous; reconciliation pending', {

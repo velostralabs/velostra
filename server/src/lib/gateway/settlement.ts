@@ -19,6 +19,7 @@ export interface FinalizeSettlementInput {
   confirmedAt?: Date
   builderAmount?: string
   platformAmount?: string
+  authoritativeEvent?: boolean
 }
 
 export async function finalizeSettlement(input: FinalizeSettlementInput): Promise<boolean> {
@@ -31,7 +32,9 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
       .limit(1)
     if (!attempt) throw new Error('Settlement attempt is missing for call ' + input.callId)
     if (attempt.status === 'FAILED') throw new Error('Cannot finalize failed settlement ' + attempt.id)
-    if (attempt.tx_hash && attempt.tx_hash.toLowerCase() !== input.txHash.toLowerCase()) {
+    const hashMismatch =
+      attempt.tx_hash && attempt.tx_hash.toLowerCase() !== input.txHash.toLowerCase()
+    if (hashMismatch && !input.authoritativeEvent) {
       throw new Error('Settlement transaction hash does not match durable attempt')
     }
     if (
@@ -39,6 +42,13 @@ export async function finalizeSettlement(input: FinalizeSettlementInput): Promis
       (input.platformAmount && compareMoney(input.platformAmount, attempt.platform_amount) !== 0)
     ) {
       throw new Error('Onchain settlement amounts do not match durable attempt')
+    }
+    if (hashMismatch) {
+      console.warn('[settlement] authoritative correlated event replaced an ambiguous tx hash', {
+        callId: input.callId,
+        previousTxHash: attempt.tx_hash,
+        confirmedTxHash: input.txHash,
+      })
     }
 
     const [call] = await tx

@@ -261,6 +261,7 @@ async function main() {
       RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_INPUT: 'race live request and worker',
       RECONCILE_TEST_PAUSE_AFTER_SETTLEMENT_MS: '2500',
       RECONCILE_TEST_AMBIGUOUS_RECEIPT_INPUT: 'force ambiguous receipt recovery',
+      RECONCILE_TEST_AMBIGUOUS_BROADCAST_INPUT: 'force unknown broadcast recovery',
     }
     backend = spawn(process.execPath, ['--import', 'tsx', 'src/index.ts'], {
       cwd: new URL('..', import.meta.url),
@@ -590,10 +591,14 @@ async function main() {
     })
     assert(missedClaimReplay.status === 409, 'worker-backfilled claim rejects later API replay')
 
-    await runReconcile(
+    const retroactiveOutput = await runReconcile(
       runtimeEnv,
       escrowDeployReceipt.blockNumber,
       platformWithdrawalReceipt.blockNumber
+    )
+    assert(
+      retroactiveOutput.includes('retroactive cursor preserved'),
+      'manual retroactive scan cannot move the persistent catch-up cursor'
     )
     const afterRescan = await recoveryClient('/api/dashboard')
     const interruptedUserAfterRescan = await userClient('/api/dashboard')
@@ -789,6 +794,114 @@ async function main() {
         Math.abs(Number(ambiguousAfter.rows[0].reserved_usd)) < 1e-9 &&
         ambiguousAfter.rows[0].transaction_count === 1,
       'worker closes AMBIGUOUS to APPLIED, releases reservation, and inserts one ledger row'
+    )
+
+    const balanceBeforeUnknownBroadcast = await userClient('/api/dashboard')
+    const earningsBeforeUnknownBroadcast = await builderClient('/api/builder/earnings')
+    const unknownBroadcastStart = await publicClient.getBlockNumber({ cacheTime: 0 })
+    const unknownBroadcastRun = await userClient(
+      '/api/agents/' + submission.body.agent.slug + '/run',
+      {
+        method: 'POST',
+        body: JSON.stringify({ input: 'force unknown broadcast recovery' }),
+      }
+    )
+    assert(
+      unknownBroadcastRun.status === 503 &&
+        unknownBroadcastRun.body.code === 'SETTLEMENT_AMBIGUOUS' &&
+        !unknownBroadcastRun.body.settlement_tx_hash,
+      'lost broadcast response preserves a recoverable call without claiming a tx hash'
+    )
+
+    const unknownBroadcastHead = await publicClient.getBlockNumber({ cacheTime: 0 })
+    const unknownBroadcastLogs = await publicClient.getLogs({
+      address: escrowAddress,
+      fromBlock: unknownBroadcastStart + 1n,
+      toBlock: unknownBroadcastHead,
+    })
+    const unknownBroadcastLog = unknownBroadcastLogs.find(
+      (log) => log.blockNumber !== null && log.transactionHash
+    )
+    assert(Boolean(unknownBroadcastLog), 'unknown broadcast transaction actually confirms onchain')
+
+    const unknownDb = new Client({ connectionString: process.env.DATABASE_URL })
+    await unknownDb.connect()
+    const unknownBefore = await unknownDb.query(
+      `select ac.status as call_status,
+              sa.status as attempt_status,
+              sa.tx_hash,
+              sa.attempt_count,
+              cb.reserved_usd,
+              count(t.id)::int as transaction_count
+         from agent_calls ac
+         join settlement_attempts sa on sa.agent_call_id = ac.id
+         join credit_balances cb on cb.user_id = ac.user_id
+         left join transactions t on t.agent_call_id = ac.id
+        where ac.id = $1
+        group by ac.status, sa.status, sa.tx_hash, sa.attempt_count, cb.reserved_usd`,
+      [unknownBroadcastRun.body.call_id]
+    )
+    assert(
+      unknownBefore.rows[0]?.call_status === 'PROCESSING' &&
+        unknownBefore.rows[0].attempt_status === 'AMBIGUOUS' &&
+        unknownBefore.rows[0].tx_hash === null &&
+        unknownBefore.rows[0].attempt_count === 1 &&
+        Math.abs(Number(unknownBefore.rows[0].reserved_usd) - 0.3) < 1e-9 &&
+        unknownBefore.rows[0].transaction_count === 0,
+      'unknown broadcast outcome remains reserved and unapplied before chain scan'
+    )
+
+    const unknownWorkerOutput = await runReconcile(
+      runtimeEnv,
+      unknownBroadcastLog.blockNumber,
+      unknownBroadcastLog.blockNumber
+    )
+    assert(
+      unknownWorkerOutput.includes('drift clean'),
+      'correlated event heals the unknown broadcast outcome without drift'
+    )
+
+    const balanceAfterUnknownBroadcast = await userClient('/api/dashboard')
+    const earningsAfterUnknownBroadcast = await builderClient('/api/builder/earnings')
+    assert(
+      Math.abs(
+        balanceBeforeUnknownBroadcast.body.balance_usd -
+          balanceAfterUnknownBroadcast.body.balance_usd -
+          0.3
+      ) < 1e-9,
+      'unknown broadcast recovery debits the reserved user amount exactly once'
+    )
+    assert(
+      Math.abs(
+        earningsAfterUnknownBroadcast.body.earnings.available -
+          earningsBeforeUnknownBroadcast.body.earnings.available -
+          0.27
+      ) < 1e-9,
+      'unknown broadcast recovery credits builder earnings exactly once'
+    )
+
+    const unknownAfter = await unknownDb.query(
+      `select ac.status as call_status,
+              sa.status as attempt_status,
+              sa.tx_hash,
+              cb.reserved_usd,
+              count(t.id)::int as transaction_count
+         from agent_calls ac
+         join settlement_attempts sa on sa.agent_call_id = ac.id
+         join credit_balances cb on cb.user_id = ac.user_id
+         left join transactions t on t.agent_call_id = ac.id
+        where ac.id = $1
+        group by ac.status, sa.status, sa.tx_hash, cb.reserved_usd`,
+      [unknownBroadcastRun.body.call_id]
+    )
+    await unknownDb.end()
+    assert(
+      unknownAfter.rows[0]?.call_status === 'SUCCESS' &&
+        unknownAfter.rows[0].attempt_status === 'APPLIED' &&
+        unknownAfter.rows[0].tx_hash === unknownBroadcastLog.transactionHash &&
+        Math.abs(Number(unknownAfter.rows[0].reserved_usd)) < 1e-9 &&
+        unknownAfter.rows[0].transaction_count === 1,
+      'worker records the authoritative event hash and closes unknown broadcast recovery'
     )
     console.log(
       'MONEY LOOP VERIFIED: outbox recovery + idempotent rescan + concurrent live/worker finalization'

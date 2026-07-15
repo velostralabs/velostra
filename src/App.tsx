@@ -39,12 +39,12 @@ function Home() {
 
   useLayoutEffect(() => {
     const targetId = homeSectionTargets[pathname]
-    const alignRoute = () => {
-      if (!targetId) {
-        window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-        return
-      }
+    if (!targetId) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      return
+    }
 
+    const alignRoute = () => {
       const target = document.getElementById(targetId)
       if (!target) return
       const navOffset = window.innerWidth <= 760 ? 88 : 112

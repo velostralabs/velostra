@@ -16,15 +16,19 @@ interface BrowserVitals {
   lcpMs: number
   cls: number
   inpMs: number
+  interactionCount: number
   transferredJsBytes: number
   webglContexts: number
 }
+
+// Recording and tracing add compositor work that would contaminate Event Timing.
+test.use({ video: 'off', trace: 'off' })
 
 test.beforeEach(async ({ page }) => {
   await installInjectedWallet(page)
   await installProductApi(page, createProductState())
   await page.addInitScript(() => {
-    const measurements = { lcpMs: 0, cls: 0, inpMs: 0, webglContexts: 0 }
+    const measurements = { lcpMs: 0, cls: 0, inpMs: 0, interactionCount: 0, webglContexts: 0 }
     Object.defineProperty(window, '__velostraVitals', { value: measurements })
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) measurements.lcpMs = Math.max(measurements.lcpMs, entry.startTime)
@@ -34,8 +38,12 @@ test.beforeEach(async ({ page }) => {
         if (!entry.hadRecentInput) measurements.cls += entry.value ?? 0
       }
     }).observe({ type: 'layout-shift', buffered: true })
+    const interactionIds = new Set<number>()
     new PerformanceObserver((list) => {
-      for (const entry of list.getEntries() as Array<PerformanceEntry & { duration: number }>) {
+      for (const entry of list.getEntries() as Array<PerformanceEntry & { duration: number; interactionId?: number }>) {
+        if (!entry.interactionId) continue
+        interactionIds.add(entry.interactionId)
+        measurements.interactionCount = interactionIds.size
         measurements.inpMs = Math.max(measurements.inpMs, entry.duration)
       }
     }).observe({ type: 'event', buffered: true, durationThreshold: 16 } as PerformanceObserverInit)
@@ -60,7 +68,11 @@ for (const [route, budget] of Object.entries(budgets.routes)) {
   test(`${route} stays within browser performance budgets`, async ({ page }) => {
     await page.goto(route)
     await expect(page.locator('#main-content')).toBeVisible()
-    await page.keyboard.press('Tab')
+    await page
+      .getByRole('navigation', { name: 'Primary navigation' })
+      .getByRole('button', { name: 'Connect Wallet' })
+      .click()
+    await expect(page.getByRole('dialog', { name: 'Choose a wallet' })).toBeVisible()
     await page.waitForTimeout(250)
     const vitals = await page.evaluate(() => {
       const captured = (window as Window & {
@@ -75,6 +87,7 @@ for (const [route, budget] of Object.entries(budgets.routes)) {
 
     expect(vitals.transferredJsBytes).toBeLessThanOrEqual(budget.transferredJsBytes)
     expect(vitals.lcpMs).toBeLessThanOrEqual(budget.lcpMs)
+    expect(vitals.interactionCount).toBeGreaterThan(0)
     expect(vitals.inpMs).toBeLessThanOrEqual(budget.inpMs)
     expect(vitals.cls).toBeLessThanOrEqual(budget.cls)
     expect(vitals.webglContexts).toBeLessThanOrEqual(budget.webglContexts)

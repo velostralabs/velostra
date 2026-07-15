@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-phase3-canary-policy",
+  "environment": "phase3-preparation",
+  "enabled": false,
+  "allowlists": {
+    "wallets": ["0x6000000000000000000000000000000000000006"],
+    "agents": ["phase3-synthetic-agent"],
+    "builders": ["0x7000000000000000000000000000000000000007"]
+  },
+  "limits": {
+    "durationSeconds": 3600,
+    "maxCalls": 25,
+    "maxGrossPerCallMinor": "1000000",
+    "maxGrossPerWalletMinor": "5000000",
+    "maxGrossTotalMinor": "10000000"
+  },
+  "thresholds": {
+    "maxUnexplainedDriftMinor": "0",
+    "maxCursorLagBlocks": 12,
+    "maxRecoverableOutboxAgeSeconds": 120,
+    "maxErrorRate": 0.01,
+    "maxWorkerAgeSeconds": 90,
+    "maxBackupAgeSeconds": 90000,
+    "minSignerBalanceWei": "10000000000000000",
+    "maxUnacknowledgedCriticalAlerts": 0,
+    "maxPendingChainEvents": 0
+  },
+  "requiredFlow": [
+    "deposit",
+    "paid-call",
+    "earnings-credit",
+    "reconciliation",
+    "builder-claim",
+    "platform-revenue",
+    "zero-drift"
+  ],
+  "stopActions": [
+    "disable-paid-writes",
+    "preserve-builder-claims",
+    "keep-reconciliation-running",
+    "page-incident-owner"
+  ],
+  "rollback": {
+    "destructiveDatabaseRollbackAllowed": false,
+    "strategy": "pause-new-risk-and-forward-repair",
+    "preserveClaims": true,
+    "preserveReconciliation": true
+  }
+}

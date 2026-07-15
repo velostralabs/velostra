@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://velostra.invalid/schemas/phase3-release-manifest.schema.json",
+  "title": "Velostra Phase 3 release manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "kind",
+    "stage",
+    "environment",
+    "release",
+    "generatedAt",
+    "repository",
+    "chain",
+    "contract",
+    "images",
+    "policies",
+    "externalEvidence",
+    "authorization",
+    "integrity"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "velostra-phase3-release" },
+    "stage": { "enum": ["preparation", "broadcast-approved", "deployed"] },
+    "environment": { "type": "string", "minLength": 2 },
+    "release": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "repository": { "type": "object" },
+    "chain": {
+      "type": "object",
+      "required": ["id", "name", "confirmations"],
+      "properties": {
+        "id": { "const": 4663 },
+        "name": { "type": "string" },
+        "confirmations": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "contract": { "type": "object" },
+    "images": { "type": "object" },
+    "policies": { "type": "object" },
+    "externalEvidence": { "type": "object" },
+    "authorization": { "type": "object" },
+    "integrity": {
+      "type": "object",
+      "required": ["algorithm", "manifestSha256"],
+      "properties": {
+        "algorithm": { "const": "sha256" },
+        "manifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+      }
+    }
+  }
+}

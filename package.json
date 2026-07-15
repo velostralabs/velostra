@@ -42,6 +42,9 @@
     "phase2:soak": "node scripts/run-phase2-soak.mjs",
     "phase2:evidence": "node scripts/validate-phase2-evidence.mjs",
     "test:phase2-evidence": "node --check scripts/run-phase2-load.mjs && node --check scripts/run-phase2-soak.mjs && node scripts/test-phase2-evidence.mjs",
+    "release:prepare": "npm run build --prefix contracts && node scripts/prepare-phase3-release.mjs",
+    "release:validate": "node scripts/validate-phase3-release.mjs",
+    "test:phase3-release": "npm run build --prefix contracts && node scripts/test-phase3-release.mjs",
     "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {

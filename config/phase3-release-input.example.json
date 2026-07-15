@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-phase3-release-input",
+  "stage": "preparation",
+  "environment": "phase3-preparation",
+  "release": "git-head",
+  "chain": {
+    "id": 4663,
+    "name": "Robinhood Chain",
+    "confirmations": 12
+  },
+  "contract": {
+    "source": "contracts/VelostraEscrow.sol",
+    "artifact": "contracts/build/VelostraEscrow.json",
+    "constructor": {
+      "settlementToken": "0x1000000000000000000000000000000000000001",
+      "platformFeeBps": 1000,
+      "roles": {
+        "admin": "0x2000000000000000000000000000000000000002",
+        "settler": "0x3000000000000000000000000000000000000003",
+        "treasury": "0x4000000000000000000000000000000000000004",
+        "pauseGuardian": "0x5000000000000000000000000000000000000005"
+      }
+    },
+    "address": null,
+    "deploymentBlock": null,
+    "deploymentTxHash": null
+  },
+  "images": {
+    "web": {
+      "reference": "velostra/web:phase3-candidate",
+      "digest": null
+    },
+    "server": {
+      "reference": "velostra/server:phase3-candidate",
+      "digest": null
+    }
+  },
+  "policies": {
+    "authority": "deploy/staging/authority-policy.example.json",
+    "canary": "config/phase3-canary-policy.example.json"
+  },
+  "externalEvidence": {
+    "phase2": null,
+    "independentReview": null
+  },
+  "authorization": {
+    "mainnetApproved": false,
+    "changeTicket": null,
+    "approvals": []
+  }
+}

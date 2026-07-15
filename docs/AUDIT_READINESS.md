@@ -1,0 +1,140 @@
+# Phase 1 audit readiness packet
+
+> Prepared: 2026-07-15.
+> Status: implementation frozen locally; independent review not yet performed.
+
+## Review objective
+
+Give an external contract auditor and focused backend security reviewer a bounded,
+reproducible scope. Local tests are evidence, not a substitute for independence.
+No contract deployment should occur until this packet references the reviewed
+commit and all Critical/High findings are closed.
+
+## In-scope contract
+
+- `contracts/VelostraEscrow.sol`
+- `contracts/MockUSD.sol` only as test scaffolding
+- `contracts/scripts/build.js`
+- `contracts/scripts/deploy.js`
+- `contracts/test/VelostraEscrow.e2e.test.js`
+
+Review focus:
+
+- role graph and two-day default-admin transfer delay;
+- pause/unpause authority and claims while paused;
+- 6-decimal token assumption and unsupported token behavior;
+- liability/solvency arithmetic and fee rounding;
+- `callId` uniqueness and event correlation;
+- claim/revenue reentrancy and checks-effects-interactions;
+- successor declaration and migration of only unencumbered liquidity;
+- stranded-fund, griefing, direct-transfer, and token edge cases.
+
+Frozen constructor shape:
+
+```solidity
+constructor(
+    address settlementToken,
+    uint16 platformFeeBps,
+    address admin,
+    address settler,
+    address treasury,
+    address pauseGuardian
+)
+```
+
+Deployment policy requires a deployed multisig contract for `admin`; all four role
+addresses must be explicit and distinct; token decimals must be 6.
+
+## In-scope backend security boundary
+
+- `server/src/lib/auth.ts`, `config.ts`, `redis.ts`, `security-readiness.ts`;
+- `server/src/lib/safe-http.ts` and gateway HMAC/secrets/onchain/settlement files;
+- `server/src/routes/agents.ts`, `dashboard.ts`, `builder.ts`, `admin.ts`;
+- `server/src/jobs/reconcile.ts`;
+- `server/src/db/schema.ts` and `server/drizzle/*.sql`;
+- security, migration, money, and restore test suites.
+
+Review focus: auth replay/multi-instance race, SSRF/DNS pinning, encrypted secret
+lifecycle, RBAC/audit, exact decimal arithmetic, reservation/outbox transitions,
+broadcast ambiguity, event-to-row correlation, live/worker race, cursor safety,
+manual rescan, drift, and production fail-closed configuration.
+
+## Explicitly out of scope for Phase 1 audit
+
+- AI model correctness or builder output quality;
+- frontend visual design;
+- managed cloud configuration not yet provisioned;
+- Phase 2 observability transport, load testing, reorg engine, multi-RPC failover,
+  and real browser-wallet automation;
+- SDKs, pagination, webhooks, and beta product features.
+
+## Reproducible evidence
+
+```bash
+npm ci
+npm run lint
+npm run build
+
+npm ci --prefix server
+npm --prefix server run build
+npm --prefix server run db:check
+npm --prefix server run test:config
+npm --prefix server run test:auth
+npm --prefix server run test:ssrf
+npm --prefix server run test:http-security
+npm --prefix server run test:secrets
+npm --prefix server run test:admin-policy
+npm --prefix server run test:money-unit
+
+npm ci --prefix contracts
+npm test --prefix contracts
+
+# disposable PostgreSQL with migrations applied
+npm --prefix server run db:migrate
+npm --prefix server run test:migrations
+npm --prefix server run test:money
+```
+
+CI also performs production dependency audits and a pg_dump/pg_restore integrity
+verification. See [TESTING.md](./TESTING.md).
+
+## Design decisions frozen for review
+
+- `userCreditBalance` is cumulative deposit evidence, never spendable authority.
+- Postgres `credit_balances` is the spendable ledger.
+- Contract earnings event carries `bytes32 callId = keccak256(agent_calls.id)`.
+- Platform fee rounds down in token minor units; builder receives the remainder.
+- Claims remain enabled during pause.
+- Successor migration never moves outstanding builder/platform liabilities.
+- Initial production uses one supervised worker and one logical signer writer.
+- Confirmation delay mitigates reorg; a rollback engine is Phase 2.
+
+## Findings register
+
+Use one row per finding. Do not overwrite history.
+
+| ID | Reviewer | Severity | Component | Status | Resolution / accepted-risk owner |
+|---|---|---|---|---|---|
+| EXT-PENDING | Independent reviewer TBD | Gate | Contract + backend | OPEN | External engagement required before mainnet. |
+
+Policy:
+
+- Critical/High: must be fixed and re-reviewed.
+- Medium: fix or explicit written acceptance with owner, expiry, and compensating
+  control.
+- Low/Informational: tracked with disposition.
+- Any contract fix after review requires affected-scope re-review and a new frozen
+  commit SHA.
+
+## Handoff checklist
+
+- [ ] Record frozen commit SHA and clean-tree status.
+- [ ] Confirm no deployment address exists.
+- [ ] Provide compiler, optimizer, OpenZeppelin, Node, and lockfile versions.
+- [ ] Provide threat model, architecture, operations runbook, schema, and ABI docs.
+- [ ] Provide all local/CI outputs and restore evidence.
+- [ ] Provide proposed multisig, signer, treasury, guardian, token, fee, and limits.
+- [ ] Receive signed scope and reviewer independence statement.
+- [ ] Enter findings without filtering.
+- [ ] Close/re-review findings and update this register.
+- [ ] Only then mark Phase 1 complete in the release sense.

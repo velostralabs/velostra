@@ -37,9 +37,11 @@ every synthetic principal/owner, and link the approved change ticket. Verify it 
 
     npm run authority:validate --prefix server -- deploy/staging/authority-policy.json
 
-DEFAULT_ADMIN, PAUSER, FEE_MANAGER, and TREASURY must be separately owned multisig
-principals with a threshold of at least two. SETTLER must be the restricted signer and
-must have no treasury, fee, pause, or admin authority.
+At deployment, DEFAULT_ADMIN and FEE_MANAGER are held by the approved governance
+multisig. PAUSER and TREASURY must be independently owned multisig principals, each
+with a threshold of at least two. SETTLER must be the restricted signer and must have
+no treasury, fee, pause, or admin authority. Any later FEE_MANAGER delegation requires
+approved onchain role-transition evidence and a new readiness/release record.
 
 ## Required staging drills
 

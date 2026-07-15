@@ -90,7 +90,8 @@ In `NODE_ENV=production`, startup rejects missing/unsafe:
 - non-4663 chain, non-6-decimal policy, zero deployment block, non-HTTPS RPC;
 - plaintext agent secrets or missing initial super-admin path.
 - mainnet-like startup without explicit Phase 3 approval, exact deployed-manifest path/hash/release/environment/stage, or a safe paid-write mode;
-- canary policy hash/allowlists/limits/window mismatch, or public mode without hash-bound passing decision and separate approval.
+- incomplete or mismatched authority/canary policy, manifest-reissued cap bypass, or
+  public mode without a hash-bound passing decision and separate approval.
 
 API and reconciliation worker both run these checks.
 
@@ -99,7 +100,7 @@ API and reconciliation worker both run these checks.
 | Risk | Current treatment | Required before mainnet |
 |---|---|---|
 | Independent review absent | release blocked | contract + focused backend review |
-| Release/canary artifact tampering | canonical hashes, stage binding, clean commit, immutable mounts, explicit approvals | protected operator artifact custody |
+| Release/canary artifact tampering | canonical hashes, exact required sets, authority/constructor binding, deployment init-code provenance, immutable mounts, explicit approvals | protected operator artifact custody |
 | Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial canary intentionally serialized |
 | Restricted signer custody not yet proven on managed staging | process refuses raw production keys | KMS/restricted signer deployment + rotation drill evidence |
 | One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |

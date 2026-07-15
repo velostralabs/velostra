@@ -13,7 +13,7 @@
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
-| Phase 3 release | `npm run test:phase3-release` | contract dependencies | manifest/deployment/readiness/catch-up/canary tamper and failure gates |
+| Phase 3 release | `npm run test:phase3-release` | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
 | Phase 3 aggregate | `npm run test:phase3` | root/server/contract installs | release gates, server compile/config, canary guard, migration consistency |
 | API build | `npm --prefix server run build` | none | strict server compile |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
@@ -26,14 +26,14 @@
 | HTTP security | `npm --prefix server run test:http-security` | none | origin, headers, request IDs, body/JSON/404 codes |
 | Secret envelope | `npm --prefix server run test:secrets` | none | encrypt/decrypt/tamper/rotation/revoke behavior |
 | Restricted signer | `npm --prefix server run test:signer` | local HTTP double | allowlist, idempotency, auth, timeout, and response validation |
-| Authority policy | `npm --prefix server run test:authority` | none | distinct owned multisig roles and restricted settler policy |
+| Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
 | Contract E2E | `npm test --prefix contracts` | in-process Ganache | 10 Phase 1 authority/solvency/migration groups |
 | Migration E2E | `npm --prefix server run test:migrations` | disposable Postgres | fresh + upgrade + invariants + indexes |
 | Money-loop E2E | `npm --prefix server run test:money` | disposable Postgres | real API/EVM/worker recovery and races |
 | Canary unit | `npm --prefix server run test:phase3-canary` | none | manifest/policy binding, disabled/public modes, allowlist/window/exposure caps |
-| Canary DB race | `npm --prefix server run test:phase3-canary-db` | migrated Postgres | simultaneous requests cannot exceed cap; rollback removes admission |
+| Canary DB race | `npm --prefix server run test:phase3-canary-db` | migrated Postgres | simultaneous requests and manifest reissue cannot exceed release/policy cap; rollback removes admission |
 | Restore verify | `npm --prefix server run restore:verify` | source + restored DB | exact restore integrity |
 | Legacy platform smoke | `npm --prefix server run test:platform` | running local stack | older marketplace happy path |
 

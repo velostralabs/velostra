@@ -10,9 +10,9 @@
 Velostra now includes the complete repository-side Phase 3 release control plane on
 top of the cleared Phase 1-2 product and resilience foundation. A canonical
 SHA-256 release manifest binds the full commit, contract artifact/ABI/bytecode,
-migration journal, every migration, lockfiles, authority/canary policy, image
-digests, evidence, approvals, chain 4663, constructor roles, reconciliation limits,
-and deployment record.
+migration journal, every migration, the exact required lockfile/release-tool sets,
+validated authority/canary policy, image digests, evidence, approvals, chain 4663,
+constructor roles, reconciliation limits, and deployment record.
 
 The deployment path is inert by default, requires two distinct approvals plus an
 accountable change ticket, and produces independently verifiable deployment
@@ -123,16 +123,18 @@ real one-hour outage and managed PITR drills pass.
   plan and never broadcasts by default.
 - Contract deployment requires `--broadcast` plus an explicit mainnet sentinel,
   matching manifest hash, ticket, release, chain, token, deployer, roles, and artifact.
-- `release:finalize` records the exact transaction/address/block and deployment
-  verification checks runtime bytecode, receipt, roles, token, fee, pause, solvency,
-  and successor state.
+- `release:finalize` records the exact transaction/address/block; verification binds
+  the approved deployer, chain, zero-value contract-creation transaction, exact init
+  code, runtime bytecode, receipt, roles, token, fee, pause, solvency, and successor
+  state.
 - `phase3:snapshot` collects independent RPC, safe-head/cursor, contract, role,
   database, image, signer, worker, backup, outbox, drift, and alert evidence.
 - `release:readiness` emits deterministic `GO` or `NO_GO` without enabling writes.
 - `release_canary_admissions` binds each canary call to release/manifest/policy and
   records `ADMITTED`, `SETTLED`, or `FAILED`.
 - Concurrent admission is serialized in the transaction that creates the call,
-  reserves credit, and creates the outbox. Later failure rolls admission back.
+  reserves credit, and creates the outbox. Capacity is cumulative per release/policy,
+  so reissuing a manifest cannot reset the cap; later failure rolls admission back.
 - `phase3:canary-summary` derives evidence from Postgres, chain events, worker
   heartbeat, and final readiness.
 - `release:canary` emits a non-destructive `STOP` plan or

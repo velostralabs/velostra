@@ -180,7 +180,11 @@ export const builders = pgTable('builders', {
   status: builderStatusEnum('status').notNull().default('ACTIVE'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
-})
+},
+  (table) => [
+    index('builder_status_created_idx').on(table.status, table.created_at),
+  ]
+)
 
 // ─────────────────────────────────────────
 // BUILDER EARNINGS
@@ -224,7 +228,12 @@ export const earningsClaims = pgTable('earnings_claims', {
   log_index: integer('log_index'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   completed_at: timestamp('completed_at'),
-})
+},
+  (table) => [
+    index('earnings_claim_builder_created_idx').on(table.builder_id, table.created_at),
+    index('earnings_claim_status_created_idx').on(table.status, table.created_at),
+  ]
+)
 
 // ─────────────────────────────────────────
 // AGENT
@@ -258,7 +267,13 @@ export const agents = pgTable('agents', {
   review_count: integer('review_count').notNull().default(0),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
-})
+},
+  (table) => [
+    index('agent_marketplace_idx').on(table.status, table.featured, table.created_at),
+    index('agent_builder_created_idx').on(table.builder_id, table.created_at),
+    index('agent_status_category_idx').on(table.status, table.category),
+  ]
+)
 
 export const agentTags = pgTable(
   'agent_tags',
@@ -303,7 +318,13 @@ export const agentCalls = pgTable('agent_calls', {
   error_message: text('error_message'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   completed_at: timestamp('completed_at'),
-})
+},
+  (table) => [
+    index('agent_call_user_created_idx').on(table.user_id, table.created_at),
+    index('agent_call_agent_created_idx').on(table.agent_id, table.created_at),
+    index('agent_call_status_created_idx').on(table.status, table.created_at),
+  ]
+)
 
 // ─────────────────────────────────────────
 // TRANSACTION
@@ -330,7 +351,17 @@ export const transactions = pgTable('transactions', {
   status: txStatusEnum('status').notNull().default('PENDING'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   confirmed_at: timestamp('confirmed_at'),
-})
+},
+  (table) => [
+    index('transaction_credit_created_idx').on(table.credit_balance_id, table.created_at),
+    index('transaction_chain_ledger_idx').on(
+      table.chain_id,
+      table.contract_address,
+      table.type,
+      table.status
+    ),
+  ]
+)
 
 // ─────────────────────────────────────────
 // REVIEW
@@ -408,7 +439,12 @@ export const reports = pgTable('reports', {
   admin_note: text('admin_note'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   resolved_at: timestamp('resolved_at'),
-})
+},
+  (table) => [
+    index('report_status_created_idx').on(table.status, table.created_at),
+    index('report_agent_created_idx').on(table.agent_id, table.created_at),
+  ]
+)
 
 // ─────────────────────────────────────────
 // PLATFORM STATS

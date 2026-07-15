@@ -1,0 +1,2 @@
+CREATE INDEX "transaction_credit_created_idx" ON "transactions" USING btree ("credit_balance_id","created_at");--> statement-breakpoint
+CREATE INDEX "transaction_chain_ledger_idx" ON "transactions" USING btree ("chain_id","contract_address","type","status");

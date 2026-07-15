@@ -10,6 +10,8 @@ const migrations = [
   'drizzle/0000_phase0_baseline.sql',
   'drizzle/0001_security_rbac.sql',
   'drizzle/0002_settlement_outbox.sql',
+  'drizzle/0003_query_indexes.sql',
+  'drizzle/0004_transaction_indexes.sql',
 ]
 
 async function loadMigration(path: string, schema: string): Promise<string[]> {
@@ -107,6 +109,24 @@ try {
   )
   assert.equal(constraints.rowCount, 4)
   console.log('✅ fresh install includes all critical money invariants')
+  const operationalIndexes = await client.query(
+    `select indexname
+       from pg_indexes
+      where schemaname = $1
+        and indexname in (
+          'agent_call_user_created_idx',
+          'agent_call_status_created_idx',
+          'agent_marketplace_idx',
+          'earnings_claim_status_created_idx',
+          'report_status_created_idx',
+          'settlement_attempt_status_updated_idx',
+          'transaction_chain_ledger_idx'
+        )`,
+    [freshSchema]
+  )
+  assert.equal(operationalIndexes.rowCount, 7)
+  console.log('✅ operational history, pending-work, and ledger indexes are installed')
+
 } finally {
   await client.query('set search_path to public')
   await client.query('drop schema if exists "' + upgradeSchema + '" cascade')

@@ -26,6 +26,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "test:auth": "tsx test/auth.e2e.test.ts",
+    "test:ssrf": "tsx test/ssrf.e2e.test.ts",
+    "test:http-security": "tsx test/http-security.e2e.test.ts",
     "test:platform": "tsx test/platform.e2e.test.mjs",
     "test:money": "npm --prefix ../contracts run build && tsx test/money-loop.e2e.test.mjs",
     "reconcile": "tsx src/jobs/reconcile.ts --once",

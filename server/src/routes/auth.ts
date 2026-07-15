@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { generateAuthNonce, completeWalletLogin } from '../lib/auth.js'
+import { authCookieOptions, clearAuthCookieOptions } from '../lib/config.js'
 
 export const authRouter = Router()
 
@@ -35,16 +36,13 @@ authRouter.post('/login', async (req, res) => {
   if ('error' in result) return res.status(401).json({ error: result.error })
 
   res
-    .cookie('velostra_token', result.token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    })
+    .cookie('velostra_token', result.token, authCookieOptions())
+
     .json(result)
 })
 
 authRouter.post('/logout', (_req, res) => {
-  res.clearCookie('velostra_token').json({ ok: true })
+  res.clearCookie('velostra_token', clearAuthCookieOptions()).json({ ok: true })
 })
 
 authRouter.get('/me', async (req, res) => {

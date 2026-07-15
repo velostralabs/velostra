@@ -7,6 +7,8 @@ import { builders, builderEarnings, agents, agentTags, earningsClaims } from '..
 import { requireAuth, requireBuilder } from '../middleware/auth.js'
 import { AGENT_CATEGORIES, MIN_PRICE_PER_CALL, priceTierFor } from '../lib/constants.js'
 import { signJWT } from '../lib/auth.js'
+import { authCookieOptions } from '../lib/config.js'
+import { EndpointSecurityError, validateAgentEndpoint } from '../lib/gateway/ssrf.js'
 import {
   getVelostraEscrowAddress,
   OnchainVerificationError,
@@ -62,7 +64,7 @@ builderRouter.post('/register', requireAuth, async (req, res) => {
   })
 
   res
-    .cookie('velostra_token', token, { httpOnly: true, sameSite: 'lax', maxAge: 24 * 60 * 60 * 1000 })
+    .cookie('velostra_token', token, authCookieOptions())
     .json({ builder })
 })
 
@@ -105,6 +107,15 @@ builderRouter.post('/agents', requireAuth, requireBuilder, async (req, res) => {
 
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)
   if (!builder) return res.status(403).json({ error: 'Builder profile not found' })
+
+  try {
+    await validateAgentEndpoint(parsed.data.endpoint_url)
+  } catch (error) {
+    if (error instanceof EndpointSecurityError) {
+      return res.status(400).json({ error: error.message, code: error.code })
+    }
+    throw error
+  }
 
   const slug = `${parsed.data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${nanoid(6)}`
   const secretKey = nanoid(32)

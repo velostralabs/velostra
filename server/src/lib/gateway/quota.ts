@@ -1,19 +1,7 @@
-import Redis from 'ioredis'
 import { and, eq, gte, count } from 'drizzle-orm'
 import { db } from '../../db/client.js'
 import { agentCalls, creditBalances } from '../../db/schema.js'
-
-let redis: Redis | null = null
-function getRedis(): Redis {
-  if (!redis) {
-    redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {
-      maxRetriesPerRequest: 1,
-      retryStrategy: () => null,
-    })
-    redis.on('error', (err) => console.error('[redis] connection error:', err.message))
-  }
-  return redis
-}
+import { ensureRedisConnected } from '../redis.js'
 
 const FREE_TIER_LIMIT = Number(process.env.FREE_TIER_CALLS_PER_MONTH ?? 10)
 if (!Number.isInteger(FREE_TIER_LIMIT) || FREE_TIER_LIMIT < 0) {
@@ -35,7 +23,8 @@ function getSecondsUntilMonthEnd(): number {
 export async function getFreeTierUsed(userId: string): Promise<number> {
   const key = getCurrentMonthKey(userId)
   try {
-    const val = await getRedis().get(key)
+    const redis = await ensureRedisConnected()
+    const val = await redis.get(key)
     return val ? parseInt(val, 10) : 0
   } catch {
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -60,8 +49,9 @@ export async function hasFreeTierRemaining(userId: string): Promise<boolean> {
 
 export async function incrementFreeTier(userId: string): Promise<number> {
   const key = getCurrentMonthKey(userId)
-  const newVal = await getRedis().incr(key)
-  if (newVal === 1) await getRedis().expire(key, getSecondsUntilMonthEnd())
+  const redis = await ensureRedisConnected()
+  const newVal = await redis.incr(key)
+  if (newVal === 1) await redis.expire(key, getSecondsUntilMonthEnd())
   return newVal
 }
 

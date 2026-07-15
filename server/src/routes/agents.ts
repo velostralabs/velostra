@@ -16,6 +16,7 @@ import {
 } from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { buildGatewayHeaders } from '../lib/gateway/hmac.js'
+import { AgentEndpointError, safeFetchAgent } from '../lib/gateway/ssrf.js'
 import { checkRateLimit, checkAgentRateLimit, checkGlobalRateLimit } from '../lib/gateway/ratelimit.js'
 import { hasFreeTierRemaining, hasSufficientCredits, incrementFreeTier } from '../lib/gateway/quota.js'
 import { BUILDER_SHARE_BPS, PLATFORM_FEE_BPS } from '../lib/constants.js'
@@ -190,13 +191,12 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
       }
 
       const started = Date.now()
-      const upstream = await fetch(agent.endpoint_url, {
+      const upstream = await safeFetchAgent(agent.endpoint_url, {
         method: 'POST',
         headers,
         body,
-        signal: AbortSignal.timeout(Number(process.env.AGENT_TIMEOUT_MS ?? 30_000)),
       })
-      const rawOutput = await upstream.text()
+      const rawOutput = upstream.text
       let output: unknown = rawOutput
       try {
         output = rawOutput ? JSON.parse(rawOutput) : null
@@ -403,8 +403,9 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
     }
 
     const message =
-      err instanceof Error && (err.name === 'UpstreamAgentError' || err.name === 'TimeoutError')
-        ? 'Agent endpoint failed to respond'
+      err instanceof AgentEndpointError ||
+      (err instanceof Error && err.name === 'UpstreamAgentError')
+        ? 'Agent endpoint failed to respond safely'
         : 'Onchain settlement failed; the call was not charged'
     res.status(502).json({ error: message })
   }

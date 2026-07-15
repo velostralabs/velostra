@@ -1,7 +1,7 @@
 # Velostra roadmap
 
-> Updated from the verified Phase 1 implementation handoff: 2026-07-15.
-> Baseline: [`ea1b61d`](./PHASE_1_HANDOFF.md); Phase 2 is ready to start.
+> Updated after Phase 2 repository implementation: 2026-07-15.
+> Baseline: Phase 1 handoff plus locally committed Phase 2 automation; Phase 2 exit evidence remains open.
 
 ## Status model
 
@@ -106,93 +106,103 @@ External actions still required:
 Phase 1 implementation is complete. Mainnet release authorization remains blocked
 until these external-review boxes close.
 
-## Phase 2 - Production-like staging and observability (NEXT)
+## Phase 2 - Production-like staging and observability (IMPLEMENTED / EVIDENCE PENDING)
 
-Status: **READY TO START**. Goal: prove operational behavior, not only local
-correctness. Phase 2 uses isolated, non-mainnet-value infrastructure and may run in
-parallel with independent review.
+Status: **repository implementation complete; operational exit not yet approved**.
+The code, topology, automation, test harnesses, SLO candidates, and fail-closed
+release packet are ready. Velostra still has no recorded mainnet deployment or
+mainnet-value authorization. The unchecked items below require external managed
+infrastructure, elapsed wall-clock time, a real wallet profile, or a human operator;
+they must never be inferred from local tests.
 
 ### 2.1 Staging foundation
 
-- [ ] provision managed Postgres with PITR, Redis, dedicated RPC, TLS frontend/API,
-  and a separately supervised reconciliation worker;
-- [ ] define environment ownership, network boundaries, least-privilege service
-  identities, resource limits, and cost guardrails;
-- [ ] apply versioned migrations, seed only synthetic data, run deep health checks,
-  and prove the worker starts from the configured deployment block;
-- [ ] record infrastructure/configuration as reproducible code or an equivalently
-  reviewable change record.
-
-Exit evidence: staging topology is reproducible, isolated, healthy, backed up, and
-contains no production/mainnet secret or value.
+- [x] Commit isolated API/web/worker/monitor/migration topology, non-root images,
+  role-specific env scopes, health checks, resource limits, and network boundaries.
+- [x] Make versioned migration, configured deployment block, synthetic-only data,
+  deep readiness, and reproducible configuration part of the deployment contract.
+- [x] Block production/mainnet startup unless the later release approval is explicit.
+- [ ] Instantiate managed Postgres with PITR, managed Redis, dedicated primary and
+  fallback RPCs, TLS ingress, registry, and secret store in an isolated account.
+- [ ] Attach provider configuration, backup status, health output, and cost ownership
+  to the hashed release packet.
 
 ### 2.2 Secrets, signer, and authority operations
 
-- [ ] place JWT, gateway, database, Redis, RPC, and envelope keys in a managed secret
-  store; no plaintext operational secret in image, repository, or frontend env;
-- [ ] use KMS/restricted signer custody, enforce one logical nonce writer, and monitor
-  signer address, nonce, gas balance, submission age, and replacement behavior;
-- [ ] configure proposed multisig, treasury, guardian, fee manager, and settler roles
-  with named owners and escalation paths;
-- [ ] drill envelope-key rotation, agent secret rotation/revoke, settler rotation,
-  pause/unpause authorization, and signer compromise response.
-
-Exit evidence: every secret/authority has an owner, least privilege, monitored use,
-and a successful rotation/revocation drill.
+- [x] Require managed secret injection and reject plaintext production signer keys.
+- [x] Use a restricted remote signer with correlated idempotency keys and one logical
+  nonce writer; validate signer/role authority policy and rotation runbooks.
+- [x] Cover remote signer authorization, timeout, malformed response, mismatch,
+  idempotency, authority ownership, and unsafe configuration with automated tests.
+- [ ] Execute managed JWT/HMAC/envelope/signer rotations, agent revoke, pause/unpause,
+  settler replacement, and compromise response with named operators.
+- [ ] Attach KMS/secret-manager audit logs and signed authority ownership evidence.
 
 ### 2.3 Observability and operator readiness
 
-- [ ] emit structured logs and deploy metrics, error tracking, dashboards, deep
-  readiness, worker heartbeat, and alert transport;
-- [ ] cover API/upstream latency/error, DB pool, Redis failure, signer nonce/gas,
-  outbox state/age, cursor/safe-head lag, RPC 429/timeout, pending events, drift,
-  solvency, and backup age;
-- [ ] route actionable alerts to a real operator with severity, runbook, dedupe,
-  acknowledgement, and escalation policy;
-- [ ] prove alert delivery for stale worker, drift, signer low balance, RPC failure,
-  database pressure, and backup/PITR failure.
-
-Exit evidence: injected failures reach an operator and link to a usable runbook.
+- [x] Emit structured logs, Prometheus metrics, request timing, deep readiness,
+  worker/backup heartbeat, durable alerts, dedupe, acknowledgement, resolution, and
+  webhook delivery metadata.
+- [x] Track dependency health/latency, DB pool, Redis, signer gas, RPC, cursor lag,
+  pending events, outbox age/state, drift, solvency, and backup freshness.
+- [x] Commit dashboard, alert rules, monitor worker, and alert lifecycle tests.
+- [ ] Deliver stale-worker, drift, signer-low, RPC, database-pressure, and backup
+  failures to a real operator and record acknowledgement/escalation evidence.
+- [ ] Attach the production error-tracking destination and redaction verification.
 
 ### 2.4 Real wallet and product validation
 
-- [ ] automate real MetaMask and at least one injected-wallet path: connect, reject,
-  reconnect, wrong chain, auth, deposit, paid call, ambiguous recovery, earnings,
-  claim, and session expiry;
-- [ ] run accessibility and visual regression on critical routes/states;
-- [ ] establish per-route JS/LCP/INP/CLS/WebGL budgets and capture a staging baseline;
-- [ ] investigate reachability and upstream disposition for the six transitive
-  MetaMask-tree Moderate advisories.
-
-Exit evidence: critical wallet/money journeys pass in a real browser and performance,
-accessibility, and dependency-risk decisions are recorded.
+- [x] Automate injected-wallet reject/reconnect/wrong-chain/auth/deposit/paid-call/
+  ambiguous-recovery/earnings/claim/session-expiry behavior in a real Chromium page.
+- [x] Provide a guarded real-MetaMask isolated-staging harness for the same journey.
+- [x] Gate critical routes with keyboard/focus, serious/critical axe checks, desktop
+  collision/overflow assertions, visual baselines, URL/history tests, and bundle/
+  LCP/INP/CLS/WebGL budgets.
+- [x] Record the time-bounded MetaMask `uuid` advisory reachability disposition and
+  fail CI if the reviewed call pattern changes.
+- [ ] Run the MetaMask harness with a dedicated extension profile and synthetic
+  staging value, then hash its evidence.
+- [ ] Capture performance baselines against the frozen managed-staging release.
 
 ### 2.5 Load, failure, and recovery drills
 
-- [ ] load concurrent paid calls, signer nonce pressure, API/worker throughput, DB
-  pool saturation, Redis quota pressure, and dense event ranges;
-- [ ] drill API/worker down for one hour, DB/Redis disconnect, RPC 429/timeout/failover,
-  restart mid-settlement, and known/unknown broadcast ambiguity;
-- [ ] simulate the chosen reorg policy and verify confirmation/cursor behavior;
-- [ ] restore managed backup/PITR into a clean environment and measure RPO/RTO;
-- [ ] agree catch-up, latency, error, outbox-age, and recovery SLOs from measured data.
-
-Exit evidence: no duplicate debit/credit, no skipped chain range, measured SLOs are
-met, and recovery leaves zero unexplained drift.
+- [x] Exercise concurrent paid calls, DB reservation pressure, Redis per-agent quota,
+  serialized signer submissions, unique call/hash correlation, and exactly-once money.
+- [x] Exercise known/unknown broadcast ambiguity, live/worker race, post-chain DB
+  rollback, dense missed events, idempotent replay, confirmation-window reorg, and
+  canonical replacement on local Postgres/Redis/EVM.
+- [x] Add deterministic primary-429 to secondary-RPC failover and gap-free range
+  planning tests; production accepts multiple credential-free HTTPS RPC endpoints.
+- [x] Add guarded staging load runner, candidate SLOs, timed dump/restore evidence,
+  and CI artifact upload. Local reference: 12 concurrent requests produced ten
+  successful settlements plus two intentional limits; 27-block catch-up completed
+  with zero drift.
+- [ ] Hold API/worker down for a real hour in managed staging, inject DB/Redis/RPC
+  failures and restart mid-settlement, then prove catch-up within the candidate SLO.
+- [ ] Restore a provider-native managed PITR point into a clean environment and meet
+  the recorded RPO/RTO objectives.
+- [ ] Calibrate/freeze the candidate latency, error, catch-up, outbox-age, and restore
+  SLOs from managed-staging measurements.
 
 ### 2.6 Soak and Phase 2 exit
 
-- [ ] run staging continuously for at least 72 hours with synthetic paid traffic,
-  worker restarts, alerts enabled, and daily financial reconciliation;
-- [ ] maintain zero unexplained drift, no stale terminally recoverable outbox row,
-  no unresolved Critical/High finding, and no unowned alert;
-- [ ] freeze a staging release candidate and attach configuration, dashboards, drill
-  results, restore evidence, dependency disposition, and operator sign-off.
+- [x] Add a guarded minimum-72-hour soak runner with immutable release attestation,
+  continuous readiness/metrics, synthetic paid calls, daily clean reconciliation,
+  outbox/drift checks, interrupt-safe checkpoints, and external restart/findings input.
+- [x] Add SHA-256-bound evidence manifest validation for soak, load, one-hour outage,
+  managed PITR, real wallets, alert delivery, worker restarts, findings, configuration,
+  dashboards, dependency disposition, and operator sign-off.
+- [x] Prove the evidence validator accepts a complete packet and rejects tampering.
+- [ ] Run the frozen candidate continuously for at least 72 hours with at least one
+  verified worker restart and three daily reconciliation checkpoints.
+- [ ] Maintain zero unexplained drift, zero stale recoverable outbox row, zero
+  unresolved High/Critical finding, and zero unowned alert for the entire run.
+- [ ] Sign and approve the final evidence manifest as the accountable operator.
 
-Phase 2 exit gate: alerts reach an operator, one-hour catch-up meets the agreed SLO,
-real-wallet money/recovery loops pass, managed restore meets RPO/RTO, the 72-hour soak
-is clean, and the evidence packet is approved. Phase 3 additionally requires the
-independent Phase 1 review gate to be closed.
+Phase 2 exit remains **OPEN** until every unchecked external item above is evidenced
+and `npm run phase2:evidence -- --manifest=...` passes on the signed packet. Phase 3
+also requires the independent Phase 1 contract/backend review gate to close.
+
 
 ## Phase 3 - Controlled mainnet release (LATER)
 
@@ -215,7 +225,7 @@ independent Phase 1 review gate to be closed.
 ## Phase 5 - Scale and product expansion (LATER)
 
 - distributed worker lease and isolated horizontally scalable signer service;
-- multi-RPC failover, backpressure, autoscaling, cost controls;
+- adaptive provider scoring, backpressure, autoscaling, and cost controls;
 - daily financial/marketplace rollups and reconciliation exports;
 - multi-deployment migration/history tooling;
 - frontend performance budgets/device tiers;
@@ -223,10 +233,9 @@ independent Phase 1 review gate to be closed.
 
 ## Immediate ordered flow
 
-1. preserve the verified implementation baseline in
-   [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md);
-2. engage external reviewers with [AUDIT_READINESS.md](./AUDIT_READINESS.md);
-3. begin Phase 2.1 staging foundation without mainnet value;
-4. complete Phase 2.2-2.5 operational, wallet, load, failure, and restore evidence;
-5. close/re-review external findings while the 72-hour Phase 2.6 soak runs;
-6. only after both gates close, freeze a Phase 3 controlled-mainnet candidate.
+1. provision the committed topology in an isolated managed-staging account;
+2. execute signer/authority rotation and real-operator alert-delivery drills;
+3. run real MetaMask, frozen staging performance, one-hour outage, and managed PITR evidence;
+4. calibrate/freeze candidate SLOs, then run the minimum 72-hour soak;
+5. hash every artifact, obtain operator sign-off, and pass phase2:evidence;
+6. close the independent Phase 1 review gate; only then freeze a Phase 3 candidate.

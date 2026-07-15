@@ -1,7 +1,7 @@
 # Builder guide
 
 > Last verified against builder routes, egress policy, and HMAC code: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 Velostra accepts framework-agnostic HTTP agents. The platform owns discovery,
 access, metering, reservation, settlement, and recovery; the builder owns execution

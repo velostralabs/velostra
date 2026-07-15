@@ -1,7 +1,7 @@
 # API reference
 
 > Last verified against `server/src/routes` and middleware: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 > Local base URL: `http://localhost:8787`.
 
 ## Conventions

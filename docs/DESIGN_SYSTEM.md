@@ -1,7 +1,7 @@
 # Design system
 
 > Last verified against frontend source: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display

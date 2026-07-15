@@ -1,7 +1,12 @@
 # Phase 1 audit readiness packet
 
 > Prepared: 2026-07-15.
-> Status: implementation baseline published; independent review not yet performed.
+> Status: Phase 1 baseline published; Phase 2 implementation added; independent review not yet performed.
+>
+> Phase 2 note: the repository now includes restricted signing, RPC failover/finality,
+> durable observability, browser gates, and recovery/evidence automation. The reviewer
+> must pin the final immutable release commit; the historical Phase 1 SHA below is not
+> sufficient to approve the current release candidate.
 
 ## Review objective
 
@@ -18,8 +23,9 @@ commit and all Critical/High findings are closed.
 - repository state at handoff: clean `main`, local and `origin/main` SHA identical;
 - deployment state: no mainnet address recorded.
 
-Documentation-only commits after that SHA do not alter the implementation baseline.
-The signed external scope must still pin an immutable reviewed commit or tag.
+The signed external scope must pin the immutable current release commit or tag and
+include every security-relevant Phase 2 change. The Phase 1 SHA remains historical
+reproduction evidence only.
 
 ## In-scope contract
 
@@ -62,8 +68,11 @@ addresses must be explicit and distinct; token decimals must be 6.
 - `server/src/lib/gateway/ssrf.ts` and gateway HMAC/secrets/onchain/settlement files;
 - `server/src/routes/agents.ts`, `dashboard.ts`, `builder.ts`, `admin.ts`;
 - `server/src/jobs/reconcile.ts`;
+- `server/src/lib/rpc.ts`, `chain-policy.ts`, remote signer, observability, and
+  operational-readiness modules;
 - `server/src/db/schema.ts` and `server/drizzle/*.sql`;
-- security, migration, money, and restore test suites.
+- guarded Phase 2 load/soak/evidence runners and their fail-closed validators;
+- security, resilience, observability, browser, migration, money, and restore suites.
 
 Review focus: auth replay/multi-instance race, SSRF/DNS pinning, encrypted secret
 lifecycle, RBAC/audit, exact decimal arithmetic, reservation/outbox transitions,
@@ -74,9 +83,9 @@ manual rescan, drift, and production fail-closed configuration.
 
 - AI model correctness or builder output quality;
 - frontend visual design;
-- managed cloud configuration not yet provisioned;
-- Phase 2 observability transport, load testing, reorg engine, multi-RPC failover,
-  and real browser-wallet automation;
+- vendor-managed cloud internals not present in this repository;
+- the truthfulness of future operator/PITR/wallet/soak evidence until that evidence
+  is produced and hash-bound to the frozen release;
 - SDKs, pagination, webhooks, and beta product features.
 
 ## Reproducible evidence
@@ -85,11 +94,18 @@ manual rescan, drift, and production fail-closed configuration.
 npm ci
 npm run lint
 npm run build
+npm run audit:metamask
+npm run test:browser
+npm run test:phase2-evidence
 
 npm ci --prefix server
 npm --prefix server run build
 npm --prefix server run db:check
 npm --prefix server run test:config
+npm --prefix server run test:resilience
+npm --prefix server run test:observability
+npm --prefix server run test:signer
+npm --prefix server run test:authority
 npm --prefix server run test:auth
 npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
@@ -135,7 +151,8 @@ are the dependency source of truth. Optimizer configuration is defined by
 - Claims remain enabled during pause.
 - Successor migration never moves outstanding builder/platform liabilities.
 - Initial production uses one supervised worker and one logical signer writer.
-- Confirmation delay mitigates reorg; a rollback engine is Phase 2.
+- Confirmation-delayed safe heads exclude unconfirmed forks; deep confirmed reorgs
+  remain an incident requiring pause, exact-range review, and explicit remediation.
 
 ## Findings register
 

@@ -2,10 +2,10 @@
 
 > Last verified against the workspace: 2026-07-15.
 
-Start with [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md), then [STATUS.md](./STATUS.md)
-and [ROADMAP.md](./ROADMAP.md). Phase 1 implementation is complete; Phase 2 is the
-next active workstream. Independent audit remains a release gate and no mainnet
-deployment is recorded.
+Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and the historical
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 2 repository implementation is
+complete; its managed-staging evidence packet is still open. Independent audit
+remains a release gate and no mainnet deployment is recorded.
 
 | Document | Purpose |
 |---|---|
@@ -18,7 +18,7 @@ deployment is recorded.
 | [OPERATIONS.md](./OPERATIONS.md) | Worker, incidents, one-hour catch-up, backups, secrets, successor. |
 | [SECURITY.md](./SECURITY.md) | Implemented controls and remaining production gates. |
 | [SMART_CONTRACT.md](./SMART_CONTRACT.md) | Roles, ABI behavior, solvency, migration, and test evidence. |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 17 tables, money/outbox invariants, migrations, indexes, restore. |
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 19 tables, money/outbox invariants, migrations, indexes, restore. |
 | [API_REFERENCE.md](./API_REFERENCE.md) | Current HTTP routes, RBAC, errors, and HMAC protocol. |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production topology, configuration, release order, and gates. |
 | [TESTING.md](./TESTING.md) | Automated/CI matrix, money-loop, migration, and restore evidence. |
@@ -41,6 +41,7 @@ or sequencing changes require a roadmap update.
 ## Scope statement
 
 Local passing tests do not equal an independent audit or production approval.
-Managed infrastructure, KMS, alert delivery, real-wallet automation, load/chaos/
-reorg evidence, and staging soak are the active Phase 2 scope. Phase 2 can run in
-parallel with external review, but Phase 3 cannot start until both gates close.
+Managed infrastructure evidence, restricted signer custody, real operator alert
+delivery, real-wallet staging automation, managed load/outage/PITR drills, and a
+72-hour soak remain open Phase 2 exit evidence. Phase 3 cannot start until that
+packet and the independent review gates close.

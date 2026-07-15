@@ -1,7 +1,7 @@
 # Arsitektur Velostra
 
 > Last verified against the workspace: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 ## System map
 
@@ -13,8 +13,9 @@ flowchart LR
     A -->|Drizzle| P[(PostgreSQL)]
     A -->|nonce / limit / quota| R[(Redis)]
     A -->|pinned HTTPS + HMAC| B["Builder endpoint"]
-    A -->|SETTLER_ROLE| C
-    W["Reconciliation worker"] -->|logs / receipts| RPC["EVM RPC"]
+    A -->|correlated idempotent request| S["Restricted remote signer"]
+    S -->|SETTLER_ROLE| C
+    W["Reconciliation worker"] -->|logs / receipts| RPC["Primary + fallback EVM RPCs"]
     W --> P
     RPC --- C
 ```
@@ -65,7 +66,9 @@ liabilities can migrate.
   block production startup.
 - Admin permissions come from database RBAC; each mutation writes an audit record.
 - Production configuration fails closed for unsafe DB/Redis/origin/auth/secret/
-  signer/chain/contract settings.
+  signer/chain/contract settings; raw signer keys are rejected.
+- The API submits through one restricted remote signer; public reads and recovery use
+  ordered primary/fallback RPC transports.
 
 ## Paid-call lifecycle
 
@@ -175,10 +178,11 @@ remain durable pending events instead of disappearing.
 ## One-hour catch-up
 
 The worker resumes from its cursor, so a one-hour outage is a backlog, not data
-loss. Default 2,000-block chunks, per-RPC timeout, exponential retry, adaptive
-splitting, and range-level cursor commits bound each step. Sustained 429/down RPC
-can extend catch-up indefinitely; it cannot cause the cursor to skip failed work.
-Dedicated RPC, lag alerts, and a timed staging outage drill remain Phase 2 gates.
+loss. Default 2,000-block chunks, per-RPC timeout, ordered endpoint failover,
+exponential retry, adaptive splitting, and range-level cursor commits bound each step.
+Sustained failure across every endpoint can extend catch-up indefinitely; it cannot
+skip failed work. Local catch-up/failover invariants pass; the timed managed-staging
+one-hour SLO remains an external gate.
 
 ## Failure model
 
@@ -194,12 +198,13 @@ Dedicated RPC, lag alerts, and a timed staging outage drill remain Phase 2 gates
 | Live path and worker race | one winner, one no-op |
 | Worker outage | cursor unchanged; restart catches up |
 | Redis outage in production | auth/abuse-sensitive operation fails closed |
-| RPC rate limit | retry/backoff, then next watch iteration from same cursor |
+| RPC rate limit | ordered endpoint failover, retry/backoff, then same cursor |
 
 ## Current scaling boundary
 
-Initial production design is one supervised worker and one logical signer writer.
-DB/event idempotency tolerates overlapping workers, but distributed leases,
-cross-instance signer nonce coordination, multi-RPC failover, reorg rollback, and
-load/chaos proof are Phase 2 work. See [THREAT_MODEL.md](./THREAT_MODEL.md) and
-[OPERATIONS.md](./OPERATIONS.md).
+Initial production design is one supervised worker and one logical restricted signer
+writer. DB/event idempotency tolerates overlap; multi-RPC failover, confirmation-depth
+reorg handling, concurrent load, dense catch-up, and tamper-evident release tooling are
+implemented. Distributed worker leases, multi-writer nonce coordination, and a rollback
+engine for reorgs deeper than the confirmation window remain later scale work. See
+[THREAT_MODEL.md](./THREAT_MODEL.md) and [OPERATIONS.md](./OPERATIONS.md).

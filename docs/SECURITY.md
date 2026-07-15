@@ -1,7 +1,7 @@
 # Security posture
 
 > Last verified against the workspace: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 > Phase 1 implementation is locally/CI verified; external audit is still open.
 
 ## Implemented controls
@@ -46,8 +46,10 @@ An infrastructure egress firewall remains defense in depth.
 - production startup scans for plaintext rows and fails closed;
 - re-encryption tool migrates all stored envelopes.
 
-Runtime signer/JWT/DB/Redis/RPC/encryption secrets must come from a managed secret
-store in Phase 2. Repository and frontend env must never contain them.
+Runtime JWT/DB/Redis/RPC/encryption secrets must come from a managed secret store.
+Production rejects raw `BACKEND_SIGNER_PRIVATE_KEY`; settlement signing goes through
+the allowlisted restricted HTTPS signer adapter and a separately injected bearer
+credential. Repository and frontend env must never contain these values.
 
 ### Admin
 
@@ -69,7 +71,8 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
 - correlated onchain call ID and replay guard;
 - conditional exactly-once finalization shared by live path and worker;
 - persistent event cursor, confirmation delay, adaptive RPC range handling,
-  pending retries, drift comparison, and safe retroactive cursor policy;
+  ordered primary/fallback RPC transport, pending retries, drift comparison, and
+  safe retroactive cursor policy;
 - role-separated, pausable, collateral-checked contract and safe successor path.
 
 ## Production startup checks
@@ -80,7 +83,7 @@ In `NODE_ENV=production`, startup rejects missing/unsafe:
 - JWT, gateway HMAC, and 32-byte agent encryption key;
 - canonical HTTPS auth/UI origins;
 - memory nonce storage;
-- zero/invalid escrow or signer key;
+- zero/invalid escrow or restricted signer configuration; raw signer keys;
 - non-required settlement mode;
 - non-4663 chain, non-6-decimal policy, zero deployment block, non-HTTPS RPC;
 - plaintext agent secrets or missing initial super-admin path.
@@ -92,22 +95,24 @@ API and reconciliation worker both run these checks.
 | Risk | Current treatment | Required before mainnet |
 |---|---|---|
 | Independent review absent | release blocked | contract + focused backend review |
-| Signer key in process env | least-privilege SETTLER_ROLE | managed KMS/restricted signer + rotation drill |
-| One logical signer writer | documented deployment constraint | load/nonce-pressure test before scale |
-| Reorg after confirmations | delay only | staging reorg drill; decide rollback policy |
-| Sustained RPC outage/429 | cursor safety + retry | dedicated RPC, alerts, failover decision |
-| Alert transport absent | clear logs | metrics/error tracking/on-call routing |
-| Real wallet automation absent | manual picker/browser QA | MetaMask + injected E2E |
+| Restricted signer custody not yet proven on managed staging | process refuses raw production keys | KMS/restricted signer deployment + rotation drill evidence |
+| One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |
+| Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
+| Sustained all-provider RPC outage/429 | ordered failover, cursor safety, retry/backoff | managed provider outage evidence + alert routing |
+| Alert delivery not yet proven to a real operator | durable metrics/alerts and lifecycle implemented | inject every required failure and capture delivery/acknowledgement |
+| Real MetaMask staging evidence absent | automated picker/a11y/layout suite; guarded external test | execute real extension + injected-provider scenarios |
 | Prompt/output retention policy open | avoid sensitive logs | privacy/retention/delete/export policy |
 | Six web transitive `uuid` moderate advisories | high threshold CI + tracking; no upstream fix | reachability/upstream review and acceptance/fix |
 
 ## Dependency and supply chain
 
 CI uses lockfiles, read-only permissions, production audits at high severity, web
-lint/build, all backend security/unit gates, contract E2E, migration/money-loop
-E2E, and restore verification. Generated builds, `.env`, deployments, dumps, and
-credentials are ignored. The canonical Phase 1 handoff run passed all four jobs on
-Node.js 22; see [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md).
+lint/build/browser/performance gates, evidence-packet tamper tests, backend security/
+resilience/observability gates, contract E2E, migration/money-loop E2E, and restore
+verification. Generated builds, `.env`, deployments, dumps, and credentials are
+ignored. The historical Phase 1 evidence remains in
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md); the current five-job matrix is in
+[TESTING.md](./TESTING.md).
 
 Run dependency audits before release:
 

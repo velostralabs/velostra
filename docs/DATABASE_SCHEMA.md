@@ -1,7 +1,7 @@
 # Database schema and recovery
 
 > Last verified against `server/src/db/schema.ts` and `server/drizzle`: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 
 Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and reviewed versioned
 SQL migrations. Financial columns are `numeric(20,6)` exposed to server logic as
@@ -47,8 +47,10 @@ erDiagram
 | `platform_stats` | future daily rollup shape |
 | `chain_sync_state` | deployment cursor |
 | `chain_events` | raw event ledger and retry state |
+| `operational_heartbeats` | durable worker/monitor/backup liveness and metadata |
+| `operational_alerts` | deduplicated alert lifecycle, acknowledgement, notification, resolution |
 
-There are 17 public application tables.
+There are 19 public application tables.
 
 ## Money invariants
 
@@ -110,6 +112,7 @@ an unscanned gap.
 0003_query_indexes.sql
 0004_transaction_indexes.sql
 0005_earnings_invariants.sql
+0006_dark_darkstar.sql  # operational heartbeats and alerts
 ```
 
 Use:
@@ -122,7 +125,7 @@ npm --prefix server run test:migrations
 
 `test:migrations` proves both fresh install and upgrade path, exact balance
 preservation, reservation initialization, state enum order, non-negative earnings and
-positive-claim constraints, 17
+positive-claim constraints, 19
 tables, and operational indexes. `db:push` is local prototyping only and must not
 be used on persistent staging/production data.
 
@@ -135,11 +138,12 @@ chain-specific ledger queries.
 
 ## Backup and restore
 
-The Phase 1 drill used `pg_dump --format=custom`, restored into a clean database,
-and ran `npm run restore:verify`. Verification compared every table/row count,
-migration history, exact financial aggregates, outbox states, constraints, and
-indexes.
+The current disposable drill uses `pg_dump --format=custom`, restores into a clean
+database, and runs `npm --prefix server run restore:verify`. Verification compares all
+19 tables, seven migrations, every row count, exact financial/outbox aggregates,
+constraints, and indexes. With the restore timing environment variables, it writes a
+redacted evidence JSON; the measured local full-data drill completed in 1,901 ms.
 
-Production must add provider-native encrypted PITR/WAL, retention, access
-separation, and timed recurring restore drills. Exact procedure is in
+Production must still prove provider-native encrypted PITR/WAL, retention, access
+separation, and managed RPO/RTO. Exact procedure is in
 [OPERATIONS.md](./OPERATIONS.md).

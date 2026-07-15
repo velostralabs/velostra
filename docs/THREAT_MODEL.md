@@ -1,7 +1,7 @@
 # Velostra threat model
 
 > Last verified against the workspace: 2026-07-15.
-> Phase state: [Phase 1 implementation handoff](./PHASE_1_HANDOFF.md) recorded; Phase 2 is next.
+> Phase state: Phase 2 repository implementation is complete; managed-staging exit evidence is pending.
 > Scope: verified Phase 1 baseline plus Phase 2 pre-mainnet operational proof.
 
 ## Security objective
@@ -16,7 +16,7 @@ governance, or treasury authority.
 1. settlement tokens held by `VelostraEscrow`;
 2. builder claimable earnings and platform revenue;
 3. user spendable credits and reservations in Postgres;
-4. the backend `SETTLER_ROLE` key;
+4. restricted remote-signer authority, authentication, nonce, and gas;
 5. governance, treasury, and pause authority;
 6. wallet-auth sessions and one-time challenges;
 7. per-agent HMAC secrets;
@@ -87,10 +87,10 @@ to its call.
 
 | Threat | Control | Residual risk / next gate |
 |---|---|---|
-| Settler key compromise | least-privilege role; immediate revoke/rotate; no treasury/admin role | KMS/restricted signer and drill in Phase 2 |
+| Settler key compromise | no raw production key; restricted remote signer; least privilege; revoke/rotate runbook | managed KMS rotation/compromise drill evidence pending |
 | Governance compromise | multisig contract; 2-day default-admin transfer delay | multisig policy and signer roster require external review |
 | Insolvent credit creation | contract liquidity guard and explicit liabilities | chosen token behavior must be audited |
-| Duplicate paid settlement | onchain callId replay guard + DB uniqueness + conditional finalize | reorg simulation remains Phase 2 |
+| Duplicate paid settlement | onchain callId replay guard + DB uniqueness + conditional finalize + local reorg/race drill | deep-reorg behavior beyond confirmation window requires incident handling |
 | Crash after onchain success | outbox, raw event ledger, worker, authoritative callId | catch-up time depends on RPC availability |
 | Lost RPC response after broadcast | AMBIGUOUS state, reservation retention, correlated event recovery | signed-raw-tx persistence is a future resilience option |
 | Live/worker race | shared conditional transition inside one DB transaction | proven by concurrent E2E |
@@ -98,9 +98,9 @@ to its call.
 | Large/slow builder response | absolute deadline, socket timeout, and byte cap | builder availability remains external |
 | Auth replay / multi-instance race | Redis atomic compare-and-delete | Redis outage fails closed in production |
 | Admin privilege abuse | granular roles, audit log, last-admin guard | approval quorum is not implemented |
-| Secret disclosure in DB | authenticated encryption and response omission | encryption key still needs managed custody |
-| Event reorg | configurable confirmation delay | no rollback engine; staging reorg drill required |
-| RPC rate limit | bounded chunks, adaptive split, retry/backoff, cursor commit per range | sustained 429 extends catch-up time |
+| Secret disclosure in DB | authenticated encryption, response omission, managed-injection startup guard | actual managed custody/rotation evidence pending |
+| Event reorg | confirmation-depth policy and canonical replacement drill | no rollback engine beyond confirmed window; managed-chain policy must be approved |
+| RPC rate limit | primary/fallback endpoints, bounded chunks, adaptive split, retry/backoff, cursor commit per range | failure across every provider extends catch-up time |
 | Manual cursor misuse | retroactive scans preserve cursor unless starting exactly at next block | production RBAC around job execution still needed |
 | Backup corruption | versioned migrations, pg_dump/restore comparison of exact aggregates and invariants | managed PITR must be configured and drilled |
 
@@ -117,15 +117,15 @@ to its call.
 
 - The settlement token is a standard audited 6-decimal ERC-20 without rebasing,
   blacklist surprises, callbacks, or fee-on-transfer behavior.
-- Initial production runs one supervised worker and one logical signer writer.
+- Initial production runs one supervised worker and one logical restricted remote-signer writer.
 - RPC and database credentials come from a managed secret store, not repository or
   image layers.
 - The contract remains undeployed until independent audit findings are closed.
 
 ## Review status
 
-The implementation and adversarial tests are complete for Phase 1 sections 1.1-1.3
-at the baseline recorded in [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). This document
-is an internal threat model, not an independent audit. Phase 2 operational evidence
-may proceed in parallel, while external contract and focused backend review remain
-mandatory before Phase 3/mainnet; see [AUDIT_READINESS.md](./AUDIT_READINESS.md).
+Phase 1 and repository-side Phase 2 controls/adversarial tests are implemented. This
+document is still an internal threat model, not an independent audit. Managed-staging
+Phase 2 evidence and independent contract/focused-backend review remain mandatory
+before Phase 3/mainnet; see [STATUS.md](./STATUS.md) and
+[AUDIT_READINESS.md](./AUDIT_READINESS.md).

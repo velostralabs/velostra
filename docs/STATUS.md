@@ -52,7 +52,7 @@ approval.
 | Signer/secrets | raw production key rejected; remote signer/authority policy tested | managed KMS/secret rotations and drills pending |
 | Observability | metrics, deep readiness, heartbeats, durable alerts, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
-| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29453341985](https://github.com/velostralabs/velostra/actions/runs/29453341985) and [staging artifact run 29453341987](https://github.com/velostralabs/velostra/actions/runs/29453341987) passed on `da63b45` |
+| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29455761339](https://github.com/velostralabs/velostra/actions/runs/29455761339) and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/actions/runs/29455761330) passed on `47747e4` |
 
 ## Phase 2 implementation delivered
 

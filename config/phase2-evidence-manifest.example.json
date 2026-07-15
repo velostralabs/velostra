@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging-isolated",
+  "release": "0000000000000000000000000000000000000000",
+  "frozenCommit": "0000000000000000000000000000000000000000",
+  "generatedAt": "2026-07-15T00:00:00Z",
+  "artifacts": {
+    "soak": { "path": "artifacts/phase2/soak-summary.json", "sha256": "REPLACE" },
+    "load": { "path": "artifacts/phase2/load.json", "sha256": "REPLACE" },
+    "outage": { "path": "artifacts/phase2/outage.json", "sha256": "REPLACE" },
+    "restore": { "path": "artifacts/phase2/restore.json", "sha256": "REPLACE" },
+    "wallet": { "path": "artifacts/phase2/wallet.json", "sha256": "REPLACE" },
+    "alerts": { "path": "artifacts/phase2/alerts.json", "sha256": "REPLACE" },
+    "workerRestarts": { "path": "artifacts/phase2/worker-restarts.json", "sha256": "REPLACE" },
+    "findings": { "path": "artifacts/phase2/findings.json", "sha256": "REPLACE" },
+    "configuration": { "path": "artifacts/phase2/configuration.json", "sha256": "REPLACE" },
+    "dashboards": { "path": "artifacts/phase2/dashboards.json", "sha256": "REPLACE" },
+    "dependencyDisposition": { "path": "docs/METAMASK_DEPENDENCY_DISPOSITION.md", "sha256": "REPLACE" }
+  },
+  "operatorSignoff": {
+    "name": "REPLACE",
+    "role": "Release operator",
+    "approvedAt": "REPLACE",
+    "decision": "pending"
+  }
+}

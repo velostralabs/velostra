@@ -39,6 +39,9 @@
     "performance:build": "node scripts/check-performance-budget.mjs",
     "audit:metamask": "node scripts/check-metamask-advisory-reachability.mjs",
     "phase2:load": "node scripts/run-phase2-load.mjs",
+    "phase2:soak": "node scripts/run-phase2-soak.mjs",
+    "phase2:evidence": "node scripts/validate-phase2-evidence.mjs",
+    "test:phase2-evidence": "node --check scripts/run-phase2-soak.mjs && node scripts/test-phase2-evidence.mjs",
     "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
   },
   "dependencies": {

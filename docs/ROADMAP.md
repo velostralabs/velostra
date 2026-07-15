@@ -157,7 +157,7 @@ loop and recovery work on staging, restore works, and soak is clean.
 
 ## Immediate ordered flow
 
-1. finish local full regression and owner review of the unpushed micro-commits;
+1. owner review of the completed regression evidence and unpushed micro-commits;
 2. freeze the approved commit and engage reviewers with
    [AUDIT_READINESS.md](./AUDIT_READINESS.md);
 3. while review runs, build Phase 2 staging/observability without mainnet value;

@@ -97,7 +97,7 @@ API and reconciliation worker both run these checks.
 | Alert transport absent | clear logs | metrics/error tracking/on-call routing |
 | Real wallet automation absent | manual picker/browser QA | MetaMask + injected E2E |
 | Prompt/output retention policy open | avoid sensitive logs | privacy/retention/delete/export policy |
-| Web transitive moderate advisory | high threshold CI + tracking | upstream/reachability review and acceptance/fix |
+| Six web transitive `uuid` moderate advisories | high threshold CI + tracking; no upstream fix | reachability/upstream review and acceptance/fix |
 
 ## Dependency and supply chain
 

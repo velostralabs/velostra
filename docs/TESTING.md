@@ -104,6 +104,19 @@ surfaces, offline marketplace state, execution/settlement controls, and provider
 picker layout/deduplication. It did not grant a real extension permission or submit
 real target-chain value.
 
+## Current dependency audit
+
+Final `npm audit --omit=dev --audit-level=high` results on 2026-07-15:
+
+- backend: 0 vulnerabilities;
+- contract package: 0 vulnerabilities;
+- web: 6 moderate vulnerabilities from transitive `uuid <11.1.1` inside the
+  MetaMask connector dependency tree; npm reports no fix available.
+
+The web command exits successfully at the CI High threshold, but the moderate
+finding remains an explicit pre-production reachability/upstream/accepted-risk
+review item. It is not silently treated as fixed.
+
 ## Remaining Phase 2 evidence
 
 - external audit and focused review are the final Phase 1 sign-off;

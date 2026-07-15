@@ -94,8 +94,16 @@ Passed during the current Phase 1 work:
   cursor preservation, exactly-once effects, and zero drift;
 - PostgreSQL dump/restore integrity drill.
 
-The final full repository regression and dependency audit are run again before the
-owner receives the no-push handoff report.
+Final full regression passed on 2026-07-15:
+
+- frontend lint is warning-free and production build passes; Vite reports only the
+  documented large async/main chunk performance warnings;
+- every isolated backend security/unit gate passes;
+- contract, migration, expanded money-loop, and final dump/clean-restore gates pass;
+- backend and contract production dependency audits report zero vulnerabilities;
+- web audit reports six moderate transitive `uuid` advisories through the MetaMask
+  connector tree, with no upstream fix available. CI fails at High and this
+  moderate risk remains explicitly tracked for Phase 2 reachability/upstream review.
 
 ## Honest remaining blockers
 

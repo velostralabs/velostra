@@ -1,6 +1,6 @@
 # Local quickstart
 
-> Last verified against package scripts and env templates: 2026-07-17.
+> Last verified against package scripts, env templates, and public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -81,7 +81,11 @@ VITE_ESCROW_ADDRESS=0x...
 VITE_SETTLEMENT_TOKEN=0x...
 ```
 
-Open `http://localhost:5173`. Canonical routes include `/system`, `/proof`,
+Open `http://localhost:5173`. The same static protocol preview is public at
+[https://velostra.xyz/](https://velostra.xyz/), built by Netlify from `main` using
+`netlify.toml`. The public preview has no managed API or contract build values; use
+the local environment above for full-stack development. Canonical routes include
+`/system`, `/proof`,
 `/economics`, `/marketplace`, `/agents/:slug`, `/dashboard`, `/builder`, `/admin`,
 and `/docs`. Legacy hash links are normalized to clean paths.
 
@@ -186,7 +190,7 @@ resource in a US Virginia region. Validate the non-mutating deployment plan:
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
 
 The bootstrap remains plan-only unless Apply and a billing account are supplied.
-No resource currently exists because Cloud Billing is not active for the
+No managed backend staging resource currently exists because Cloud Billing is not active for the
 authenticated account. Follow [the US staging runbook](../deploy/gcp/README.md) only
 after the user-owned GCP, Neon, Upstash, Alchemy, and alert receiver accounts exist.
 Use only the approved US regions and Robinhood testnet chain 46630. Never use

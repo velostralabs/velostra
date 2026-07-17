@@ -1,12 +1,15 @@
 # Design system
 
-> Last verified against frontend source: 2026-07-17.
+> Last verified against frontend source and public rendering: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation has passed internal engineering/CI
 > audit. The visual system remains current while mainnet execution stays gated.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display
 type, dense data labels, dan depth/motion yang tetap menjaga keterbacaan.
+
+Canonical public visual surface: [https://velostra.xyz/](https://velostra.xyz/). It
+is a static protocol preview; API-backed state is not part of this visual baseline.
 
 ## Source files
 
@@ -127,6 +130,9 @@ Semantic routes menggantikan hash navigation:
 - non-home pages lazy-loaded;
 - `RouteManager` menangani scroll restore dan page titles;
 - marketplace query filter dinormalisasi di URL.
+- Netlify `dist/` publication plus `public/_redirects` preserves direct-route refresh;
+- repository-root publication is invalid because it exposes `/src/main.tsx` instead
+  of the built application.
 
 Link internal harus memakai React Router `Link/NavLink`, bukan raw anchor, kecuali
 external URL atau in-page accessible skip link.
@@ -227,7 +233,9 @@ yang baru dimuat ketika connection path memerlukannya.
 
 Committed browser gates enforce entry/async/total gzip budgets plus route LCP, INP,
 CLS, accessibility, collision/overflow, routing-state, and visual baselines.
-The guarded real-MetaMask and managed-staging performance evidence remain external
+A public Netlify smoke now proves valid TLS, hashed bundle delivery, and full landing
+rendering at the canonical domain. The guarded real-MetaMask and managed-staging
+performance evidence remain external
 release gates. New Phase 4 panels must preserve async/error/empty states and must not
 pull Three.js or wallet SDK chunks into unrelated routes.
 

@@ -1,6 +1,7 @@
 # Velostra social assets
 
-Approved public-facing exports derived from the Crystal V master artwork:
+Approved public-facing exports derived from the Crystal V master artwork. The canonical
+public origin using the link-preview asset is `https://velostra.xyz/`:
 
 | Asset | Size | Use |
 |---|---:|---|

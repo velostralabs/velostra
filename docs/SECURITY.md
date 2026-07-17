@@ -1,12 +1,29 @@
 # Security posture
 
-> Last verified against the workspace: 2026-07-17.
+> Last verified against the workspace and public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > Internal engineering/CI audit: PASS. Independent third-party audit: not claimed; required before mainnet release.
 
 ## Implemented controls
+
+### Public frontend hosting boundary
+
+- the canonical public preview is `https://velostra.xyz/`; valid TLS and the
+  `www` redirect are provider-managed by Netlify;
+- Git-linked `main` builds with Node.js 22 and publishes only Vite `dist/` through
+  tracked `netlify.toml`; repository-root publication is explicitly prohibited;
+- the current Netlify environment contains no `VITE_API_URL`, escrow address,
+  settlement-token address, backend credential, or Netlify Function;
+- the static CDN may deliver globally even though Netlify account metadata reports
+  a US `us-east-2` functions region; no legal-office or user-location claim follows;
+- the frontend is never trusted for auth, receipt, balance, pricing, settlement,
+  signer, governance, or treasury truth.
+
+This public preview expands the browser/supply-chain surface but does not expand
+financial authority. API-backed and onchain actions remain inactive until the
+separately gated US staging runtime exists.
 
 ### Wallet auth and HTTP boundary
 
@@ -126,6 +143,7 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | Risk | Current treatment | Required before mainnet |
 |---|---|---|
 | Independent review absent | release blocked | contract + focused backend review |
+| Public static preview precedes managed backend | no client secrets or contract/API values; static build and routing only | bind exact origins, CSP, API, verified testnet contract, and real-wallet evidence before activation |
 | Release/canary artifact tampering | canonical hashes, exact required sets, authority/constructor binding, deployment init-code provenance, immutable mounts, explicit approvals | protected operator artifact custody |
 | Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial canary intentionally serialized |
 | Restricted signer custody not yet proven on managed staging | raw keys rejected; dedicated private signer, scoped invokers, managed software secp256k1 KMS implementation, nonce lock, and local signer tests are committed | apply the US KMS/signer deployment and capture rotation plus audit-log evidence |

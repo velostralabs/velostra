@@ -1,6 +1,6 @@
 # Phase 4 platform contract
 
-> Last verified: 2026-07-17.
+> Last verified against repository and deployment status: 2026-07-18.
 > Repository status: implemented and locally audited; activation remains gated.
 > This contract is now the compatibility baseline for Phase 5 changes.
 This document freezes the repository contract for Velostra Phase 4. The implementation
@@ -59,7 +59,9 @@ invariant while adding closed-beta platform capabilities.
 Phase 4 repository completion requires fresh and upgrade migrations, API and SDK contract
 tests, concurrency/idempotency/webhook tests, browser regression gates, an isolated
 synthetic closed-beta journey, zero unexplained financial or delivery drift, and updated
-documentation. It does not authorize public traffic, mainnet deployment, or real value.
+documentation. It does not authorize API-backed public traffic, closed-beta activation,
+mainnet deployment, or real value. The separate static protocol preview has no
+platform/backend authority.
 
 ## Completion evidence
 
@@ -72,6 +74,7 @@ documentation. It does not authorize public traffic, mainnet deployment, or real
 - the staging topology includes API, reconciliation worker, webhook worker,
   operational monitor, migration, and web roles.
 
-Repository completion does not authorize a deployment, closed beta, public traffic,
-or real value. The operational Phase 3 exit, managed evidence, independent review,
+Repository completion does not authorize a managed platform/contract deployment,
+closed beta, API-backed public traffic, or real value. The operational Phase 3
+exit, managed evidence, independent review,
 and accountable activation decision remain mandatory.

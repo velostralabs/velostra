@@ -15,5 +15,7 @@ release explicitly says so.
 
 The verified Phase 1 baseline and evidence live in
 [docs/PHASE_1_HANDOFF.md](../docs/PHASE_1_HANDOFF.md); the external review scope
-lives in [docs/AUDIT_READINESS.md](../docs/AUDIT_READINESS.md). Phase 2 is the next
-active workstream, but local/CI passing tests are not an independent audit.
+lives in [docs/AUDIT_READINESS.md](../docs/AUDIT_READINESS.md), and current sequencing
+lives in [docs/STATUS.md](../docs/STATUS.md). Phase 0-4 repository preparation is
+complete and the static protocol preview is public, but local/CI tests and a hosted
+frontend are not an independent audit or production/backend activation.

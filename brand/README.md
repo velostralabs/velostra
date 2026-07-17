@@ -1,6 +1,6 @@
 # Velostra Crystal V logo kit
 
-> Last verified against product, public, and README surfaces: 2026-07-17.
+> Last verified against product, README, and deployed public surfaces: 2026-07-18.
 > Product baseline: Phase 0-4 repository implementation complete; activation gated.
 
 Editable source assets for the Crystal V identity used by the Velostra product.

@@ -1,6 +1,7 @@
 # Velostra JavaScript SDK
 
-> Contract verified: 2026-07-17. Repository package; not published to a public registry.
+> Contract verified: 2026-07-18. Repository package; not published to a public registry.
+> Public API status: not deployed; `velostra.xyz` is a static protocol preview.
 
 Typed browser/Node client for /api/v1 with stable errors, opaque cursor pagination,
 wallet authentication helpers, idempotent agent calls, reports, gateway HMAC, and

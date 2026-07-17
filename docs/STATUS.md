@@ -1,9 +1,11 @@
 # Velostra status
 
-> Last verified against the workspace: 2026-07-17.
+> Last verified against the workspace and public frontend: 2026-07-18.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
 > verified. Controlled mainnet execution remains explicitly gated.
 > No mainnet deployment or real-value authorization is recorded.
+> Public deployment: the static protocol preview is live at https://velostra.xyz/;
+> no managed API, database, Redis, signer, worker, or escrow deployment is claimed.
 
 ## Executive status
 
@@ -26,12 +28,22 @@ one-hour outage/PITR/72-hour soak, real operator alert delivery, deployment
 verification, low-value canary, and accountable closed-beta approval remain external
 gates.
 
-A low-cost US-only staging deployment path is now committed and locally validated:
+The static protocol preview is publicly deployed through the Velostra Netlify team
+and Git-linked `velostralabs/velostra` `main` branch. The canonical TLS origin is
+`https://velostra.xyz/`; `https://www.velostra.xyz/` redirects to it, and
+`https://velostra.netlify.app/` remains the provider default. The tracked deployment
+contract runs `npm run build` under Node.js 22 and publishes only `dist/`.
+
+This frontend is deliberately a protocol preview. Its production environment has no
+`VITE_API_URL`, `VITE_ESCROW_ADDRESS`, or `VITE_SETTLEMENT_TOKEN`, so API-backed
+and financial flows are not activated and must not be represented as operational.
+
+A low-cost US-only backend staging deployment path is committed and locally validated:
 Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
 us-east4; bounded Cloud Run services/jobs; immutable image digests; managed software
-KMS signing; and a USD 35 monthly envelope. No provider resource has been created
-yet. Google Cloud Billing and the user-owned Neon, Upstash, Alchemy, and alert
-receiver accounts remain the current external provisioning gate.
+KMS signing; and a USD 35 monthly envelope. No managed backend/staging provider
+resource has been created yet. Google Cloud Billing and the user-owned Neon, Upstash,
+Alchemy, and alert receiver accounts remain the current external provisioning gate.
 
 ## Audit decision
 
@@ -40,13 +52,14 @@ receiver accounts remain the current external provisioning gate.
   migration, and CI gates:** PASS locally.
 - **Database:** nine reviewed migrations and 30 application tables.
 - **Independent third-party audit:** not claimed or fabricated.
-- **Deployment state:** no mainnet contract, transaction, or mainnet value.
+- **Deployment state:** public static frontend live; no managed backend, testnet
+  contract, mainnet contract, mainnet transaction, or real-value activation.
 - **Expansion state:** impossible from repository automation alone; a passing canary
   still returns `PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`.
 
 | Area | Repository state | External state |
 |---|---|---|
-| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, and performance budgets | real MetaMask and managed-staging performance evidence pending |
+| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values, real MetaMask, and managed-staging performance evidence pending |
 | Contract | role-separated, solvent, pausable, correlated `callId`, guarded build/deploy/verify tooling | independent audit and mainnet deployment pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | timed managed one-hour outage evidence pending |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
@@ -57,6 +70,25 @@ receiver accounts remain the current external provisioning gate.
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29455761339](https://github.com/velostralabs/velostra/actions/runs/29455761339) and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/actions/runs/29455761330) passed on `47747e4` |
+
+## Public frontend deployment evidence
+
+- Canonical origin: [https://velostra.xyz/](https://velostra.xyz/).
+- Alias: `www.velostra.xyz` redirects to the canonical apex.
+- Provider identity: Netlify site `velostra`, team `Velostra`, team slug
+  `velostralabs`; provider default `velostra.netlify.app`.
+- Source: GitHub `velostralabs/velostra`, production branch `main`.
+- Build contract: tracked `netlify.toml`, Node.js 22, `npm run build`, publish
+  directory `dist`.
+- Runtime verification on 2026-07-18: HTTPS validation passed, apex returned 200,
+  hashed JS/CSS assets returned 200 with correct MIME types, `www` resolved to the
+  apex, and a browser DOM/screenshot smoke rendered the complete landing surface.
+- Security boundary: no Netlify Function is used and no secret or managed backend
+  credential is present in the client build. Netlify account metadata reports the
+  US `us-east-2` functions region, while static CDN delivery is global.
+
+This evidence proves only static frontend delivery. It is not managed-staging
+readiness, wallet/contract evidence, closed-beta activation, or mainnet authority.
 
 ## Phase 2 implementation delivered
 
@@ -252,9 +284,10 @@ pending staging outage artifact.
 
 ## Next action
 
-Activate only the user-owned US provider accounts, beginning with Google Cloud
-Billing, then apply the plan-tested bootstrap and load secrets through the hidden
-prompt helper. Deploy and verify the Robinhood testnet contract, runtime, and web
-origin before running wallet, alert, one-hour outage, PITR, and 72-hour evidence.
+Keep the public preview stable, then activate only the user-owned US backend provider
+accounts, beginning with Google Cloud Billing. Apply the plan-tested bootstrap and
+load secrets through the hidden prompt helper. Deploy and verify the Robinhood
+testnet contract, API, workers, signer, and canonical API/auth origin before running
+wallet, alert, one-hour outage, PITR, and 72-hour evidence.
 No external gate may be marked complete from the local plan. Keep paid writes
 disabled and do not use mainnet value.

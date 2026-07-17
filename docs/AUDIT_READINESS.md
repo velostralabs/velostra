@@ -1,6 +1,6 @@
 # External audit readiness packet
 
-> Prepared: 2026-07-17.
+> Prepared: 2026-07-18.
 > Status: internal engineering/CI audit passed and the repository is clear for
 > continued development; independent third-party review has not yet been performed
 > and remains a mainnet release prerequisite.
@@ -22,6 +22,13 @@
 > privacy/anonymization, telemetry governance, dedicated worker readiness, and
 > migration 0008. No closed-beta activation is claimed.
 
+> Public deployment note: `https://velostra.xyz/` is a live Netlify-hosted static
+> protocol preview sourced from `velostralabs/velostra` `main`. It currently has no
+> production API URL, escrow/token address, Netlify Function, managed database,
+> worker, signer, testnet escrow, or real-value flow. Reviewers should treat the
+> published browser bundle and Netlify configuration as a deployed web/supply-chain
+> surface, not as evidence that the backend or protocol is activated.
+
 ## Review objective
 
 Give an external contract auditor and focused backend security reviewer a bounded,
@@ -35,6 +42,7 @@ commit and all Critical/High findings are closed.
 - handoff evidence: [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md);
 - GitHub evidence: [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476), four of four jobs passed;
 - repository state at handoff: clean `main`, local and `origin/main` SHA identical;
+- public frontend state: canonical static preview live at `https://velostra.xyz/`;
 - deployment state: no mainnet address recorded.
 
 The signed external scope must pin the immutable current release commit or tag and

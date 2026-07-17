@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://velostra.xyz"><img alt="Public preview: live" src="https://img.shields.io/badge/public_preview-live-c9ff5f?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/STATUS.md"><img alt="Status: pre-mainnet" src="https://img.shields.io/badge/status-pre--mainnet-c9ff5f?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/SMART_CONTRACT.md"><img alt="EVM settlement" src="https://img.shields.io/badge/settlement-EVM-8fe9dc?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/ARCHITECTURE.md"><img alt="Builder share: 90%" src="https://img.shields.io/badge/builder_share-90%25-d6b684?style=flat-square&labelColor=090c11" /></a>
@@ -19,6 +20,19 @@
 </p>
 
 ---
+
+## Public deployment
+
+The static protocol preview is live at [velostra.xyz](https://velostra.xyz/).
+Netlify builds `main` with Node.js 22, runs `npm run build`, and publishes only
+`dist/` through the tracked [`netlify.toml`](./netlify.toml). `www.velostra.xyz`
+redirects to the TLS-protected apex domain.
+
+This public deployment intentionally has no managed `VITE_API_URL`, escrow address,
+or settlement-token address. The landing experience, documentation, and client-side
+routing are live; API-backed marketplace data, wallet authentication, top-up, paid
+calls, claims, builder operations, and admin operations remain inactive until the
+isolated US backend/testnet deployment passes its gates.
 
 ## Execution should leave evidence
 
@@ -235,8 +249,9 @@ signer, bounded web/API services, and staggered one-task jobs:
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
 
-No managed staging resource or cost exists yet because Cloud Billing and the other
-user-owned provider accounts are not active. See the
+No managed backend staging resource or backend cost exists yet because Cloud Billing
+and the other user-owned provider accounts are not active. The separate public
+Netlify protocol preview is already live. See the
 [US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled. This
 path is restricted to the approved US regions and cannot target mainnet.
 
@@ -287,8 +302,9 @@ Phase 0-4 repository preparation is implemented and locally verified: product,
 security, exactly-once recovery, staging/observability, immutable release identity,
 guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
-governance. The US-only Robinhood testnet deployment policy and dry-run plan also
-pass locally; no managed resource has been provisioned.
+governance. The public Netlify protocol preview is live at `velostra.xyz`; the
+US-only Robinhood testnet backend/contract deployment policy and dry-run plan also
+pass locally, but no managed backend staging resource has been provisioned.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
 recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,

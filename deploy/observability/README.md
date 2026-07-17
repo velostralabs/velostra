@@ -1,5 +1,9 @@
 # Velostra observability deployment contract
 
+> Deployment status (2026-07-18): this is a target runtime contract. No managed
+> monitor, reconciliation, webhook, metrics, or alerting service is live. The public
+> `velostra.xyz` Netlify preview is static and has no worker/backend authority.
+
 The API exposes shallow liveness at /health, dependency-aware readiness at /ready,
 and Prometheus exposition at /metrics. Metrics require the managed scrape bearer
 token. Readiness remains closed until PostgreSQL, Redis, the configured RPC, escrow

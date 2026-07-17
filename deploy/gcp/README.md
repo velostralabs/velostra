@@ -4,6 +4,11 @@ This directory is the executable deployment policy for the low-cost Velostra
 staging stack. It is isolated from Robinhood mainnet and rejects every non-US
 region.
 
+Deployment truth as of 2026-07-18: the separate static protocol preview is live on
+Netlify at `velostra.xyz`. It has no managed API or contract build values and is not
+the staging stack described here. No GCP/Neon/Upstash/Alchemy backend resource has
+been provisioned by this runbook.
+
 ## Fixed policy
 
 - Robinhood testnet only: chain 46630.
@@ -155,7 +160,7 @@ explicit, first-deployment-only action.
 Paid writes remain disabled. The command records the generated API and signer
 URLs in artifacts/staging/runtime.json.
 
-## 7. Build and deploy the web service
+## 7. Build and deploy the isolated staging web service
 
 Build the web image against the generated API URL and verified contract
 addresses:
@@ -167,12 +172,15 @@ Deploy the immutable web digest:
     powershell -NoProfile -File deploy/gcp/deploy-web.ps1 -Release $release -WebImage '<web immutableImage from artifact>' -ProjectId velostra-staging-us -Apply
 
 The Cloud Run web URL is recorded in artifacts/staging/web-runtime.json.
+It is a staging evidence origin, not the current public Netlify origin.
 
 ## 8. Bind the canonical web origin
 
 Rerun the runtime command without RunMigration and use the exact webUrl from
-web-runtime.json as WebOrigin. This creates the final CORS and wallet-auth
-binding. Do not leave staging.velostra.invalid configured.
+web-runtime.json as the isolated staging WebOrigin. This creates the final CORS and
+wallet-auth binding for the evidence environment. Do not leave
+staging.velostra.invalid configured, and do not bind `velostra.xyz` until a separate
+review explicitly connects the public Netlify build to the verified staging API.
 
 After the second pass, verify that runtime.json contains the final web origin
 and that API readiness, reconciliation, webhook, and monitor jobs are healthy.
@@ -198,6 +206,7 @@ substitute for these external runtime evidence gates.
 ## Current external blocker
 
 The authenticated Google account has no visible project or Cloud Billing
-account. No cloud resource or cost has been created. Activate Cloud Billing
-before applying the bootstrap. Neon, Upstash, Alchemy, and the alert receiver
-also require user-owned accounts before their secret values can be loaded.
+account. No managed backend/staging resource or backend cost has been created. The
+public Netlify preview exists separately and does not change this blocker. Activate
+Cloud Billing before applying the bootstrap. Neon, Upstash, Alchemy, and the alert
+receiver also require user-owned accounts before their secret values can be loaded.

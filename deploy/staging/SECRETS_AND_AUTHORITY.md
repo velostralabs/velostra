@@ -1,7 +1,9 @@
 # Staging secrets and authority runbook
 
 This runbook is for isolated managed staging and Phase 3 release preparation. It
-does not authorize a production or mainnet rollout.
+does not authorize a production or mainnet rollout. No managed secret, identity,
+signer, or authority resource is currently provisioned; the public Netlify preview
+contains none of these values.
 
 ## Secret delivery
 

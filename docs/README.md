@@ -1,12 +1,14 @@
 # Velostra documentation
 
-> Last verified against the workspace: 2026-07-17.
+> Last verified against the workspace and public frontend: 2026-07-18.
 
 Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and
 [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md). Phase 0-4 repository implementation
 is complete and locally cleared. Phase 3 execution and closed-beta activation remain
 gated on independent review, managed evidence, immutable release approval, and
 explicit operator authorization; no mainnet deployment is recorded.
+The static protocol preview is live at [velostra.xyz](https://velostra.xyz/), but no
+managed API, stateful backend, escrow deployment, closed beta, or real-value flow is live.
 
 | Document | Purpose |
 |---|---|
@@ -52,10 +54,11 @@ or sequencing changes require a roadmap update.
 ## Scope statement
 
 The repository has passed automated and internal engineering review for Phase 0-4,
-which clears continued non-mainnet development. This is not an independent audit,
+which clears continued non-mainnet development. The static protocol preview is a
+verified public deployment; this is not an independent audit, managed backend/contract
 deployment, closed-beta approval, or real-value authorization. Managed infrastructure,
 signer custody, operator alerts, real-wallet staging, load/outage/PITR drills, and a
 72-hour soak remain release prerequisites. The repository now includes a locally
-validated US-only staging plan, but Google Cloud Billing and all managed provider
+validated US-only staging plan, but Google Cloud Billing and all managed backend
 resources/evidence are still external and unprovisioned. Local completion never
 overrides activation gates.

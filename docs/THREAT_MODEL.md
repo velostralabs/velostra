@@ -1,6 +1,6 @@
 # Velostra threat model
 
-> Last verified against the workspace: 2026-07-17.
+> Last verified against the workspace and public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -27,7 +27,8 @@ governance, or treasury authority.
 10. immutable release manifest, approval packet, image digests, and canary exposure ledger;
 11. API idempotency state, immutable agent revisions, notifications, and analytics;
 12. webhook subscription secrets, exact payloads, delivery/attempt/dead-letter history;
-13. moderation evidence/history, privacy requests/exports, and telemetry policy registry.
+13. moderation evidence/history, privacy requests/exports, and telemetry policy registry;
+14. canonical domain, static frontend bundle, social metadata, and deployment identity.
 
 Raw agent input/output may contain user-sensitive data. It is an application asset,
 but it is not required for chain accounting after a result has been durably linked
@@ -37,6 +38,7 @@ to its call.
 
 | Actor / dependency | Trusted for | Never trusted for |
 |---|---|---|
+| Netlify static hosting/CDN | delivering the reviewed public bundle and domain TLS | backend authority, secrets, API readiness, financial truth |
 | User wallet | user-approved signatures and transactions | server identity without signature verification |
 | Browser provider | transporting wallet requests | private keys, final receipt truth, chain configuration |
 | Builder endpoint | agent output after HMAC-authenticated request | internal network access, pricing, settlement, user balance |
@@ -150,6 +152,8 @@ to its call.
 - RPC and database credentials come from a managed secret store, not repository or
   image layers.
 - The contract remains undeployed until independent audit findings are closed.
+- The public Netlify preview contains no managed API or contract build values and is not
+  treated as an activated product runtime.
 
 ## Review status
 

@@ -12,7 +12,7 @@ this pull request.
 - [ ] Paid-call reservation/outbox/reconciliation failure paths were considered
 - [ ] Financial arithmetic, idempotency, and live/worker race safety were considered
 - [ ] Threat model, status, roadmap, and domain documentation were updated
-- [ ] Phase 1 baseline/re-review impact or Phase 2 exit evidence was recorded when relevant
+- [ ] Frozen baseline, re-review, roadmap, deployment, and release-gate evidence was recorded when relevant
 - [ ] No secrets, personal data, `.env`, dumps, build output, or local paths were added
 
 ## Risk and rollback
@@ -25,4 +25,5 @@ confirmed chain effect; state how reconciliation remains active.
 
 If this changes the frozen Phase 1 contract or security scope, state whether
 re-review is required and update `docs/AUDIT_READINESS.md` plus
-`docs/PHASE_1_HANDOFF.md`. Phase 2 work must name the affected roadmap exit evidence.
+`docs/PHASE_1_HANDOFF.md`. Every change must name affected roadmap, deployment, and
+release-gate evidence.

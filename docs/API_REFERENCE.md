@@ -1,8 +1,9 @@
 # API reference
 
-> Last verified against server routes and middleware: 2026-07-17.
+> Last verified against server routes, middleware, and deployment status: 2026-07-18.
 > Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
 > Local base URL: http://localhost:8787.
+> Public API status: not deployed; `velostra.xyz` is currently a static protocol preview.
 
 ## Version and response contract
 

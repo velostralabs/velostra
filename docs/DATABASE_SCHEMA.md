@@ -1,7 +1,8 @@
 # Database schema and recovery
 
-> Last verified against server/src/db/schema.ts and server/drizzle: 2026-07-17.
+> Last verified against server/src/db/schema.ts, server/drizzle, and deployment status: 2026-07-18.
 > Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
+> Managed database status: not provisioned; the public Netlify preview has no database connection.
 
 Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and nine reviewed SQL
 migrations. Financial columns are numeric(20,6). Server decisions convert canonical

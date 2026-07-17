@@ -7,7 +7,9 @@ secret storage. It deliberately does not embed credentials or provider outputs.
 This Compose topology remains the portable/local specification. The selected managed
 staging implementation is the [US-only GCP runbook](../gcp/README.md): Robinhood
 testnet 46630, GCP us-east4, Neon aws-us-east-1, Upstash GCP us-east4, and a
-USD 35 envelope. No managed resource has been provisioned yet.
+USD 35 envelope. No managed backend staging resource has been provisioned yet.
+The static Netlify protocol preview at `velostra.xyz` is a separate deployment and
+does not satisfy this topology or any staging evidence gate.
 
 ## Invariants
 

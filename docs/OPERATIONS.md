@@ -1,10 +1,38 @@
 # Operations and incident runbook
 
-> Last verified against the workspace: 2026-07-17.
+> Last verified against the workspace and public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> No mainnet deployment is recorded in this repository.
+> The static protocol preview is live at https://velostra.xyz/. No managed backend,
+> testnet escrow, closed-beta, mainnet, or real-value deployment is recorded.
+
+## Current public frontend operations
+
+Netlify owns only the static protocol-preview delivery path. The production project
+is site `velostra` under the Velostra/`velostralabs` team, linked to GitHub
+`velostralabs/velostra` branch `main`. The tracked deployment contract is:
+
+    [build]
+      command = "npm run build"
+      publish = "dist"
+
+Node.js 22 is pinned in `netlify.toml`; `public/_redirects` provides SPA fallback.
+Never change the publish directory to the repository root: doing so serves source
+`index.html` with `/src/main.tsx` and produces a blank browser surface.
+
+After every frontend deployment, verify:
+
+    curl -I https://velostra.xyz/
+    curl -I -L https://www.velostra.xyz/
+
+Then confirm production HTML references hashed `/assets/*.js` and `/assets/*.css`,
+those assets return 200 with JavaScript/CSS MIME types, and a real browser renders
+navigation plus the landing heading. Roll back with Netlify deploy history only to a
+known Git-linked build; do not rewrite Git history.
+
+The current Netlify environment contains no API, escrow, or settlement-token build
+values. A healthy static smoke is not API readiness or financial activation.
 
 ## Production process model
 
@@ -49,7 +77,7 @@ any Apply action:
 6. use the hidden-prompt helper for Secret Manager values;
 7. retain generated records only under ignored artifacts/staging.
 
-Google Cloud Billing is not active for the authenticated account, so no GCP staging
+Google Cloud Billing is not active for the authenticated account, so no GCP backend staging
 resource exists yet. Do not record readiness, rotation, alert, outage, PITR, or soak
 evidence until the actual managed service produced it.
 

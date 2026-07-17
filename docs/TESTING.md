@@ -1,6 +1,6 @@
 # Testing and release evidence
 
-> Last verified against test files and scripts: 2026-07-17.
+> Last verified against tests, CI, and the public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -11,6 +11,7 @@
 |---|---|---|---|
 | Web lint | `npm run lint` | none | source/static checks |
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
+| Netlify production build | `netlify build --context production` | linked Netlify project | tracked Node 22 build command and `dist/` publish contract |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
 | Social assets | `npm run test:social-assets` | none | X/OG dimensions, metadata hygiene, and link-preview tags |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
@@ -67,6 +68,24 @@ verified by [Product verification run 29455761339](https://github.com/velostrala
 and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/actions/runs/29455761330);
 both passed on `47747e4a1c85825975361e903f6ab0b2069b6cb2`. CI uses Node.js 22 with
 `actions/checkout@v6` and `actions/setup-node@v6`.
+
+## Public frontend deployment smoke
+
+The public protocol preview at `https://velostra.xyz/` was verified on 2026-07-18
+after the tracked Netlify publish contract was added:
+
+1. Netlify reported the Git-linked `main` deployment as `ready` with no build error.
+2. Production HTML referenced hashed `/assets/*.js` and `/assets/*.css`, not
+   `/src/main.tsx`.
+3. Every referenced entry asset returned 200 with JavaScript or CSS MIME type.
+4. Apex HTTPS returned 200 with valid certificate verification.
+5. `www.velostra.xyz` redirected to the canonical apex.
+6. A clean real-browser load rendered navigation, the primary heading, full landing
+   DOM, and the adaptive Crystal V visual rather than a blank root.
+
+This smoke proves static delivery only. The production Netlify environment currently
+contains only `NODE_VERSION`; API, escrow, and settlement-token values are absent.
+Real API, wallet, contract, worker, and financial tests remain managed-staging gates.
 
 ## Money-loop coverage
 

@@ -1,6 +1,6 @@
 # Velostra roadmap
 
-> Updated after Phase 4 repository completion review: 2026-07-17.
+> Updated after public frontend deployment verification: 2026-07-18.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
@@ -16,12 +16,26 @@
 
 Repository phase completion and mainnet release authorization are tracked separately.
 
+## Deployment truth
+
+The static protocol preview is live at `https://velostra.xyz/` through the Velostra
+Netlify team. GitHub `main` builds with Node.js 22 using tracked `netlify.toml` and
+publishes `dist/`; TLS, apex/www routing, hashed assets, and browser rendering were
+verified on 2026-07-18.
+
+No managed API, Postgres, Redis, signer, reconciliation/webhook/monitor runtime,
+Robinhood testnet escrow, closed beta, mainnet contract, or real-value flow is live.
+The public preview has no API/escrow/token build values and closes no Phase 2/3/4
+activation or evidence gate.
+
 ## Phase 0 - Recoverable product foundation (DONE)
 
 Delivered:
 
 - premium responsive frontend, semantic URLs/query state, Crystal V assets, and
   MetaMask + EIP-6963/injected provider picker;
+- public Netlify protocol preview with canonical `velostra.xyz`, TLS, SPA fallback,
+  reproducible Vite build/publish configuration, and privacy-safe Velostra identity;
 - wallet auth, marketplace, builder/admin/dashboard product surfaces;
 - escrow top-up, paid 90/10 call, claim, platform withdrawal;
 - `bytes32 callId` correlation, four-event indexer, missed-report backfill, drift,
@@ -135,6 +149,8 @@ and must never be inferred from local tests.
 - [x] Commit plan-only US bootstrap, bounded Cloud Run service/job deployment,
   immutable image build/deploy, safe Secret Manager input, KMS address derivation,
   explicit migration, and a fail-closed deployment-plan test.
+- [x] Publish the separate static protocol preview on Netlify with a tracked `dist/`
+  build contract; keep all managed API/contract values absent until staging exists.
 - [ ] Instantiate Neon Postgres with PITR, Upstash Redis, Alchemy primary plus
   Robinhood public fallback RPC, GCP registry/KMS/Secret Manager/Cloud Run, and
   alert delivery in the selected US regions.
@@ -353,12 +369,13 @@ closed-beta approval. Repository completion cannot enable real users or value.
 
 ### Staging/evidence lane (active external next)
 
-1. activate Google Cloud Billing and create the user-owned Neon, Upstash, Alchemy,
-   and alert receiver accounts;
+1. retain the verified public Netlify preview, activate Google Cloud Billing, and
+   create the user-owned Neon, Upstash, Alchemy, and alert receiver accounts;
 2. apply the plan-tested US-only bootstrap and load scoped secret versions;
 3. derive the KMS signer, deploy and verify VelostraEscrow on Robinhood testnet, then
-   deploy immutable server/web images with paid writes disabled;
-4. bind the generated web origin and prove readiness plus wallet/alert flows;
+   deploy immutable server/staging-web images with paid writes disabled;
+4. bind the generated staging web/API origin and prove readiness plus wallet/alert
+   flows before any explicit public-domain integration;
 5. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
    claiming completion early;
 6. retain all outputs under ignored artifacts until the final signed evidence packet.

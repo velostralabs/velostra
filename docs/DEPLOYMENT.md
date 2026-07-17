@@ -1,10 +1,11 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts: 2026-07-17.
+> Last verified against build/deploy scripts and the public frontend: 2026-07-18.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> No production or mainnet deployment is recorded.
+> The static public frontend is deployed at https://velostra.xyz/. No managed API,
+> worker, database, Redis, signer, escrow, closed-beta, or mainnet deployment is recorded.
 
 ## Release gates
 
@@ -28,15 +29,16 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 - paid writes disabled and a USD 35 cross-provider monthly envelope.
 
 All mutation scripts are plan-only without Apply. They require a clean full release
-SHA and immutable image digests. No US staging resource has been provisioned yet
-because the authenticated Google account has no Cloud Billing account. This is the
-current external blocker, not a completed deployment.
+SHA and immutable image digests. No US managed backend staging resource has been
+provisioned yet because the authenticated Google account has no Cloud Billing account.
+This is the current external blocker, not a completed staging deployment. The separate
+static Netlify protocol preview does not satisfy any managed-staging evidence gate.
 
 ## Target topology
 
 ```mermaid
 flowchart LR
-    CDN["Static frontend + CDN"] --> API["Express API"]
+    CDN["Netlify static frontend / future configured client"] --> API["Express API"]
     API --> PG[(Managed PostgreSQL + PITR)]
     API --> REDIS[(Managed Redis)]
     API --> RPC["Dedicated HTTPS RPC"]
@@ -56,6 +58,10 @@ The low-cost US staging translation keeps the signer at one instance and invokes
 reconciliation, webhooks, and monitoring as separate one-task Cloud Run Jobs on
 staggered 15-minute schedules. API read traffic may scale only within its bounded
 two-instance cap; signer nonce behavior stays isolated.
+
+Current deployment overlay: only the static Netlify frontend node is public. The
+Express API and every stateful/financial dependency in this diagram remain target
+runtime components. The current client has no deployed API or contract build values.
 
 ## Database release
 
@@ -198,10 +204,28 @@ requires the exact passing decision file/hash and
 
 ## Frontend deployment
 
+Current public deployment truth:
+
+- canonical origin: `https://velostra.xyz/`;
+- redirect alias: `https://www.velostra.xyz/`;
+- provider default: `https://velostra.netlify.app/`;
+- Netlify identity: site `velostra`, team `Velostra`, slug `velostralabs`;
+- source: `velostralabs/velostra`, branch `main`;
+- tracked config: `netlify.toml`, Node.js 22, command `npm run build`, publish `dist`;
+- SPA fallback: `public/_redirects` is copied into `dist/`;
+- no Netlify Functions and no client-side secret values.
+
+The first Git-linked deployment incorrectly served repository-root `index.html` and
+therefore referenced `/src/main.tsx`. Commit `0b686e5` introduced the reproducible
+publish contract. The corrected deployment was verified with valid TLS, 200 responses
+for hashed JS/CSS assets, and a real-browser render smoke. Future changes must retain
+that contract and must never publish the repository root.
+
 ```bash
 npm ci
 npm run lint
 npm run build
+netlify build --context production
 ```
 
 Build-time public values:
@@ -210,17 +234,24 @@ Build-time public values:
 - `VITE_ESCROW_ADDRESS`;
 - `VITE_SETTLEMENT_TOKEN`.
 
+Those three values are intentionally absent from the current public preview. Add them
+only after the US testnet API and verified contract addresses exist. Until then,
+API-backed marketplace/auth/dashboard/builder/admin and financial actions are not
+operational even though the client routes render.
+
 Serve `dist/` behind TLS/CDN with SPA fallback to `/index.html`, no-cache/short cache
 for HTML, immutable cache for hashed assets, CSP appropriate to wallet/RPC/API
 origins, and no server secret in `VITE_*`.
 
 ## Release sequence
 
-For the current Robinhood testnet staging sequence, follow the guarded two-pass
+For the future Robinhood testnet staging sequence, follow the guarded two-pass
 runtime/web origin procedure in [deploy/gcp/README.md](../deploy/gcp/README.md).
 It deploys and verifies the testnet contract before building immutable images, runs
 migration only with explicit opt-in, keeps paid writes disabled, and finally rebinds
-the API to the generated canonical web origin.
+the API to the generated staging web origin. That isolated Cloud Run web surface is
+distinct from the currently public Netlify protocol preview until an explicit,
+evidence-backed cutover binds `velostra.xyz` to the managed API.
 
 The mainnet sequence remains gated:
 

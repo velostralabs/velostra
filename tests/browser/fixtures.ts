@@ -253,17 +253,23 @@ export async function installProductApi(page: Page, state: ProductState): Promis
         },
       })
     }
-    if (path === '/api/agents/flowbook-trader/run') {
+    if (
+      path === '/api/agents/flowbook-trader/run' ||
+      path === '/api/v1/agents/flowbook-trader/run'
+    ) {
+      const versioned = path.startsWith('/api/v1/')
       state.runAttempts += 1
       if (state.runAttempts === 1) {
         return json(route, { error: 'Settlement status is ambiguous; reconciliation is tracking it.' }, 503)
       }
       state.balance -= 0.3
       state.availableEarnings += 0.27
-      return json(route, {
+      const result = {
+        call_id: 'call-browser-fixture',
         output: { verdict: 'execution verified', receipt: 'VL-E2E' },
         settlement_tx_hash: TX_HASHES[2],
-      })
+      }
+      return json(route, versioned ? { data: result } : result)
     }
     if (path === '/api/dashboard' && route.request().method() === 'GET') {
       return json(route, {

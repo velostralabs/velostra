@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v6
       - name: Validate staging topology
         run: |
-          for role in common api worker monitor; do cp "deploy/staging/$role.env.example" "deploy/staging/$role.env"; done
+          for role in common api worker webhook monitor; do cp "deploy/staging/$role.env.example" "deploy/staging/$role.env"; done
           docker compose -f deploy/staging/compose.yaml config --quiet
       - name: Build API and worker image
         run: docker build -f server/Dockerfile -t "$VELOSTRA_SERVER_IMAGE" server

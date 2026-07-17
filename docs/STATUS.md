@@ -163,8 +163,11 @@ real one-hour outage and managed PITR drills pass.
   and Phase 4 PostgreSQL E2E cover idempotency/revision/webhook/moderation/privacy
   races, cursor tamper, and zero aggregate/delivery drift.
 - CI now defines seven jobs, including a dedicated Phase 4 API/SDK contract job and
-  Phase 4 PostgreSQL E2E in the money-loop job. Remote CI is not claimed until the
-  local commits are pushed and GitHub executes them.
+  Phase 4 PostgreSQL E2E in the money-loop job. After publication on 2026-07-17,
+  both Product verification and Staging artifact verification completed successfully
+  on GitHub Actions. The remote audit exposed and closed two CI-only gaps: the staging
+  topology now materializes `webhook.env`, and synthetic INP waits for network/font/
+  paint settling while preserving the 200 ms product target.
 
 ## Pre-Phase 4 repository closeout
 

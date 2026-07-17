@@ -328,8 +328,9 @@ Phase 3 exit and accountable approval.
 - [x] Update architecture, API, schema, builder, operations, security, testing,
   status, roadmap, deployment, and audit documents.
 
-Repository exit: **PASS locally after final audit**. The Phase 4 CI job is committed
-but not claimed as a remote run until these commits are pushed and GitHub executes it.
+Repository exit: **PASS locally and in remote CI after final audit**. Product
+verification and staging artifact verification both completed successfully on
+GitHub Actions after the Phase 4 publication and CI-hardening commits.
 Activation gate: operational Phase 3 exit plus managed evidence and accountable
 closed-beta approval. Repository completion cannot enable real users or value.
 

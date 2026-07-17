@@ -99,6 +99,7 @@ Invoke-Gcloud @('config', 'set', 'run/region', $region)
 $apis = @(
   'artifactregistry.googleapis.com',
   'cloudbilling.googleapis.com',
+  'billingbudgets.googleapis.com',
   'cloudbuild.googleapis.com',
   'cloudkms.googleapis.com',
   'cloudscheduler.googleapis.com',

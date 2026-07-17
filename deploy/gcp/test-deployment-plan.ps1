@@ -17,6 +17,7 @@ $webImage = 'us-east4-docker.pkg.dev/' + $ProjectId +
 
 $runtimeParameters = @{
   Release = $release
+  ProjectId = $ProjectId
   ServerImage = $serverImage
   EscrowAddress = '0x1111111111111111111111111111111111111111'
   DeploymentBlock = 1
@@ -25,7 +26,7 @@ $runtimeParameters = @{
 }
 $runtime = & (Join-Path $PSScriptRoot 'deploy-runtime.ps1') @runtimeParameters
 if ($LASTEXITCODE -ne 0) { throw 'Runtime plan failed' }
-$web = & (Join-Path $PSScriptRoot 'deploy-web.ps1') -Release $release -WebImage $webImage
+$web = & (Join-Path $PSScriptRoot 'deploy-web.ps1') -Release $release -WebImage $webImage -ProjectId $ProjectId
 if ($LASTEXITCODE -ne 0) { throw 'Web plan failed' }
 $bootstrap = & (Join-Path $PSScriptRoot 'bootstrap-staging.ps1') -ProjectId $ProjectId
 if ($LASTEXITCODE -ne 0) { throw 'Bootstrap plan failed' }
@@ -76,6 +77,7 @@ foreach ($regionMention in $regionMentions) {
 Reject-Match $all '(?m)^APPLY ' 'Plan validation must never mutate resources'
 Require-Match $bootstrapText 'service-accounts create web' 'Bootstrap must create the unprivileged web identity'
 Require-Match $bootstrapText 'service-accounts create builder' 'Bootstrap must create a dedicated build identity'
+Require-Match $bootstrapText 'billingbudgets[.]googleapis[.]com' 'Bootstrap must enable the API used to create its billing budget'
 Require-Match $bootstrapText 'repositories add-iam-policy-binding velostra .*builder@.*roles/artifactregistry.writer' 'Builder must receive repository-scoped image write access'
 Require-Match $bootstrapText 'roles/logging.logWriter' 'Builder must receive Cloud Logging write access'
 Require-Match $bootstrapText 'roles/storage.objectViewer' 'Builder must receive source object read access'

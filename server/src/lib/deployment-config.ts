@@ -83,7 +83,15 @@ export function deploymentProcessRole(): DeploymentProcessRole {
   return role
 }
 
-function assertCommon(role: DeploymentProcessRole): void {
+function isMainnetLike(environment: string): boolean {
+  return environment === 'production' || /(^|-)mainnet($|-)/.test(environment)
+}
+
+export function expectedRobinhoodChainId(environment: string): 4663 | 46630 {
+  return isMainnetLike(environment) ? 4663 : 46630
+}
+
+function assertCommon(role: DeploymentProcessRole): string {
   if (required('VELOSTRA_SECRET_PROVIDER') !== 'managed-injection') {
     throw new Error('Production VELOSTRA_SECRET_PROVIDER must be managed-injection')
   }
@@ -102,12 +110,13 @@ function assertCommon(role: DeploymentProcessRole): void {
   if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(environment)) {
     throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase identifier')
   }
-  const mainnetLike = environment === 'production' || /(^|-)mainnet($|-)/.test(environment)
+  const mainnetLike = isMainnetLike(environment)
   const release = required('VELOSTRA_RELEASE')
   if (!/^[0-9a-f]{40}$/i.test(release)) {
     throw new Error('Production VELOSTRA_RELEASE must be a full 40-character commit SHA')
   }
   if (mainnetLike) assertPhase3RuntimeConfiguration(role, environment, release)
+  return environment
 }
 
 function assertRedis(): void {
@@ -118,10 +127,13 @@ function assertRedis(): void {
   }
 }
 
-function assertChain(requireSignerAuthorization: boolean): void {
+function assertChain(environment: string, requireSignerAuthorization: boolean): void {
   nonZeroAddress('VELOSTRA_ESCROW_ADDRESS')
-  if (positiveInteger('ROBINHOOD_CHAIN_ID') !== 4663) {
-    throw new Error('Production ROBINHOOD_CHAIN_ID must be 4663')
+  const expectedChainId = expectedRobinhoodChainId(environment)
+  if (positiveInteger('ROBINHOOD_CHAIN_ID') !== expectedChainId) {
+    throw new Error(
+      `Production ROBINHOOD_CHAIN_ID must be ${expectedChainId} for ${environment}`
+    )
   }
   if (positiveInteger('SETTLEMENT_TOKEN_DECIMALS') !== 6) {
     throw new Error('Production SETTLEMENT_TOKEN_DECIMALS must be 6')
@@ -142,12 +154,21 @@ function assertChain(requireSignerAuthorization: boolean): void {
   if (requireSignerAuthorization) {
     httpsUrl('SETTLEMENT_SIGNER_URL')
     secret('SETTLEMENT_SIGNER_AUTH_TOKEN')
+    const rawAudience = process.env.SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE?.trim()
+    if (rawAudience) {
+      const audience = httpsUrl('SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE')
+      if (audience.origin !== audience.toString().replace(/\/$/, '')) {
+        throw new Error(
+          'Production SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE must be a canonical HTTPS origin'
+        )
+      }
+    }
     positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', '10000')
     positiveInteger('SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES', '16384')
   }
 }
 
-function assertApi(origins: string[]): void {
+function assertApi(environment: string, origins: string[]): void {
   secret('JWT_SECRET')
   secret('GATEWAY_HMAC_SECRET')
   secret('PLATFORM_CURSOR_SECRET')
@@ -163,7 +184,7 @@ function assertApi(origins: string[]): void {
   if (!/^[a-zA-Z0-9_-]{1,32}$/.test(process.env.AGENT_SECRET_ENCRYPTION_KEY_ID ?? 'primary')) {
     throw new Error('Production AGENT_SECRET_ENCRYPTION_KEY_ID is invalid')
   }
-  assertChain(true)
+  assertChain(environment, true)
   secret('METRICS_AUTH_TOKEN')
   positiveInteger('OBSERVABILITY_INTERVAL_MS', '15000')
   positiveInteger('READINESS_WORKER_MAX_AGE_MS', '90000')
@@ -176,8 +197,8 @@ function assertApi(origins: string[]): void {
   }
 }
 
-function assertReconciliationWorker(): void {
-  assertChain(true)
+function assertReconciliationWorker(environment: string): void {
+  assertChain(environment, true)
   positiveInteger('RECONCILE_MAX_BLOCK_RANGE', '2000')
   positiveInteger('RECONCILE_RPC_RETRIES', '3')
   positiveInteger('RECONCILE_INTERVAL_MS', '30000')
@@ -193,9 +214,9 @@ function assertWebhookWorker(): void {
   positiveInteger('WEBHOOK_INTERVAL_MS', '5000')
 }
 
-function assertMonitor(): void {
+function assertMonitor(environment: string): void {
   assertRedis()
-  assertChain(false)
+  assertChain(environment, false)
   httpsUrl('ALERT_WEBHOOK_URL')
   secret('ALERT_WEBHOOK_TOKEN')
   httpsUrl('ALERT_RUNBOOK_BASE_URL')
@@ -217,10 +238,10 @@ export function assertDeploymentConfiguration(
   role: DeploymentProcessRole,
   origins: string[]
 ): void {
-  assertCommon(role)
+  const environment = assertCommon(role)
   if (role === 'migration') return
-  if (role === 'api') assertApi(origins)
-  else if (role === 'reconciliation-worker') assertReconciliationWorker()
+  if (role === 'api') assertApi(environment, origins)
+  else if (role === 'reconciliation-worker') assertReconciliationWorker(environment)
   else if (role === 'webhook-worker') assertWebhookWorker()
-  else assertMonitor()
+  else assertMonitor(environment)
 }

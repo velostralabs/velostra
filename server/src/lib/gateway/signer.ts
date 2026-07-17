@@ -38,6 +38,7 @@ function remoteSignerConfiguration(): {
   address: Address
   timeoutMs: number
   maxResponseBytes: number
+  identityTokenAudience?: URL
 } {
   const rawUrl = process.env.SETTLEMENT_SIGNER_URL
   const token = process.env.SETTLEMENT_SIGNER_AUTH_TOKEN
@@ -54,13 +55,71 @@ function remoteSignerConfiguration(): {
   if (token.length < 32) {
     throw new Error('SETTLEMENT_SIGNER_AUTH_TOKEN must be at least 32 characters')
   }
+  const rawAudience = process.env.SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE?.trim()
+  const identityTokenAudience = rawAudience ? new URL(rawAudience) : undefined
+  if (
+    identityTokenAudience &&
+    (identityTokenAudience.protocol !== 'https:' ||
+      identityTokenAudience.username ||
+      identityTokenAudience.password ||
+      identityTokenAudience.origin !== identityTokenAudience.toString().replace(/\/$/, ''))
+  ) {
+    throw new Error('SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE must be a canonical HTTPS origin')
+  }
   return {
     url,
     token,
     address: configuredRemoteSignerAddress(),
     timeoutMs: positiveInteger('SETTLEMENT_SIGNER_TIMEOUT_MS', 10_000),
     maxResponseBytes: positiveInteger('SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES', 16_384),
+    identityTokenAudience,
   }
+}
+
+let cachedIdentityToken:
+  | { audience: string; token: string; expiresAtSeconds: number }
+  | undefined
+
+function jwtExpirySeconds(token: string): number {
+  const parts = token.split('.')
+  if (parts.length !== 3) throw new Error('Cloud Run metadata returned a malformed identity token')
+  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8')) as {
+    exp?: unknown
+  }
+  if (!Number.isInteger(payload.exp) || Number(payload.exp) <= 0) {
+    throw new Error('Cloud Run identity token is missing a valid expiry')
+  }
+  return Number(payload.exp)
+}
+
+async function cloudRunIdentityToken(audience: URL, timeoutMs: number): Promise<string> {
+  const nowSeconds = Math.floor(Date.now() / 1000)
+  if (
+    cachedIdentityToken?.audience === audience.toString() &&
+    cachedIdentityToken.expiresAtSeconds > nowSeconds + 60
+  ) {
+    return cachedIdentityToken.token
+  }
+
+  const endpoint = new URL(
+    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity'
+  )
+  endpoint.searchParams.set('audience', audience.toString())
+  endpoint.searchParams.set('format', 'full')
+  const response = await fetch(endpoint, {
+    signal: AbortSignal.timeout(Math.min(timeoutMs, 5_000)),
+    headers: { 'metadata-flavor': 'Google' },
+  })
+  if (!response.ok) {
+    throw new Error('Cloud Run identity token request failed with HTTP ' + response.status)
+  }
+  const token = (await response.text()).trim()
+  cachedIdentityToken = {
+    audience: audience.toString(),
+    token,
+    expiresAtSeconds: jwtExpirySeconds(token),
+  }
+  return token
 }
 
 async function readBoundedJson(response: Response, maxBytes: number): Promise<unknown> {
@@ -98,15 +157,20 @@ export async function submitRemoteSettlement(input: {
   idempotencyKey: Hash
 }): Promise<Hash> {
   const config = remoteSignerConfiguration()
+  const headers: Record<string, string> = {
+    authorization: 'Bearer ' + config.token,
+    'content-type': 'application/json',
+    'idempotency-key': input.idempotencyKey,
+    'user-agent': 'velostra-settlement/1',
+  }
+  if (config.identityTokenAudience) {
+    headers['x-serverless-authorization'] =
+      'Bearer ' + await cloudRunIdentityToken(config.identityTokenAudience, config.timeoutMs)
+  }
   const response = await fetch(config.url, {
     method: 'POST',
     signal: AbortSignal.timeout(config.timeoutMs),
-    headers: {
-      authorization: `Bearer ${config.token}`,
-      'content-type': 'application/json',
-      'idempotency-key': input.idempotencyKey,
-      'user-agent': 'velostra-settlement/1',
-    },
+    headers,
     body: JSON.stringify({
       chain_id: input.chainId,
       to: input.to,

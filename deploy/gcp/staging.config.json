@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "environment": "staging",
+  "network": {
+    "name": "robinhood-testnet",
+    "chainId": 46630,
+    "mainnetAllowed": false
+  },
+  "residency": {
+    "policy": "US_ONLY",
+    "gcpRegion": "us-east4",
+    "gcpRegionLabel": "Northern Virginia",
+    "neonRegion": "aws-us-east-1",
+    "neonRegionLabel": "N. Virginia",
+    "upstashProvider": "gcp",
+    "upstashRegion": "us-east4",
+    "upstashRegionLabel": "Virginia"
+  },
+  "cost": {
+    "currency": "USD",
+    "totalMonthlyEnvelope": 35,
+    "gcpBudgetAlert": 20,
+    "upstashHardCap": 5,
+    "neonAllowance": 5,
+    "contingency": 5
+  },
+  "providers": {
+    "postgres": {
+      "name": "Neon",
+      "initialPlan": "Free",
+      "evidencePlan": "Launch",
+      "scaleToZero": true,
+      "maxComputeUnits": 0.25,
+      "restoreWindowHoursInitial": 6,
+      "restoreWindowHoursEvidence": 24
+    },
+    "redis": {
+      "name": "Upstash",
+      "plan": "pay-as-you-go",
+      "hardBudgetCapUsd": 5,
+      "globalReplication": false
+    },
+    "rpc": {
+      "primary": "Alchemy Robinhood Testnet Free",
+      "fallback": "Robinhood public testnet RPC",
+      "paidRpcAllowed": false
+    }
+  },
+  "gcp": {
+    "artifactRepository": "velostra",
+    "kms": {
+      "keyRing": "velostra-staging",
+      "key": "settlement-signer",
+      "version": 1,
+      "purpose": "asymmetric-signing",
+      "algorithm": "ec-sign-secp256k1-sha256",
+      "protectionLevel": "software"
+    },
+    "cloudRun": {
+      "services": {
+        "web": { "minInstances": 0, "maxInstances": 2, "cpu": 1, "memory": "256Mi", "concurrency": 80 },
+        "api": { "minInstances": 0, "maxInstances": 2, "cpu": 1, "memory": "512Mi", "concurrency": 40 },
+        "signer": { "minInstances": 0, "maxInstances": 1, "cpu": 1, "memory": "256Mi", "concurrency": 4 }
+      },
+      "jobs": {
+        "reconciliation": { "schedule": "*/15 * * * *", "timeoutSeconds": 600, "maxRetries": 1, "tasks": 1 },
+        "webhooks": { "schedule": "2-59/15 * * * *", "timeoutSeconds": 300, "maxRetries": 1, "tasks": 1 },
+        "monitor": { "schedule": "5-59/15 * * * *", "timeoutSeconds": 300, "maxRetries": 1, "tasks": 1 }
+      }
+    }
+  }
+}

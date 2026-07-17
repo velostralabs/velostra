@@ -41,6 +41,7 @@ function isPublicExampleDomain(domain) {
     domain === 'example.com' ||
     /\.(?:example|invalid|test|internal)$/.test(domain) ||
     domain === 'users.noreply.github.com' ||
+    domain === 'developer.gserviceaccount.com' ||
     domain.endsWith('.iam.gserviceaccount.com')
   )
 }

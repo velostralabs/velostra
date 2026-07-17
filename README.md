@@ -242,18 +242,20 @@ tampered, cross-release, or unsigned.
 
 The selected low-cost staging path uses Robinhood testnet chain 46630 and Virginia
 regions only: GCP us-east4, Neon aws-us-east-1, and Upstash GCP us-east4. It includes
-plan-only bootstrap, managed secp256k1 KMS signing, immutable image builds, a private
+guarded bootstrap, HSM-backed secp256k1 signing, immutable image builds, a private
 signer, bounded web/API services, and staggered one-task jobs:
 
     powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
-    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
-No managed backend staging resource or backend cost exists yet because Cloud Billing
-and the other user-owned provider accounts are not active. The separate public
-Netlify protocol preview is already live. See the
-[US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled. This
-path is restricted to the approved US regions and cannot target mainnet.
+The GCP bootstrap is applied in project `velostra-production`: billing and its
+account-native budget alert are active; an empty us-east4 registry, six namespaced
+service accounts, one multi-tenant HSM key, and twelve empty regional secret
+containers exist. No secret version, Cloud Run service/job, scheduler, database,
+Redis, RPC, contract, or managed staging traffic exists yet. The public Netlify
+preview remains separate. See the [US staging runbook](./deploy/gcp/README.md).
+Paid writes remain disabled and this path cannot target mainnet.
 
 ## Controlled release tooling
 
@@ -308,7 +310,8 @@ guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
 governance. The public Netlify protocol preview is live at `velostra.xyz`; the
 US-only Robinhood testnet backend/contract deployment policy and dry-run plan also
-pass locally, but no managed backend staging resource has been provisioned.
+pass locally. The GCP US bootstrap foundation is provisioned, but no secret value,
+managed API/worker runtime, provider database/Redis/RPC, or testnet contract exists.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
 recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,

@@ -109,6 +109,18 @@ Checkpoint: `6e83a04`.
 and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312)
 passed; the matching Netlify production deploy reached `ready`.
 
+### 2026-07-18 - US GCP bootstrap applied
+
+- activated the brand-only `velostra-production` project and billing guardrails;
+- provisioned an empty us-east4 Artifact Registry, six namespaced least-privilege
+  identities, and twelve empty regional Secret Manager containers;
+- created one us-east4 multi-tenant HSM secp256k1 signer key;
+- derived and retained the public signer evidence only under ignored artifacts.
+
+Checkpoint: GCP bootstrap and its account-native budget alert are active. All twelve
+secret containers still have zero versions. No Cloud Run service/job, Scheduler job,
+provider data service, testnet contract, mainnet resource, or real-value flow exists.
+
 ## What is complete
 
 ### Product and identity
@@ -147,9 +159,10 @@ passed; the matching Netlify production deploy reached `ready`.
 
 These are real external/runtime gates, not hidden repository TODOs:
 
-1. Provider-account activation and billing readiness are not recorded as applied evidence.
-2. Managed Postgres, Redis, RPC, KMS, Secret Manager, Cloud Run services/jobs, and
-   real alert destinations are not provisioned.
+1. Provider activation for Neon, Upstash, Alchemy, and the alert receiver is not
+   recorded as applied evidence.
+2. Managed Postgres, Redis, RPC, Cloud Run services/jobs, and real alert destinations
+   are not provisioned; the GCP registry/HSM/identities/empty secrets are bootstrap only.
 3. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
 4. The public frontend has no production API, escrow, or settlement-token build values.
 5. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
@@ -168,10 +181,11 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 ### Lane A - Managed US staging (active external next)
 
-1. Activate Google Cloud Billing and create the user-owned Neon, Upstash, Alchemy,
-   and alert-receiver accounts.
-2. Apply the plan-tested US-only bootstrap and provision only approved regions.
-3. Load scoped secrets through the hidden-prompt flow and derive the KMS signer.
+1. Create the user-owned Neon, Upstash, Alchemy, and alert-receiver accounts in the
+   approved US regions.
+2. Load scoped secret versions through the hidden-prompt flow and verify every endpoint.
+3. Treat the retained HSM-derived public address as the exact settlement signer
+   identity for every contract and runtime check.
 4. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
    block, roles, token, fee, and verification evidence under ignored artifacts.
 5. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and

@@ -187,12 +187,13 @@ resource in a US Virginia region. Validate the non-mutating deployment plan:
 
     powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
-    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
 The bootstrap remains plan-only unless Apply and a billing account are supplied.
-No managed backend staging resource currently exists because Cloud Billing is not active for the
-authenticated account. Follow [the US staging runbook](../deploy/gcp/README.md) only
-after the user-owned GCP, Neon, Upstash, Alchemy, and alert receiver accounts exist.
+For the current project it has been applied through the US-only registry, namespaced
+identities, multi-tenant HSM key, and empty secret containers. No secret value or
+runtime workload is deployed. Follow [the US staging runbook](../deploy/gcp/README.md)
+after the remaining Neon, Upstash, Alchemy, and alert receiver accounts exist.
 Use only the approved US regions and Robinhood testnet chain 46630. Never use
 mainnet or real value for this staging path.
 

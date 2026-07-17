@@ -5,7 +5,9 @@
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > The static public frontend is deployed at https://velostra.xyz/. No managed API,
-> worker, database, Redis, signer, escrow, closed-beta, or mainnet deployment is recorded.
+> worker, database, Redis, signer runtime, escrow, closed-beta, or mainnet deployment
+> is recorded. The isolated GCP US bootstrap foundation exists without secret values
+> or application workloads.
 
 ## Release gates
 
@@ -29,10 +31,13 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 - paid writes disabled and a USD 35 cross-provider monthly envelope.
 
 All mutation scripts are plan-only without Apply. They require a clean full release
-SHA and immutable image digests. No US managed backend staging resource has been
-provisioned yet because the authenticated Google account has no Cloud Billing account.
-This is the current external blocker, not a completed staging deployment. The separate
-static Netlify protocol preview does not satisfy any managed-staging evidence gate.
+SHA and immutable image digests. The `velostra-production` project now has active
+billing and an account-native alert budget plus an empty Artifact Registry, six
+namespaced service accounts, one us-east4 multi-tenant HSM secp256k1 key, and twelve
+empty us-east4 secret containers. No secret version, Cloud Run service/job, Scheduler
+job, managed database/Redis/RPC, or contract is deployed. This bootstrap foundation
+is not a completed staging deployment, and the separate static Netlify preview does
+not satisfy any managed-staging evidence gate.
 
 ## Target topology
 

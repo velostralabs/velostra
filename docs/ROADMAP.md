@@ -24,9 +24,11 @@ Netlify team. GitHub `main` builds with Node.js 22 using tracked `netlify.toml` 
 publishes `dist/`; TLS, apex/www routing, hashed assets, and browser rendering were
 verified on 2026-07-18.
 
-No managed API, Postgres, Redis, signer, reconciliation/webhook/monitor runtime,
-Robinhood testnet escrow, closed beta, mainnet contract, or real-value flow is live.
-The public preview has no API/escrow/token build values and closes no Phase 2/3/4
+No managed API, Postgres, Redis, signer runtime, reconciliation/webhook/monitor
+runtime, Robinhood testnet escrow, closed beta, mainnet contract, or real-value flow
+is live. The GCP US bootstrap foundation is provisioned with billing guardrails, an
+empty registry, scoped identities, one HSM key, and empty secret containers. The
+public preview has no API/escrow/token build values and closes no Phase 2/3/4
 activation or evidence gate.
 
 ## Phase 0 - Recoverable product foundation (DONE)
@@ -373,16 +375,16 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 
 ### Staging/evidence lane (active external next)
 
-1. retain the verified public Netlify preview, activate Google Cloud Billing, and
-   create the user-owned Neon, Upstash, Alchemy, and alert receiver accounts;
-2. apply the plan-tested US-only bootstrap and load scoped secret versions;
-3. derive the KMS signer, deploy and verify VelostraEscrow on Robinhood testnet, then
-   deploy immutable server/staging-web images with paid writes disabled;
-4. bind the generated staging web/API origin and prove readiness plus wallet/alert
+1. retain the verified public Netlify preview and applied GCP US bootstrap;
+2. create Neon, Upstash, Alchemy, and alert-receiver resources in approved US regions;
+3. load scoped secret versions and validate the retained HSM signer evidence;
+4. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
+   server/staging-web images with paid writes disabled;
+5. bind the generated staging web/API origin and prove readiness plus wallet/alert
    flows before any explicit public-domain integration;
-5. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
+6. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
    claiming completion early;
-6. retain all outputs under ignored artifacts until the final signed evidence packet.
+7. retain all outputs under ignored artifacts until the final signed evidence packet.
 
 ### Repository/product lane
 

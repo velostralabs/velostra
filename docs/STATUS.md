@@ -5,7 +5,8 @@
 > verified. Controlled mainnet execution remains explicitly gated.
 > No mainnet deployment or real-value authorization is recorded.
 > Public deployment: the static protocol preview is live at https://velostra.xyz/;
-> no managed API, database, Redis, signer, worker, or escrow deployment is claimed.
+> no managed API, database, Redis, signer runtime, worker, or escrow is deployed.
+> The isolated GCP US bootstrap foundation exists without secret values or workloads.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
 ## Executive status
@@ -42,9 +43,12 @@ and financial flows are not activated and must not be represented as operational
 A low-cost US-only backend staging deployment path is committed and locally validated:
 Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
 us-east4; bounded Cloud Run services/jobs; immutable image digests; multi-tenant
-Cloud HSM signing; and a USD 35 monthly envelope. No managed backend/staging provider
-resource has been created yet. Google Cloud Billing and the user-owned Neon, Upstash,
-Alchemy, and alert receiver accounts remain the current external provisioning gate.
+Cloud HSM signing; and a USD 35 monthly envelope. The GCP bootstrap foundation is
+applied with active billing guardrails, an empty registry, six namespaced identities,
+one HSM signer key, and twelve empty regional secret containers. No secret version,
+Cloud Run workload/schedule, provider database/Redis/RPC, alert receiver, or testnet
+contract exists. Neon, Upstash, Alchemy, and the alert receiver remain the external
+provisioning gates.
 
 ## Audit decision
 
@@ -53,8 +57,9 @@ Alchemy, and alert receiver accounts remain the current external provisioning ga
   migration, and CI gates:** PASS locally.
 - **Database:** nine reviewed migrations and 30 application tables.
 - **Independent third-party audit:** not claimed or fabricated.
-- **Deployment state:** public static frontend live; no managed backend, testnet
-  contract, mainnet contract, mainnet transaction, or real-value activation.
+- **Deployment state:** public static frontend and isolated GCP bootstrap foundation
+  live; no managed application runtime, testnet contract, mainnet contract, mainnet
+  transaction, or real-value activation.
 - **Expansion state:** impossible from repository automation alone; a passing canary
   still returns `PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`.
 
@@ -66,8 +71,8 @@ Alchemy, and alert receiver accounts remain the current external provisioning ga
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | Google billing/provider accounts and managed resources not provisioned yet |
-| Signer/secrets | raw production key rejected; restricted remote signer plus managed secp256k1 KMS implementation, scoped identities, and hidden-prompt Secret Manager helper tested | KMS resource, secret versions, audit logs, rotations, and drills pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | GCP billing/registry/identities/HSM/empty secrets provisioned; provider data services and application workloads pending |
+| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | HSM key and public-address evidence exist; secret versions, signer runtime, audit logs, rotations, and drills pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
@@ -289,10 +294,11 @@ The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). The next hones
 checkpoint is managed US staging online with a verified Robinhood testnet escrow
 while paid writes remain disabled.
 
-Keep the public preview stable, then activate only the user-owned US backend provider
-accounts, beginning with Google Cloud Billing. Apply the plan-tested bootstrap and
-load secrets through the hidden prompt helper. Deploy and verify the Robinhood
-testnet contract, API, workers, signer, and canonical API/auth origin before running
-wallet, alert, one-hour outage, PITR, and 72-hour evidence.
+Keep the public preview stable and preserve the applied GCP US bootstrap. Create only
+the remaining user-owned Neon, Upstash, Alchemy, and alert-receiver resources in the
+approved US regions, then load scoped values through the hidden-prompt helper. Deploy
+and verify the Robinhood testnet contract, API, workers, signer, and canonical
+API/auth origin before running wallet, alert, one-hour outage, PITR, and 72-hour
+evidence.
 No external gate may be marked complete from the local plan. Keep paid writes
 disabled and do not use mainnet value.

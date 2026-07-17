@@ -6,8 +6,10 @@ region.
 
 Deployment truth as of 2026-07-18: the separate static protocol preview is live on
 Netlify at `velostra.xyz`. It has no managed API or contract build values and is not
-the staging stack described here. No GCP/Neon/Upstash/Alchemy backend resource has
-been provisioned by this runbook.
+the staging stack described here. Project `velostra-production` now contains only
+the applied us-east4 bootstrap foundation: an empty registry, namespaced identities,
+one multi-tenant HSM key, and empty secret containers. No provider data service,
+secret value, runtime workload, scheduler trigger, or contract is deployed.
 
 ## Fixed policy
 
@@ -70,7 +72,7 @@ artifacts in tracked files.
 
     powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
-    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
 All three commands are read-only. The last command prints the intended GCP
 changes.
@@ -79,21 +81,23 @@ changes.
 
 After Cloud Billing is active:
 
-    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us -BillingAccount XXXXXX-XXXXXX-XXXXXX -Apply
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production -BillingAccount XXXXXX-XXXXXX-XXXXXX -Apply
 
 This creates only US resources, dedicated least-privilege runtime/build identities,
 the restricted KMS signer key, secret containers, and the USD 20 GCP budget
-alerts. Because Cloud Billing budgets must use the billing account currency,
+alerts. It removes the auto-created default Compute Editor grant and keeps managed
+resource labels owned by Velostra. Because Cloud Billing budgets must use the billing
+account currency,
 operators with a stricter account-native budget already configured must instead
 verify and reuse it without recording its currency in the repository:
 
-    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us -BillingAccount XXXXXX-XXXXXX-XXXXXX -UseExistingBillingBudget -Apply
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production -BillingAccount XXXXXX-XXXXXX-XXXXXX -UseExistingBillingBudget -Apply
 
 ## 3. Add secret versions
 
 Run the helper once for every secret container printed by the bootstrap:
 
-    powershell -NoProfile -File deploy/gcp/set-secret-version.ps1 -ProjectId velostra-staging-us -Name database-url
+    powershell -NoProfile -File deploy/gcp/set-secret-version.ps1 -ProjectId velostra-production -Name database-url
 
 Repeat for redis-url, jwt-secret, gateway-hmac-secret,
 platform-cursor-secret, agent-secret-encryption-key, metrics-auth-token,
@@ -112,7 +116,7 @@ Requirements:
 
 ## 4. Derive the restricted signer address
 
-    powershell -NoProfile -File deploy/gcp/export-signer-address.ps1 -ProjectId velostra-staging-us
+    powershell -NoProfile -File deploy/gcp/export-signer-address.ps1 -ProjectId velostra-production
 
 The command exports only the public key, validates the KMS algorithm and
 location, and records the derived EVM address under artifacts/staging.
@@ -154,14 +158,14 @@ Use the current clean commit as Release. The image helper records the immutable
 digest under artifacts/staging/server-image.json.
 
     $release = (git rev-parse HEAD).Trim()
-    powershell -NoProfile -File deploy/gcp/build-image.ps1 -Component server -Release $release -ProjectId velostra-staging-us -Apply
+    powershell -NoProfile -File deploy/gcp/build-image.ps1 -Component server -Release $release -ProjectId velostra-production -Apply
 
 Deploy the private signer, public API, migration definition, scheduled workers,
 and Scheduler triggers. The first pass uses a temporary canonical HTTPS origin
 because the web service does not have a Cloud Run URL yet. RunMigration is an
 explicit, first-deployment-only action.
 
-    powershell -NoProfile -File deploy/gcp/deploy-runtime.ps1 -Release $release -ServerImage '<server immutableImage from artifact>' -EscrowAddress '<verified escrow address>' -DeploymentBlock <verified deployment block> -SignerAddress '<kms-derived address>' -AdminWallet '<admin wallet>' -WebOrigin 'https://staging.velostra.invalid' -RunMigration -Apply
+    powershell -NoProfile -File deploy/gcp/deploy-runtime.ps1 -ProjectId velostra-production -Release $release -ServerImage '<server immutableImage from artifact>' -EscrowAddress '<verified escrow address>' -DeploymentBlock <verified deployment block> -SignerAddress '<kms-derived address>' -AdminWallet '<admin wallet>' -WebOrigin 'https://staging.velostra.invalid' -RunMigration -Apply
 
 Paid writes remain disabled. The command records the generated API and signer
 URLs in artifacts/staging/runtime.json.
@@ -171,11 +175,11 @@ URLs in artifacts/staging/runtime.json.
 Build the web image against the generated API URL and verified contract
 addresses:
 
-    powershell -NoProfile -File deploy/gcp/build-image.ps1 -Component web -Release $release -ProjectId velostra-staging-us -ApiUrl '<apiUrl from runtime.json>' -EscrowAddress '<verified escrow address>' -SettlementTokenAddress '<verified token address>' -Apply
+    powershell -NoProfile -File deploy/gcp/build-image.ps1 -Component web -Release $release -ProjectId velostra-production -ApiUrl '<apiUrl from runtime.json>' -EscrowAddress '<verified escrow address>' -SettlementTokenAddress '<verified token address>' -Apply
 
 Deploy the immutable web digest:
 
-    powershell -NoProfile -File deploy/gcp/deploy-web.ps1 -Release $release -WebImage '<web immutableImage from artifact>' -ProjectId velostra-staging-us -Apply
+    powershell -NoProfile -File deploy/gcp/deploy-web.ps1 -Release $release -WebImage '<web immutableImage from artifact>' -ProjectId velostra-production -Apply
 
 The Cloud Run web URL is recorded in artifacts/staging/web-runtime.json.
 It is a staging evidence origin, not the current public Netlify origin.
@@ -209,10 +213,11 @@ The stack is not considered staging-ready until all of these are captured:
 Repository tests prove the implementation and deployment policy. They do not
 substitute for these external runtime evidence gates.
 
-## Current external blocker
+## Current external blockers
 
-The authenticated Google account has no visible project or Cloud Billing
-account. No managed backend/staging resource or backend cost has been created. The
-public Netlify preview exists separately and does not change this blocker. Activate
-Cloud Billing before applying the bootstrap. Neon, Upstash, Alchemy, and the alert
-receiver also require user-owned accounts before their secret values can be loaded.
+Google Cloud Billing, the account-native alert budget, regional registry, identities,
+multi-tenant HSM key, and empty secret containers are active. The public Netlify
+preview remains separate. No secret version or application workload exists.
+Neon, Upstash, Alchemy, and the alert receiver still require user-owned accounts
+in the approved US regions before their values can be loaded and the testnet
+contract/runtime sequence can continue.

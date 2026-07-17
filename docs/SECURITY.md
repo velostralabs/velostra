@@ -146,7 +146,7 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | Public static preview precedes managed backend | no client secrets or contract/API values; static build and routing only | bind exact origins, CSP, API, verified testnet contract, and real-wallet evidence before activation |
 | Release/canary artifact tampering | canonical hashes, exact required sets, authority/constructor binding, deployment init-code provenance, immutable mounts, explicit approvals | protected operator artifact custody |
 | Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial canary intentionally serialized |
-| Restricted signer custody not yet proven on managed staging | raw keys rejected; dedicated private signer, scoped invokers, multi-tenant Cloud HSM secp256k1 implementation, nonce lock, and local signer tests are committed | apply the US HSM/signer deployment and capture rotation plus audit-log evidence |
+| Restricted signer runtime custody not yet proven | raw keys rejected; the US multi-tenant HSM secp256k1 key and scoped signer identity are provisioned; public-address derivation, nonce lock, and local signer tests pass | deploy the private signer and capture live signing, rotation, compromise, and audit-log evidence |
 | One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |
 | Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
 | Sustained all-provider RPC outage/429 | ordered failover, cursor safety, retry/backoff | managed provider outage evidence + alert routing |

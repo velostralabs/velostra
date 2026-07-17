@@ -4,8 +4,9 @@
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> The static protocol preview is live at https://velostra.xyz/. No managed backend,
-> testnet escrow, closed-beta, mainnet, or real-value deployment is recorded.
+> The static protocol preview is live at https://velostra.xyz/. The isolated GCP US
+> bootstrap foundation exists, but no managed application runtime, testnet escrow,
+> closed-beta, mainnet, or real-value deployment is recorded.
 
 ## Current public frontend operations
 
@@ -77,9 +78,11 @@ any Apply action:
 6. use the hidden-prompt helper for Secret Manager values;
 7. retain generated records only under ignored artifacts/staging.
 
-Google Cloud Billing is not active for the authenticated account, so no GCP backend staging
-resource exists yet. Do not record readiness, rotation, alert, outage, PITR, or soak
-evidence until the actual managed service produced it.
+Google Cloud Billing, the account-native alert budget, regional registry, namespaced
+identities, HSM key, and empty secret containers are active. No secret version,
+Cloud Run service/job, Scheduler trigger, database, Redis, RPC, or alert destination
+is deployed. Do not record readiness, rotation, alert, outage, PITR, or soak evidence
+until the actual managed service produced it.
 
 ## Reconciliation commands
 

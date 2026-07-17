@@ -93,6 +93,20 @@ services:
       disable: true
     stop_grace_period: 60s
 
+  webhook-worker:
+    <<: *server-common
+    env_file:
+      - path: ./common.env
+        required: true
+      - path: ./webhook.env
+        required: true
+    command: ["node", "dist/jobs/webhooks.js", "--watch"]
+    environment:
+      VELOSTRA_PROCESS_ROLE: webhook-worker
+    healthcheck:
+      disable: true
+    stop_grace_period: 30s
+
   operational-monitor:
     <<: *server-common
     env_file:

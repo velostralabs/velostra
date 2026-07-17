@@ -52,6 +52,45 @@ export function evaluateAlerts(snapshot: OperationalSnapshot): AlertCandidate[] 
     })
   }
 
+  const webhookWorkerMaxAge = threshold('ALERT_WEBHOOK_WORKER_MAX_AGE_SECONDS', 90)
+  if (
+    snapshot.webhookWorker.ageSeconds === undefined ||
+    snapshot.webhookWorker.ageSeconds > webhookWorkerMaxAge
+  ) {
+    alerts.push({
+      rule: 'webhook_worker_stale',
+      severity: 'critical',
+      summary: 'Webhook worker heartbeat is stale',
+      details: { age_seconds: snapshot.webhookWorker.ageSeconds, threshold_seconds: webhookWorkerMaxAge },
+    })
+  }
+
+  const deadLetters = snapshot.webhooks.byStatus.DEAD_LETTER ?? 0
+  if (deadLetters > 0) {
+    alerts.push({
+      rule: 'webhook_dead_letter',
+      severity: 'warning',
+      summary: 'Webhook deliveries require operator replay',
+      details: { deliveries: deadLetters },
+    })
+  }
+
+  const webhookPendingThreshold = threshold('ALERT_WEBHOOK_MAX_PENDING_AGE_SECONDS', 300)
+  if (
+    snapshot.webhooks.oldestPendingAgeSeconds !== undefined &&
+    snapshot.webhooks.oldestPendingAgeSeconds > webhookPendingThreshold
+  ) {
+    alerts.push({
+      rule: 'webhook_delivery_stale',
+      severity: 'critical',
+      summary: 'A webhook delivery has exceeded the pending-age threshold',
+      details: {
+        age_seconds: snapshot.webhooks.oldestPendingAgeSeconds,
+        threshold_seconds: webhookPendingThreshold,
+      },
+    })
+  }
+
   if (process.env.ALERT_REQUIRE_BACKUP_HEARTBEAT === 'true') {
     const backupMaxAge = threshold('ALERT_BACKUP_MAX_AGE_SECONDS', 86_400)
     if (

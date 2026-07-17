@@ -10,18 +10,24 @@ const validProductionEnv: Record<string, string> = {
   METRICS_AUTH_TOKEN: 'm'.repeat(32),
   OBSERVABILITY_INTERVAL_MS: '15000',
   READINESS_REQUIRE_WORKER: 'true',
+  READINESS_REQUIRE_WEBHOOK_WORKER: 'true',
   READINESS_WORKER_MAX_AGE_MS: '90000',
+  READINESS_WEBHOOK_WORKER_MAX_AGE_MS: '90000',
   MONITOR_INTERVAL_MS: '30000',
   ALERT_WEBHOOK_URL: 'https://alerts.velostra.internal/events',
   ALERT_WEBHOOK_TOKEN: 'a'.repeat(32),
   ALERT_RUNBOOK_BASE_URL: 'https://runbooks.velostra.internal/operations',
   ALERT_REQUIRE_BACKUP_HEARTBEAT: 'true',
+  ALERT_REQUIRE_WEBHOOK_HEARTBEAT: 'true',
+  ALERT_WEBHOOK_WORKER_MAX_AGE_SECONDS: '90',
+  ALERT_WEBHOOK_MAX_PENDING_AGE_SECONDS: '300',
   ALERT_SIGNER_MIN_BALANCE_WEI: '10000000000000000',
   DATABASE_URL: 'postgresql://velostra:secret@db.internal:5432/velostra?sslmode=require',
   DATABASE_POOL_MAX: '10',
   DATABASE_CONNECTION_TIMEOUT_MS: '5000',
   JWT_SECRET: 'j'.repeat(32),
   GATEWAY_HMAC_SECRET: 'h'.repeat(32),
+  PLATFORM_CURSOR_SECRET: 'c'.repeat(32),
   AUTH_PUBLIC_URI: 'https://app.velostra.xyz',
   WEB_ORIGIN: 'https://app.velostra.xyz,https://www.velostra.xyz',
   REDIS_URL: 'rediss://redis.internal:6379',
@@ -91,6 +97,7 @@ try {
   rejects({ VELOSTRA_SECRET_PROVIDER: 'environment' }, /VELOSTRA_SECRET_PROVIDER/)
   rejects({ JWT_SECRET: 'weak' }, /JWT_SECRET/)
   rejects({ GATEWAY_HMAC_SECRET: 'weak' }, /GATEWAY_HMAC_SECRET/)
+  rejects({ PLATFORM_CURSOR_SECRET: 'weak' }, /PLATFORM_CURSOR_SECRET/)
   rejects(
     { AUTH_PUBLIC_URI: 'http://app.velostra.xyz', WEB_ORIGIN: 'https://app.velostra.xyz' },
     /AUTH_PUBLIC_URI/
@@ -123,12 +130,33 @@ try {
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_TOKEN: 'weak' }, /ALERT_WEBHOOK_TOKEN/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_RUNBOOK_BASE_URL: 'http://runbooks.internal' }, /ALERT_RUNBOOK_BASE_URL/)
   rejects({ READINESS_REQUIRE_WORKER: 'false' }, /READINESS_REQUIRE_WORKER/)
+  rejects({ READINESS_REQUIRE_WEBHOOK_WORKER: 'false' }, /READINESS_REQUIRE_WEBHOOK_WORKER/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_REQUIRE_BACKUP_HEARTBEAT: 'false' }, /ALERT_REQUIRE_BACKUP_HEARTBEAT/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_REQUIRE_WEBHOOK_HEARTBEAT: 'false' }, /ALERT_REQUIRE_WEBHOOK_HEARTBEAT/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_SIGNER_MIN_BALANCE_WEI: '-1' }, /ALERT_SIGNER_MIN_BALANCE_WEI/)
   rejects({ VELOSTRA_ENVIRONMENT: 'production' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_ENVIRONMENT: 'mainnet' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_ENVIRONMENT: 'robinhood-mainnet' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'unknown' }, /VELOSTRA_PROCESS_ROLE/)
+
+  configure({
+    VELOSTRA_PROCESS_ROLE: 'webhook-worker',
+    WEB_ORIGIN: undefined,
+    JWT_SECRET: undefined,
+    GATEWAY_HMAC_SECRET: undefined,
+    PLATFORM_CURSOR_SECRET: undefined,
+    REDIS_URL: undefined,
+    VELOSTRA_ESCROW_ADDRESS: undefined,
+    ROBINHOOD_RPC_URL: undefined,
+    SETTLEMENT_SIGNER_URL: undefined,
+    SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
+    METRICS_AUTH_TOKEN: undefined,
+    ALERT_WEBHOOK_URL: undefined,
+    ALERT_WEBHOOK_TOKEN: undefined,
+  })
+  assert.doesNotThrow(() => assertProductionConfiguration())
+  rejects({ VELOSTRA_PROCESS_ROLE: 'webhook-worker', AGENT_SECRET_ENCRYPTION_KEY: undefined }, /AGENT_SECRET_ENCRYPTION_KEY/)
+  rejects({ VELOSTRA_PROCESS_ROLE: 'webhook-worker', WEBHOOK_MAX_ATTEMPTS: '0' }, /WEBHOOK_MAX_ATTEMPTS/)
 
   configure({
     VELOSTRA_PROCESS_ROLE: 'migration',

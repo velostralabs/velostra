@@ -35,6 +35,10 @@ export interface OperationalSnapshot {
     byStatus: Record<string, number>
     oldestRecoverableAgeSeconds?: number
   }
+  webhooks: {
+    byStatus: Record<string, number>
+    oldestPendingAgeSeconds?: number
+  }
   drift: {
     available: boolean
     exceedsThreshold: boolean
@@ -45,6 +49,7 @@ export interface OperationalSnapshot {
     balanceWei?: bigint
   }
   worker: { ageSeconds?: number }
+  webhookWorker: { ageSeconds?: number }
   backup: { ageSeconds?: number }
 }
 
@@ -76,9 +81,11 @@ export async function collectOperationalSnapshot(): Promise<OperationalSnapshot>
     dependencies,
     chain: {},
     outbox: { byStatus: {} },
+    webhooks: { byStatus: {} },
     drift: { available: false, exceedsThreshold: true, values: {} },
     signer: {},
     worker: {},
+    webhookWorker: {},
     backup: {},
   }
 
@@ -120,8 +127,17 @@ export async function collectOperationalSnapshot(): Promise<OperationalSnapshot>
 
   const state = await checked(async () => {
     const address = getVelostraEscrowAddress()
-    const [outboxRows, oldestRow, cursorRow, pendingRow, workerAge, backupAge] =
-      await Promise.all([
+    const [
+      outboxRows,
+      oldestRow,
+      cursorRow,
+      pendingRow,
+      webhookRows,
+      oldestWebhookRow,
+      workerAge,
+      webhookWorkerAge,
+      backupAge,
+    ] = await Promise.all([
         pool.query<{ status: string; count: number }>(
           'select status, count(*)::int as count from settlement_attempts group by status'
         ),
@@ -140,10 +156,29 @@ export async function collectOperationalSnapshot(): Promise<OperationalSnapshot>
         pool.query<{ count: number }>(
           'select count(*)::int as count from chain_events where reconciled = false'
         ),
+        pool.query<{ status: string; count: number }>(
+          'select status, count(*)::int as count from webhook_deliveries group by status'
+        ),
+        pool.query<{ age_seconds: string | null }>(
+          `select extract(epoch from (now() - min(created_at)))::text as age_seconds
+             from webhook_deliveries
+            where status in ('PENDING','RETRYING')`
+        ),
         heartbeatAgeSeconds('reconciliation-worker'),
+        heartbeatAgeSeconds('webhook-worker'),
         heartbeatAgeSeconds('backup'),
       ])
-    return { outboxRows, oldestRow, cursorRow, pendingRow, workerAge, backupAge }
+    return {
+      outboxRows,
+      oldestRow,
+      cursorRow,
+      pendingRow,
+      webhookRows,
+      oldestWebhookRow,
+      workerAge,
+      webhookWorkerAge,
+      backupAge,
+    }
   })
   dependencies.operational_state = state.check
   if (state.value) {
@@ -156,7 +191,14 @@ export async function collectOperationalSnapshot(): Promise<OperationalSnapshot>
     const cursor = state.value.cursorRow.rows[0]?.last_processed_block
     snapshot.chain.cursorBlock = cursor === undefined ? undefined : BigInt(cursor)
     snapshot.chain.pendingEvents = Number(state.value.pendingRow.rows[0]?.count ?? 0)
+    snapshot.webhooks.byStatus = Object.fromEntries(
+      state.value.webhookRows.rows.map((row) => [row.status, Number(row.count)])
+    )
+    const oldestWebhook = state.value.oldestWebhookRow.rows[0]?.age_seconds
+    snapshot.webhooks.oldestPendingAgeSeconds =
+      oldestWebhook === null || oldestWebhook === undefined ? undefined : Number(oldestWebhook)
     snapshot.worker.ageSeconds = state.value.workerAge
+    snapshot.webhookWorker.ageSeconds = state.value.webhookWorkerAge
     snapshot.backup.ageSeconds = state.value.backupAge
   }
 
@@ -205,9 +247,13 @@ export function readinessFromSnapshot(snapshot: OperationalSnapshot | undefined)
 } {
   if (!snapshot) return { ready: false, checks: { snapshot: false } }
   const workerMaxAge = Number(process.env.READINESS_WORKER_MAX_AGE_MS ?? 90_000) / 1_000
+  const webhookWorkerMaxAge = Number(process.env.READINESS_WEBHOOK_WORKER_MAX_AGE_MS ?? 90_000) / 1_000
   const requireWorker =
     process.env.READINESS_REQUIRE_WORKER === 'true' ||
     (process.env.NODE_ENV === 'production' && process.env.READINESS_REQUIRE_WORKER !== 'false')
+  const requireWebhookWorker =
+    process.env.READINESS_REQUIRE_WEBHOOK_WORKER === 'true' ||
+    (process.env.NODE_ENV === 'production' && process.env.READINESS_REQUIRE_WEBHOOK_WORKER !== 'false')
   const checks: Record<string, boolean> = {
     postgres: snapshot.dependencies.postgres?.ok === true,
     redis: snapshot.dependencies.redis?.ok === true,
@@ -220,6 +266,11 @@ export function readinessFromSnapshot(snapshot: OperationalSnapshot | undefined)
     checks.worker =
       snapshot.worker.ageSeconds !== undefined &&
       snapshot.worker.ageSeconds <= workerMaxAge
+  }
+  if (requireWebhookWorker) {
+    checks.webhook_worker =
+      snapshot.webhookWorker.ageSeconds !== undefined &&
+      snapshot.webhookWorker.ageSeconds <= webhookWorkerMaxAge
   }
   return {
     ready: Object.values(checks).every(Boolean),

@@ -38,9 +38,11 @@ const healthy: OperationalSnapshot = {
   },
   chain: { lagBlocks: 0n, pendingEvents: 0, solvent: true },
   outbox: { byStatus: {}, oldestRecoverableAgeSeconds: 0 },
+  webhooks: { byStatus: {}, oldestPendingAgeSeconds: 0 },
   drift: { available: true, exceedsThreshold: false, values: {} },
   signer: { balanceWei: 20_000_000_000_000_000n },
   worker: { ageSeconds: 1 },
+  webhookWorker: { ageSeconds: 1 },
   backup: { ageSeconds: 1 },
 }
 const drifted: OperationalSnapshot = {

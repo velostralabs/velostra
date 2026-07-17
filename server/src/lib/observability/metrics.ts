@@ -90,6 +90,9 @@ export function renderPrometheus(): string {
       'velostra_outbox_oldest_recoverable_age_seconds ' +
         number(snapshot.outbox.oldestRecoverableAgeSeconds),
       'velostra_worker_heartbeat_age_seconds ' + number(snapshot.worker.ageSeconds),
+      'velostra_webhook_worker_heartbeat_age_seconds ' + number(snapshot.webhookWorker.ageSeconds),
+      'velostra_webhook_oldest_pending_age_seconds ' + number(snapshot.webhooks.oldestPendingAgeSeconds),
+      'velostra_webhook_dead_letter_total ' + number(snapshot.webhooks.byStatus.DEAD_LETTER),
       'velostra_backup_heartbeat_age_seconds ' + number(snapshot.backup.ageSeconds),
       'velostra_chain_solvent ' + (snapshot.chain.solvent === true ? 1 : 0),
       'velostra_reconciliation_drift ' + (snapshot.drift.exceedsThreshold ? 1 : 0),
@@ -98,6 +101,9 @@ export function renderPrometheus(): string {
     for (const [status, count] of Object.entries(snapshot.outbox.byStatus)) {
       lines.push(`velostra_outbox_rows{status="${label(status)}"} ${count}`)
     }
-  }
+
+    for (const [status, count] of Object.entries(snapshot.webhooks.byStatus)) {
+      lines.push(`velostra_webhook_deliveries{status="${label(status)}"} ${count}`)
+    }  }
   return lines.join('\n') + '\n'
 }

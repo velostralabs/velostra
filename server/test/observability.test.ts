@@ -33,12 +33,14 @@ function snapshot(overrides: Partial<OperationalSnapshot> = {}): OperationalSnap
       byStatus: { APPLIED: 12, AMBIGUOUS: 0 },
       oldestRecoverableAgeSeconds: 0,
     },
+    webhooks: { byStatus: { DELIVERED: 4, DEAD_LETTER: 0 }, oldestPendingAgeSeconds: 0 },
     drift: { available: true, exceedsThreshold: false, values: {} },
     signer: {
       address: '0x4444444444444444444444444444444444444444',
       balanceWei: 20_000_000_000_000_000n,
     },
     worker: { ageSeconds: 10 },
+    webhookWorker: { ageSeconds: 8 },
     backup: { ageSeconds: 60 },
     ...overrides,
   }
@@ -78,12 +80,17 @@ try {
       balanceWei: 1n,
     },
     worker: { ageSeconds: 120 },
+    webhookWorker: { ageSeconds: 121 },
+    webhooks: { byStatus: { DEAD_LETTER: 2 }, oldestPendingAgeSeconds: 601 },
     backup: {},
   })
   const rules = new Set(evaluateAlerts(unhealthy).map((alert) => alert.rule))
   for (const rule of [
     'dependency_rpc',
     'worker_stale',
+    'webhook_worker_stale',
+    'webhook_dead_letter',
+    'webhook_delivery_stale',
     'backup_stale',
     'cursor_lag',
     'outbox_stale',
@@ -98,6 +105,8 @@ try {
   const metrics = renderPrometheus()
   assert.match(metrics, /velostra_dependency_up\{dependency="postgres"\} 1/)
   assert.match(metrics, /velostra_reconciliation_lag_blocks 8/)
+  assert.match(metrics, /velostra_webhook_worker_heartbeat_age_seconds 8/)
+  assert(metrics.includes('velostra_webhook_deliveries{status="DELIVERED"} 4'))
   assert.match(metrics, /velostra_signer_balance_wei 20000000000000000/)
   assert.match(metrics, /velostra_chain_solvent 1/)
 

@@ -5,6 +5,7 @@ const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
 export type DeploymentProcessRole =
   | 'api'
   | 'reconciliation-worker'
+  | 'webhook-worker'
   | 'operational-monitor'
   | 'migration'
 
@@ -73,6 +74,7 @@ export function deploymentProcessRole(): DeploymentProcessRole {
   if (
     role !== 'api' &&
     role !== 'reconciliation-worker' &&
+    role !== 'webhook-worker' &&
     role !== 'operational-monitor' &&
     role !== 'migration'
   ) {
@@ -148,6 +150,7 @@ function assertChain(requireSignerAuthorization: boolean): void {
 function assertApi(origins: string[]): void {
   secret('JWT_SECRET')
   secret('GATEWAY_HMAC_SECRET')
+  secret('PLATFORM_CURSOR_SECRET')
   const authUri = httpsUrl('AUTH_PUBLIC_URI')
   if (authUri.origin !== authUri.toString().replace(/\/$/, '') || !origins.includes(authUri.origin)) {
     throw new Error('Production AUTH_PUBLIC_URI must be a canonical WEB_ORIGIN')
@@ -164,16 +167,30 @@ function assertApi(origins: string[]): void {
   secret('METRICS_AUTH_TOKEN')
   positiveInteger('OBSERVABILITY_INTERVAL_MS', '15000')
   positiveInteger('READINESS_WORKER_MAX_AGE_MS', '90000')
+  positiveInteger('READINESS_WEBHOOK_WORKER_MAX_AGE_MS', '90000')
   if (process.env.READINESS_REQUIRE_WORKER !== 'true') {
     throw new Error('Production READINESS_REQUIRE_WORKER must be true')
   }
+  if (process.env.READINESS_REQUIRE_WEBHOOK_WORKER !== 'true') {
+    throw new Error('Production READINESS_REQUIRE_WEBHOOK_WORKER must be true')
+  }
 }
 
-function assertWorker(): void {
+function assertReconciliationWorker(): void {
   assertChain(true)
   positiveInteger('RECONCILE_MAX_BLOCK_RANGE', '2000')
   positiveInteger('RECONCILE_RPC_RETRIES', '3')
   positiveInteger('RECONCILE_INTERVAL_MS', '30000')
+}
+
+function assertWebhookWorker(): void {
+  exact32ByteSecret('AGENT_SECRET_ENCRYPTION_KEY')
+  positiveInteger('WEBHOOK_BATCH_SIZE', '25')
+  positiveInteger('WEBHOOK_MAX_ATTEMPTS', '8')
+  positiveInteger('WEBHOOK_RETRY_BASE_MS', '1000')
+  positiveInteger('WEBHOOK_RETRY_MAX_MS', '3600000')
+  positiveInteger('WEBHOOK_LOCK_MS', '60000')
+  positiveInteger('WEBHOOK_INTERVAL_MS', '5000')
 }
 
 function assertMonitor(): void {
@@ -183,6 +200,11 @@ function assertMonitor(): void {
   secret('ALERT_WEBHOOK_TOKEN')
   httpsUrl('ALERT_RUNBOOK_BASE_URL')
   positiveInteger('MONITOR_INTERVAL_MS', '30000')
+  if (process.env.ALERT_REQUIRE_WEBHOOK_HEARTBEAT !== 'true') {
+    throw new Error('Production ALERT_REQUIRE_WEBHOOK_HEARTBEAT must be true')
+  }
+  positiveInteger('ALERT_WEBHOOK_WORKER_MAX_AGE_SECONDS', '90')
+  positiveInteger('ALERT_WEBHOOK_MAX_PENDING_AGE_SECONDS', '300')
   if (process.env.ALERT_REQUIRE_BACKUP_HEARTBEAT !== 'true') {
     throw new Error('Production ALERT_REQUIRE_BACKUP_HEARTBEAT must be true')
   }
@@ -198,6 +220,7 @@ export function assertDeploymentConfiguration(
   assertCommon(role)
   if (role === 'migration') return
   if (role === 'api') assertApi(origins)
-  else if (role === 'reconciliation-worker') assertWorker()
+  else if (role === 'reconciliation-worker') assertReconciliationWorker()
+  else if (role === 'webhook-worker') assertWebhookWorker()
   else assertMonitor()
 }

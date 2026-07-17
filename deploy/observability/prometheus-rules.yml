@@ -17,6 +17,30 @@ groups:
         annotations:
           summary: "Reconciliation worker heartbeat is stale"
           runbook: "worker_stale"
+      - alert: VelostraWebhookWorkerStale
+        expr: velostra_webhook_worker_heartbeat_age_seconds > 90
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Webhook worker heartbeat is stale"
+          runbook: "webhook_worker_stale"
+      - alert: VelostraWebhookDeadLetter
+        expr: velostra_webhook_dead_letter_total > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Webhook deliveries require operator replay"
+          runbook: "webhook_dead_letter"
+      - alert: VelostraWebhookDeliveryStale
+        expr: velostra_webhook_oldest_pending_age_seconds > 300
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Webhook pending age exceeds its delivery budget"
+          runbook: "webhook_delivery_stale"
       - alert: VelostraCursorLag
         expr: velostra_reconciliation_lag_blocks > 2000
         for: 5m

@@ -1,66 +1,72 @@
 # Database schema and recovery
 
-> Last verified against `server/src/db/schema.ts` and `server/drizzle`: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
+> Last verified against server/src/db/schema.ts and server/drizzle: 2026-07-17.
+> Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
 
-Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and reviewed versioned
-SQL migrations. Financial columns are `numeric(20,6)` exposed to server logic as
-canonical decimal strings. Critical decisions convert them to integer minor units;
-JS numbers are used only at the JSON presentation boundary.
+Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and nine reviewed SQL
+migrations. Financial columns are numeric(20,6). Server decisions convert canonical
+decimal strings to integer minor units; JavaScript numbers are presentation-only.
 
-## Core relationships
+## Authority and relationships
 
-```mermaid
+Postgres owns spendable/reserved user credit and all product/control-plane state.
+The escrow owns token custody and onchain liabilities. Confirmed chain logs are
+authoritative recovery evidence, not a substitute for the product ledger.
+
+~~~mermaid
 erDiagram
     USERS ||--|| CREDIT_BALANCES : owns
     USERS ||--o| BUILDERS : becomes
-    USERS ||--o{ ADMIN_ROLE_ASSIGNMENTS : receives
-    USERS ||--o{ ADMIN_AUDIT_LOGS : acts
     BUILDERS ||--|| BUILDER_EARNINGS : has
-    BUILDERS ||--o{ EARNINGS_CLAIMS : claims
-    BUILDERS ||--o{ AGENTS : publishes
-    AGENTS ||--o{ AGENT_CALLS : executes
-    USERS ||--o{ AGENT_CALLS : requests
+    BUILDERS ||--o{ AGENTS : owns
+    AGENTS ||--o{ AGENT_REVISIONS : versions
+    AGENT_REVISIONS ||--o{ AGENT_CALLS : executes
     AGENT_CALLS ||--|| SETTLEMENT_ATTEMPTS : recovers
-    AGENT_CALLS ||--o| RELEASE_CANARY_ADMISSIONS : bounds
-    AGENT_CALLS ||--o| TRANSACTIONS : settles
-    CHAIN_SYNC_STATE ||--o{ CHAIN_EVENTS : indexes
-```
+    BUILDERS ||--o{ WEBHOOK_SUBSCRIPTIONS : configures
+    WEBHOOK_EVENTS ||--o{ WEBHOOK_DELIVERIES : fans_out
+    WEBHOOK_DELIVERIES ||--o{ WEBHOOK_DELIVERY_ATTEMPTS : records
+    REPORTS ||--o{ MODERATION_ACTIONS : transitions
+    USERS ||--o{ PRIVACY_REQUESTS : requests
+~~~
 
-## Tables
+## Table inventory
 
-| Table | Purpose / invariant |
+| Domain | Tables |
 |---|---|
-| `users` | unique EVM wallet identity |
-| `admin_role_assignments` | granular, revocable DB admin roles; unique user+role |
-| `admin_audit_logs` | action, actor, target, request ID, IP, metadata, time |
-| `credit_balances` | spendable, reserved, free-tier fallback; one row/user |
-| `builders` | one builder/user and wallet; lifecycle status |
-| `builder_earnings` | exact earned, available, claimed totals |
-| `earnings_claims` | claim evidence; unique tx hash and chain metadata |
-| `agents` | listing, encrypted secret envelope, revoke time, price, stats |
-| `agent_tags` | unique agent+tag |
-| `agent_calls` | durable input/output/status, correlation, exact split |
-| `transactions` | top-up/call/platform ledger; unique tx hash/call link |
-| `settlement_attempts` | reservation/outbox state and candidate hash |
-| `release_canary_admissions` | manifest/policy-bound canary subject, exposure, and terminal status |
-| `reviews` | unique agent+user review |
-| `reports` | moderation record |
-| `platform_stats` | future daily rollup shape |
-| `chain_sync_state` | deployment cursor |
-| `chain_events` | raw event ledger and retry state |
-| `operational_heartbeats` | durable worker/monitor/backup liveness and metadata |
-| `operational_alerts` | deduplicated alert lifecycle, acknowledgement, notification, resolution |
+| Identity/admin | users, admin_role_assignments, admin_audit_logs |
+| Durable API | api_idempotency_records |
+| Financial | credit_balances, builder_earnings, earnings_claims, transactions |
+| Marketplace | builders, agents, agent_tags, reviews, reports, platform_stats |
+| Agent execution | agent_revisions, agent_calls, settlement_attempts, release_canary_admissions |
+| Builder communication | user_notifications |
+| Webhooks | webhook_subscriptions, webhook_events, webhook_deliveries, webhook_delivery_attempts |
+| Trust/privacy | moderation_actions, privacy_requests, telemetry_field_registry |
+| Chain recovery | chain_sync_state, chain_events |
+| Operations | operational_heartbeats, operational_alerts |
 
-There are 20 public application tables.
+There are 30 public application tables.
 
-## Money invariants
+## Phase 4 state
+
+- api_idempotency_records binds key, authenticated actor, operation, request
+  fingerprint, PROCESSING/COMPLETED state, response, timestamps, and expiry.
+- agent_revisions stores immutable snapshots with per-agent revision_number and
+  DRAFT/PUBLISHED/SUPERSEDED state. agents.active_revision_id selects current state.
+- agent_calls.agent_revision_id attributes every execution to its revision.
+- user_notifications stores bounded builder/user operational messages.
+- webhook_subscriptions stores encrypted/one-time-secret lifecycle metadata and event
+  selection; webhook_events has stable dedupe identity; deliveries and attempts keep
+  scheduling, claim, result, error, and dead-letter history.
+- moderation_actions is append-only transition history for reports.
+- privacy_requests owns EXPORT/DELETE workflow and result/rejection evidence.
+- telemetry_field_registry records classification, purpose, owner, retention, and
+  whether collection is enabled.
+
+## Money and settlement invariants
 
 Database checks enforce:
 
-```text
+~~~text
 balance_usd >= 0
 reserved_usd >= 0
 reserved_usd <= balance_usd
@@ -68,88 +74,86 @@ gross_amount > 0
 builder_amount >= 0
 platform_amount >= 0
 gross_amount = builder_amount + platform_amount
-```
+~~~
 
-Paid-call reservation uses a conditional update on available credit
-`balance - reserved`. Finalization requires both balance and reservation to cover
-the exact gross. A failed pre-chain call conditionally releases only its own
-reservation.
+Paid-call reservation conditionally checks balance - reserved. Finalization requires
+both balance and reservation to cover gross. Only the conditional
+PROCESSING -> SUCCESS winner may debit the user, credit builder earnings, increment
+agent totals, link the transaction, and mark the outbox APPLIED.
 
-## Settlement attempt states
+Settlement attempt states are PREPARED, READY, SUBMITTED, AMBIGUOUS, CONFIRMED,
+APPLIED, and FAILED. AMBIGUOUS retains its reservation until authoritative evidence
+or a definitive failure.
 
-| State | Meaning |
-|---|---|
-| `PREPARED` | call, reservation, and outbox committed; builder not complete |
-| `READY` | successful builder output is durable; may broadcast |
-| `SUBMITTED` | candidate tx hash persisted |
-| `AMBIGUOUS` | broadcast or receipt outcome uncertain; keep reservation |
-| `CONFIRMED` | receipt success known; ledger not necessarily applied |
-| `APPLIED` | call and all financial effects committed |
-| `FAILED` | definitive safe failure; reservation released |
+## Uniqueness and concurrency
 
-`attempt_count` distinguishes initial and recovery broadcasts. A correlated event
-can supply the authoritative successful hash if an ambiguous candidate differs.
+Critical database ownership rules include:
 
-## Idempotency and race safety
+- unique transactions.tx_hash and optional one transaction per agent_call_id;
+- unique earnings_claims.tx_hash;
+- unique (chain_events.tx_hash, log_index);
+- unique agent_calls.onchain_call_id;
+- one settlement attempt and at most one canary admission per call;
+- unique (agent_id, revision_number);
+- unique webhook event dedupe identity and one delivery per event/subscription;
+- unique delivery attempt number per delivery;
+- conditional revision publish, delivery claim, moderation resolution, privacy
+  processing, and financial finalization;
+- transaction-scoped advisory locks for revision numbering/publish, final-admin
+  safety, and canary admission.
 
-- unique `transactions.tx_hash`;
-- unique `earnings_claims.tx_hash`;
-- unique `(chain_events.tx_hash, log_index)`;
-- unique `agent_calls.onchain_call_id`;
-- unique optional `transactions.agent_call_id`;
-- one `settlement_attempts` row per call;
-- at most one `release_canary_admissions` row per call; concurrent cap checks use a transaction-scoped advisory lock;
-- conditional `PROCESSING -> SUCCESS` owns all financial side effects.
+Idempotency does not reclaim expired PROCESSING rows. Because a crash can happen
+after the business transaction commits but before the response record completes,
+the safe result is IDEMPOTENCY_INDETERMINATE rather than a duplicate mutation.
 
-## Cursor behavior
+## Reconciliation cursor
 
-`chain_sync_state.id` is `escrow:<chainId>:<address>`. Normal scans advance only
-when starting at exactly `last_processed_block + 1`. Retroactive or intentionally
-overlapping ranges preserve the cursor, preventing an operator from jumping over
-an unscanned gap.
+chain_sync_state.id is escrow:<chainId>:<address>. Normal scans advance only when
+starting at last_processed_block + 1. Retroactive/overlapping scans preserve the
+normal cursor. Raw events persist before application and remain retryable when their
+user, builder, or call is not yet available.
 
 ## Migrations
 
-```text
+~~~text
 0000_phase0_baseline.sql
 0001_security_rbac.sql
 0002_settlement_outbox.sql
 0003_query_indexes.sql
 0004_transaction_indexes.sql
 0005_earnings_invariants.sql
-0006_dark_darkstar.sql  # operational heartbeats and alerts
-0007_phase3_canary_admissions.sql  # bounded rollout admission ledger
-```
+0006_dark_darkstar.sql
+0007_phase3_canary_admissions.sql
+0008_phase4_platform.sql
+~~~
 
 Use:
 
-```bash
+~~~bash
 npm --prefix server run db:check
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
-```
+npm run test:phase4-db
+~~~
 
-`test:migrations` proves both fresh install and upgrade path, exact balance
-preservation, reservation initialization, state enum order, non-negative earnings and
-positive-claim and canary constraints, 20
-tables, and operational indexes. `db:push` is local prototyping only and must not
-be used on persistent staging/production data.
-
-## Operational indexes
-
-Indexes cover marketplace/status/category, builder submissions, user/agent call
-history, call status queues, claims, reports, settlement pending work, admin audit,
-admin assignments, raw event scan/retry, credit transaction history, and
-chain-specific ledger queries.
+Fresh and upgrade tests verify 30 tables, 28 critical constraints, 27 critical
+indexes, enum/order compatibility, balance preservation, new references, and
+Phase 4 invariants. db:push is local prototyping only and must never replace
+migrations on persistent data.
 
 ## Backup and restore
 
-The current disposable drill uses `pg_dump --format=custom`, restores into a clean
-database, and runs `npm --prefix server run restore:verify`. Verification compares all
-20 tables, eight migrations, every row count, exact financial/outbox aggregates,
-constraints, and indexes. With the restore timing environment variables, it writes a
-redacted evidence JSON; the measured local full-data drill completed in 1,542 ms.
+Use a custom-format pg_dump, restore into a clean database, then run:
 
-Production must still prove provider-native encrypted PITR/WAL, retention, access
-separation, and managed RPO/RTO. Exact procedure is in
-[OPERATIONS.md](./OPERATIONS.md).
+~~~bash
+SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restore:verify
+~~~
+
+The verifier compares all 30 tables, at least nine migrations, every row count,
+financial/outbox/webhook aggregates, and critical constraints/indexes. Evidence
+output is redacted and may include measured RPO/RTO when the timing variables are
+provided.
+
+Repository verification does not prove provider-native PITR. Managed encrypted
+WAL/PITR, separation of duties, retention, and an actual RPO/RTO drill remain
+activation prerequisites. See OPERATIONS.md.

@@ -1,7 +1,7 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against the workspace: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -19,12 +19,14 @@ flowchart LR
     S -->|SETTLER_ROLE| C
     W["Reconciliation worker"] -->|logs / receipts| RPC["Primary + fallback EVM RPCs"]
     W --> P
+    H["Webhook worker"] -->|claim / retry / dead-letter| P
+    H -->|signed HTTPS| B2["Builder webhook"]
     RPC --- C
 ```
 
-Frontend, API, worker, Postgres, Redis, RPC, and contract are separate failure
-domains. The API and worker use the same backend build but run as separate
-supervised processes.
+Frontend, API, reconciliation worker, webhook worker, Postgres, Redis, RPC, and
+contract are separate failure domains. Backend roles use the same immutable build but
+run as separate supervised processes.
 
 ## Authority boundaries
 
@@ -32,7 +34,7 @@ supervised processes.
 |---|---|
 | Token custody, builder liabilities, platform revenue | `VelostraEscrow.sol` |
 | User spendable and reserved call credit | Postgres `credit_balances` |
-| Call/product/moderation state | Postgres |
+| Call, revision, webhook, moderation, privacy, and telemetry state | Postgres |
 | Chain recovery evidence | confirmed contract logs + `chain_events` |
 | Wallet identity | verified EIP-191 signature over a bound challenge |
 | Rate limits / fast quota | Redis; never financial truth |
@@ -71,6 +73,12 @@ liabilities can migrate.
   signer/chain/contract settings; raw signer keys are rejected.
 - The API submits through one restricted remote signer; public reads and recovery use
   ordered primary/fallback RPC transports.
+- /api/v1 adds signed cursor scope, stable envelopes, and durable actor/operation/
+  fingerprint-bound idempotency; compatible legacy routes advertise migration headers.
+- Published agent revisions are immutable and every call records its executed revision.
+- Webhook secrets are one-time plaintext; exact bodies are HMAC signed and delivery
+  attempts are durable.
+- Moderation/privacy/telemetry actions are classified, permissioned, and audited.
 
 ## Paid-call lifecycle
 
@@ -208,7 +216,7 @@ commit, reproducible contract output, migration graph, lockfiles, policies, exte
 evidence, images, roles, chain, and approvals. Preparation cannot be used as a
 broadcast manifest; broadcast-approved cannot masquerade as deployed.
 
-Mainnet-like API/worker/monitor startup validates the exact deployed manifest.
+Mainnet-like API/reconciliation/webhook/monitor startup validates the exact deployed manifest.
 Paid-call mode defaults to `disabled`. In `canary` mode the API checks immutable
 allowlists/window/per-call caps, then acquires a transaction-scoped advisory lock.
 Within that same transaction it rechecks global and wallet exposure, inserts
@@ -222,6 +230,43 @@ The collector derives the canary summary from the admission/event/heartbeat ledg
 and final readiness snapshot. Failure produces a forward-repair stop plan that
 disables new paid risk while preserving claims and reconciliation. A passing result
 still requires a separate operator approval before public mode.
+
+## Phase 4 platform control plane
+
+~~~mermaid
+flowchart LR
+    CLIENT["SDK / console"] --> V1["Versioned API"]
+    V1 --> IDEM["Durable idempotency"]
+    V1 --> REV["Immutable revisions"]
+    V1 --> TRUST["Moderation / privacy / telemetry"]
+    REV --> EVENT["Stable webhook event"]
+    TRUST --> EVENT
+    EVENT --> DELIVERY["Delivery + attempt ledger"]
+    DELIVERY --> WH["Webhook worker"]
+    WH --> ENDPOINT["Builder HTTPS receiver"]
+    DELIVERY --> DLQ["Dead letter + audited replay"]
+~~~
+
+New externally retried mutations first claim an idempotency identity. A completed
+request replays its exact stored response; a conflicting fingerprint is rejected.
+An expired PROCESSING state is indeterminate because the business commit may already
+exist, so it fails closed instead of stealing ownership and duplicating effects.
+
+Revision numbering and activation are serialized per agent. Published rows are never
+edited; activation copies the selected snapshot and sends the listing back through
+approval. Notifications and webhook events are created in the same database
+transaction as their business transition.
+
+Webhook events have stable dedupe identities. One event fans out to unique
+subscription deliveries. Workers claim due rows conditionally, hold a bounded lock,
+sign exact body bytes, record every attempt, and either deliver, reschedule with
+bounded backoff, or dead-letter. RBAC/audited replay resets only a dead-letter row.
+Readiness and alerts track worker heartbeat and oldest pending delivery.
+
+Privacy deletion anonymizes personal product fields while preserving the minimum
+financial, settlement, security, and audit evidence required for integrity.
+Telemetry collection fails closed unless a field is classified, owned, retained for
+a bounded period, and enabled; prohibited fields cannot be enabled.
 
 ## Failure model
 
@@ -238,11 +283,14 @@ still requires a separate operator approval before public mode.
 | Worker outage | cursor unchanged; restart catches up |
 | Redis outage in production | auth/abuse-sensitive operation fails closed |
 | RPC rate limit | ordered endpoint failover, retry/backoff, then same cursor |
+| Duplicate API retry | one durable idempotency owner; replay/conflict/indeterminate response |
+| Webhook endpoint outage | durable attempts, bounded retry, dead letter, audited replay |
+| Concurrent webhook workers | one conditional claim; expired lock is recoverable |
 
 ## Current scaling boundary
 
-Initial production design is one supervised worker and one logical restricted signer
-writer. DB/event idempotency tolerates overlap; multi-RPC failover, confirmation-depth
+Initial production design is one supervised reconciliation worker, one supervised
+webhook worker, and one logical restricted signer writer. DB/event idempotency tolerates overlap; multi-RPC failover, confirmation-depth
 reorg handling, concurrent load, dense catch-up, and tamper-evident release tooling are
 implemented. Distributed worker leases, multi-writer nonce coordination, and a rollback
 engine for reorgs deeper than the confirmation window remain later scale work. See

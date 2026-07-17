@@ -1,176 +1,178 @@
 # API reference
 
-> Last verified against `server/src/routes` and middleware: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
-> Local base URL: `http://localhost:8787`.
+> Last verified against server routes and middleware: 2026-07-17.
+> Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
+> Local base URL: http://localhost:8787.
 
-## Conventions
+## Version and response contract
 
-Authenticated routes accept the httpOnly `velostra_token` cookie or Bearer token.
-Financial JSON values are decimal numbers for clients; internal decisions use exact
-6-decimal strings/minor units.
+New integrations use /api/v1. Every v1 response includes X-API-Version: 1.
 
-Error responses include stable machine fields:
+- Successful objects are wrapped as { data: ... }.
+- Collections use { data: [...], page: { next_cursor, has_more } }.
+- Errors keep { error, code, request_id, details? }.
+- Cursor limits are 1..100, default 25.
+- Cursors are opaque, signed, versioned, filter-scoped, and bound to the stable
+  (created_at,id) boundary. Tampering or using one under different filters fails.
+- Compatible /api routes remain available during migration and emit Deprecation,
+  Sunset, and Link headers pointing to /api/v1.
 
-```json
-{
-  "error": "human-readable message",
-  "code": "MACHINE_READABLE_CODE",
-  "request_id": "correlation-id"
-}
-```
+Authenticated routes accept the httpOnly velostra_token cookie or a Bearer token.
+Financial decisions use exact 6-decimal strings/minor units internally; JSON values
+are presentation numbers.
 
-Direct route responses include `error` and `code`; centralized errors also include
-`request_id` and optional safe `details`. Never branch client behavior on message
-text.
+## Durable idempotency
 
-## Health
+Externally retried v1 mutations accept Idempotency-Key. The server binds a key to
+the authenticated actor, HTTP operation, route, and normalized request fingerprint.
 
-`GET /health` returns process health and chain identity. It is not a deep DB/Redis/
-RPC readiness probe; deep readiness belongs to Phase 2.
+- Same key + same request after completion replays the stored status/body.
+- Same key + different request returns IDEMPOTENCY_CONFLICT.
+- A concurrent duplicate waits for or replays the one owner.
+- An expired PROCESSING record is not blindly reclaimed because the mutation may
+  already have committed before a crash. It returns IDEMPOTENCY_INDETERMINATE;
+  inspect resource state, then use a new key only when safe.
 
-## Auth - `/api/auth`
+Clients should generate a unique key per business intent and retain it through
+network retries.
+
+## Health and operations
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET | /health | shallow process and chain identity |
+| GET | /ready | dependency, contract, reconciliation, and configured webhook-worker readiness |
+| GET | /metrics | bearer-protected Prometheus exposition |
+
+## Authentication
+
+Base: /api/v1/auth.
 
 | Method | Path | Behavior |
 |---|---|---|
-| POST | `/nonce` | body `{ walletAddress }`; returns bound EIP-191 message + nonce |
-| POST | `/login` | body `{ walletAddress, signature }`; atomic single-use verification, token/user |
-| POST | `/logout` | clears auth cookie |
-| GET | `/me` | `{ auth: session|null }` |
+| POST | /nonce | create wallet/domain/URI/chain/time-bound challenge |
+| POST | /login | atomic one-use EIP-191 verification |
+| POST | /logout | clear auth cookie |
+| GET | /me | current session or null |
 
-Important codes: `INVALID_WALLET_INPUT`, `INVALID_WALLET_ADDRESS`,
-`INVALID_LOGIN_INPUT`, `AUTH_VERIFICATION_FAILED`, `AUTH_REQUIRED`.
+Important codes include INVALID_WALLET_INPUT, AUTH_VERIFICATION_FAILED, and
+AUTH_REQUIRED.
 
-## Marketplace - `/api/agents`
-
-### `GET /api/agents`
-
-Approved agents, maximum 60. Query: `q`, category enum, and sort `featured`,
-`popular`, or `price`.
-
-### `GET /api/agents/:slug`
-
-Approved agent detail, builder, tags, and latest reviews. `AGENT_NOT_FOUND` on
-missing/non-approved listing.
-
-### `POST /api/agents/:slug/run`
-
-Auth required. Body:
-
-```json
-{ "input": "1-10000 characters" }
-```
-
-Success:
-
-```json
-{
-  "call_id": "cuid2",
-  "output": {},
-  "execution_ms": 123,
-  "is_free_tier": false,
-  "settlement_tx_hash": "0x..."
-}
-```
-
-Paid flow creates a durable reservation/outbox before builder HTTP. Important
-codes:
-
-- `INVALID_INPUT`, `AGENT_NOT_FOUND`, `AGENT_SECRET_REVOKED`;
-- `GLOBAL_RATE_LIMITED`, `USER_RATE_LIMITED`, `AGENT_RATE_LIMITED`;
-- `INSUFFICIENT_CREDITS` (402);
-- `PHASE3_PAID_WRITES_DISABLED` (503);
-- `PHASE3_CANARY_CONFIGURATION_INVALID` (503);
-- `PHASE3_CANARY_SUBJECT_NOT_ALLOWED` (403);
-- `PHASE3_CANARY_PER_CALL_CAP`, `PHASE3_CANARY_CALL_CAP`, `PHASE3_CANARY_WALLET_CAP`, or `PHASE3_CANARY_TOTAL_CAP` (429);
-- `AGENT_ENDPOINT_FAILED` (502);
-- `SETTLEMENT_REVERTED` (502, reservation released);
-- `SETTLEMENT_AMBIGUOUS` or `RECONCILIATION_PENDING` (503, reservation retained and
-  worker owns recovery).
-
-A 503 recovery response may have a known `settlement_tx_hash`; a lost broadcast
-response may not. `call_id` remains the durable support/reconciliation identity.
-
-### `POST /api/agents/:slug/review`
-
-Auth required. Body `{ rating: 1..5, comment?: max 1000 }`. Upserts the unique
-user+agent review and recalculates aggregate rating.
-
-## Builder - `/api/builder`
+## Marketplace and execution
 
 | Method | Path | Behavior |
 |---|---|---|
-| POST | `/register` | create builder and earnings row; refresh builder session |
-| GET | `/me` | profile, earnings, owned agents |
-| POST | `/agents` | submit pending agent and return one plaintext secret |
-| POST | `/agents/:id/secret/rotate` | replace encrypted secret and return new plaintext once |
-| POST | `/agents/:id/secret/revoke` | disable gateway execution for the agent |
-| GET | `/earnings` | exact earnings + latest 20 claims |
-| POST | `/claim` | reconcile a wallet-submitted confirmed claim tx |
+| GET | /api/v1/agents | approved agents; q, category, limit, cursor |
+| GET | /api/v1/agents/:slug | detail, builder, tags, latest reviews |
+| POST | /api/v1/agents/:slug/run | authenticated free/paid execution |
+| POST | /api/v1/agents/:slug/review | upsert rating 1..5 and optional comment |
 
-Agent submit constraints: name 2-60, description 10-280, long description max
-4,000, category enum, endpoint URL passing SSRF policy, price minimum 0.08, optional
-logo/tags (max 8). Normal agent responses never expose encrypted secret storage.
+Paid execution first commits PROCESSING call, reservation, and PREPARED settlement
+attempt. A recovery response can include call_id, settlement_tx_hash when known, and
+reconciliation_pending. Never rerun user work merely because receipt polling timed out.
 
-Claim body:
+Important codes include INSUFFICIENT_CREDITS, AGENT_ENDPOINT_FAILED,
+SETTLEMENT_REVERTED, SETTLEMENT_AMBIGUOUS, RECONCILIATION_PENDING, and the
+PHASE3_CANARY_* gate codes.
 
-```json
-{ "amount": 1.5, "tx_hash": "0x<64 hex>" }
-```
+## Builder core
 
-The API verifies escrow, sender, event, amount, receipt, and replay. Important
-codes include `BUILDER_NOT_FOUND`, `INVALID_AGENT_PRICE`, endpoint-policy codes,
-`INVALID_CLAIM_INPUT`, `INVALID_CLAIM_AMOUNT`, `CLAIM_VERIFICATION_FAILED`,
-`INSUFFICIENT_EARNINGS`, and `CLAIM_REPLAYED`.
+Base: /api/v1/builder. Builder authentication is required.
 
-## Dashboard - `/api/dashboard`
+| Method | Path | Behavior |
+|---|---|---|
+| POST | /register | create builder and earnings account |
+| GET | /me | builder profile, agents, earnings |
+| POST | /agents | submit agent and return plaintext gateway secret once |
+| POST | /agents/:id/secret/rotate | replace secret; plaintext returned once |
+| POST | /agents/:id/secret/revoke | stop gateway execution |
+| GET | /earnings | exact earnings and recent claims |
+| POST | /claim | verify and reconcile confirmed wallet claim |
 
-Auth required.
+Agent endpoint, price, logo, and tags remain bounded. Normal responses never expose
+encrypted secret storage.
 
-- `GET /`: spendable balance, free-tier status, 20 recent calls.
-- `POST /topup`: body `{ amount_usd, tx_hash }` after wallet deposit; minimum $1.
+## Revisions, probes, history, analytics, and notifications
 
-Top-up verifies receipt/escrow/sender/event/amount. Codes:
-`INVALID_TOPUP_AMOUNT`, `TOPUP_VERIFICATION_FAILED`, `TOPUP_REPLAYED`. Missing
-browser report is healed by the worker.
+| Method | Path | Behavior |
+|---|---|---|
+| GET | /api/v1/builder/agents/:id/revisions | cursor revision history |
+| POST | /api/v1/builder/agents/:id/revisions | create immutable draft |
+| POST | /api/v1/builder/agents/:id/revisions/:revisionId/test | production-policy endpoint probe |
+| POST | /api/v1/builder/agents/:id/revisions/:revisionId/publish | publish and reset approval to PENDING |
+| POST | /api/v1/builder/agents/:id/revisions/:revisionId/rollback | activate a published revision and reset approval |
+| GET | /api/v1/builder/calls | cursor history; optional agent_id/status |
+| GET | /api/v1/builder/analytics | exact bounded range; optional agent_id/revision_id |
+| GET | /api/v1/builder/notifications | cursor inbox |
+| PATCH | /api/v1/builder/notifications/:id/read | mark owned notification read |
 
-## Admin - `/api/admin`
+Publishing is serialized per agent. A call records agent_revision_id, so analytics
+and disputes remain attributable to the executed revision.
 
-Every route requires auth plus a DB permission.
+## Builder webhooks
+
+| Method | Path | Behavior |
+|---|---|---|
+| POST | /api/v1/builder/webhooks | create HTTPS subscription; secret returned once |
+| GET | /api/v1/builder/webhooks | list owned subscriptions |
+| PATCH | /api/v1/builder/webhooks/:id/status | PAUSE or RESUME |
+| POST | /api/v1/builder/webhooks/:id/rotate-secret | rotate secret; returned once |
+| DELETE | /api/v1/builder/webhooks/:id | soft-delete subscription |
+| GET | /api/v1/builder/webhooks/:id/deliveries | bounded delivery history |
+
+Supported events are defined by server/src/lib/platform/webhooks.ts. Delivery headers:
+
+- X-Velostra-Event-Id
+- X-Velostra-Event-Type
+- X-Velostra-Timestamp
+- X-Velostra-Signature
+
+The lowercase hex HMAC-SHA256 signs timestamp + "." + event_id + "." + exact body
+bytes. Delivery is at least once; consumers must deduplicate by event ID.
+
+## Trust and privacy
+
+| Method | Path | Behavior |
+|---|---|---|
+| POST | /api/v1/trust/agents/:id/reports | create evidence-safe report |
+| GET | /api/v1/trust/reports | current user's cursor report history |
+| GET | /api/v1/privacy/policy | public retention/anonymization policy |
+| POST | /api/v1/privacy/requests | request EXPORT or DELETE |
+| GET | /api/v1/privacy/requests | current user's cursor request history |
+| GET | /api/v1/privacy/requests/:id/export | download completed owned export |
+
+Raw secrets/private prompts are rejected as moderation evidence. DELETE anonymizes
+personal product fields while preserving required financial, settlement, security,
+and audit evidence.
+
+## Governance operations
+
+All routes below require DB-backed permissions and privileged mutations are audited.
 
 | Method | Path | Permission |
 |---|---|---|
-| GET | `/agents/pending` | `agent:read` |
-| POST | `/agents/:id/decision` | `agent:decide` |
-| GET | `/reports` | `report:read` |
-| POST | `/reports/:id/resolve` | `report:resolve` |
-| GET | `/stats` | `stats:read` |
-| GET | `/roles` | `rbac:manage` |
-| POST | `/roles/grant` | `rbac:manage` |
-| POST | `/roles/revoke` | `rbac:manage` |
-| GET | `/audit-log?limit=1..100` | `audit:read` |
+| GET | /api/v1/admin/reports | report:read |
+| POST | /api/v1/admin/reports/:id/assign | report:resolve |
+| POST | /api/v1/admin/reports/:id/resolve | report:resolve |
+| GET | /api/v1/admin/privacy/requests | privacy:operate |
+| POST | /api/v1/admin/privacy/requests/:id/process | privacy:operate |
+| GET | /api/v1/admin/telemetry/fields | telemetry:manage |
+| PUT | /api/v1/admin/telemetry/fields/:name | telemetry:manage |
+| GET | /api/v1/admin/webhooks/dead-letter | webhook:operate |
+| GET | /api/v1/admin/webhooks/deliveries/:id/attempts | webhook:operate |
+| POST | /api/v1/admin/webhooks/deliveries/:id/replay | webhook:operate |
+| POST | /api/v1/admin/webhooks/subscriptions/:id/pause | webhook:operate |
 
-Roles: `SUPER_ADMIN`, `AGENT_REVIEWER`, `REPORT_MODERATOR`, `FINANCE_VIEWER`,
-`AUDITOR`. The last active super admin cannot be revoked. Targets must have signed
-in before a role can be granted. Mutations are audited.
+Legacy admin agent decisions, statistics, roles, and audit-log endpoints are also
+mounted under /api/v1/admin and retain their permission checks.
 
-## Builder HMAC protocol
+## Gateway HMAC
 
-Outbound body:
+Outbound agent JSON contains input, user_id, and call_id. Headers are
+X-Velostra-Agent-Id, X-Velostra-Timestamp, and X-Velostra-Signature.
+The signature is lowercase HMAC-SHA256 over timestamp + "." + exactRawBody using
+the per-agent secret. Capture bytes before JSON parsing, enforce freshness, compare
+in constant time, and deduplicate call_id when execution is not naturally idempotent.
 
-```json
-{ "input": "...", "user_id": "...", "call_id": "..." }
-```
-
-Headers: `X-Velostra-Agent-Id`, `X-Velostra-Timestamp`, and lowercase hex
-`X-Velostra-Signature`. Signature is HMAC-SHA256 over
-`timestamp + "." + exactRawBody` using the per-agent secret. Builder must enforce a
-fresh timestamp, timing-safe equality, and optional call ID replay cache.
-
-## Current product API gaps
-
-Public `/api/v1` versioning, cursor pagination, agent edit/versioning, approval
-webhooks, user report creation, and public SDKs are Phase 4 roadmap work. Error
-codes, secret rotation/revoke, and admin RBAC are implemented.
+Use sdk/javascript or sdk/python for typed pagination, errors, idempotent calls,
+gateway signing, and webhook verification.

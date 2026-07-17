@@ -1,5 +1,8 @@
 # Phase 4 platform contract
 
+> Last verified: 2026-07-17.
+> Repository status: implemented and locally audited; activation remains gated.
+> This contract is now the compatibility baseline for Phase 5 changes.
 This document freezes the repository contract for Velostra Phase 4. The implementation
 must preserve every Phase 0-3 financial, reconciliation, release, and operational
 invariant while adding closed-beta platform capabilities.
@@ -15,6 +18,9 @@ invariant while adding closed-beta platform capabilities.
 - Retried mutations accept `Idempotency-Key`. The durable record binds the authenticated
   actor, operation, normalized request fingerprint, status, and replayable response.
   Reusing a key for a different request is a conflict.
+- A completed key replays the stored status/body. A still-running duplicate waits or
+  returns in-progress. An expired PROCESSING record is indeterminate and cannot be
+  reclaimed automatically because its business transaction may have committed.
 - Legacy `/api/*` routes remain available during Phase 4 and advertise their successor
   through `Deprecation`, `Sunset`, and `Link` headers once a compatible v1 route exists.
 
@@ -33,6 +39,10 @@ invariant while adding closed-beta platform capabilities.
 - Delivery is at-least-once; consumer effects are made idempotent with the event id.
 - Attempts are durable, retries are bounded exponential backoff, and exhausted deliveries
   enter a dead-letter state that requires an audited operator replay.
+- The webhook worker is separately supervised; readiness and alerts cover heartbeat,
+  oldest pending delivery, and dead-letter growth.
+- Receiver effects are idempotent by stable event ID because timeout/retry can occur
+  after the receiver has already committed.
 
 ## Trust and privacy contract
 
@@ -50,3 +60,18 @@ Phase 4 repository completion requires fresh and upgrade migrations, API and SDK
 tests, concurrency/idempotency/webhook tests, browser regression gates, an isolated
 synthetic closed-beta journey, zero unexplained financial or delivery drift, and updated
 documentation. It does not authorize public traffic, mainnet deployment, or real value.
+
+## Completion evidence
+
+- migration 0008 installs the Phase 4 platform tables and invariants;
+- JS/Python SDK tests share exact HMAC fixtures;
+- PostgreSQL E2E covers idempotency/revision/webhook/moderation/privacy races,
+  cursor tamper, exact analytics, replay history, and zero financial/delivery drift;
+- lint, build, browser, security, contract, Phase 2, Phase 3, money-loop, migration,
+  observability, and restore gates remain part of the repository matrix;
+- the staging topology includes API, reconciliation worker, webhook worker,
+  operational monitor, migration, and web roles.
+
+Repository completion does not authorize a deployment, closed beta, public traffic,
+or real value. The operational Phase 3 exit, managed evidence, independent review,
+and accountable activation decision remain mandatory.

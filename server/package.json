@@ -52,6 +52,7 @@
     "db:migrate:runtime": "node dist/scripts/migrate.js",
     "test:signer": "tsx test/remote-signer.test.ts",
     "test:kms-signer": "tsx test/kms-signer.test.ts",
+    "kms:address": "tsx src/scripts/derive-kms-address.ts",
     "test:authority": "tsx test/authority-policy.test.ts",
     "authority:validate": "tsx src/scripts/validate-authority-policy.ts",
     "monitor": "tsx src/jobs/monitor.ts",

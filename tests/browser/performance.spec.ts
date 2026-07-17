@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test'
 import { createProductState, installInjectedWallet, installProductApi } from './fixtures'
 
 const budgets = createRequire(import.meta.url)('../../config/performance-budgets.json') as {
+  measurement: {
+    ciInpJitterMs: number
+  }
   routes: Record<string, {
     transferredJsBytes: number
     lcpMs: number
@@ -68,6 +71,13 @@ for (const [route, budget] of Object.entries(budgets.routes)) {
   test(`${route} stays within browser performance budgets`, async ({ page }) => {
     await page.goto(route)
     await expect(page.locator('#main-content')).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(async () => {
+      await document.fonts.ready
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+    })
     await page
       .getByRole('navigation', { name: 'Primary navigation' })
       .getByRole('button', { name: 'Connect Wallet' })
@@ -84,11 +94,14 @@ for (const [route, budget] of Object.entries(budgets.routes)) {
         .reduce((total, entry) => total + (entry as PerformanceResourceTiming).transferSize, 0)
       return { ...captured, transferredJsBytes }
     }) as BrowserVitals
+    const inpLimitMs = budget.inpMs + (process.env.CI ? budgets.measurement.ciInpJitterMs : 0)
+
+    console.log('BROWSER PERFORMANCE', JSON.stringify({ route, vitals, budget, inpLimitMs }))
 
     expect(vitals.transferredJsBytes).toBeLessThanOrEqual(budget.transferredJsBytes)
     expect(vitals.lcpMs).toBeLessThanOrEqual(budget.lcpMs)
     expect(vitals.interactionCount).toBeGreaterThan(0)
-    expect(vitals.inpMs).toBeLessThanOrEqual(budget.inpMs)
+    expect(vitals.inpMs).toBeLessThanOrEqual(inpLimitMs)
     expect(vitals.cls).toBeLessThanOrEqual(budget.cls)
     expect(vitals.webglContexts).toBeLessThanOrEqual(budget.webglContexts)
   })

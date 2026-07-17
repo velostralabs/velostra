@@ -4,7 +4,8 @@
     "viewport": "1440x1000",
     "browser": "Playwright Chromium",
     "network": "local production preview",
-    "notes": "Browser transfer budgets complement build-time gzip budgets; staging baselines must be attached to the release evidence packet."
+    "ciInpJitterMs": 50,
+    "notes": "Browser transfer budgets complement build-time gzip budgets. Synthetic INP is measured after network/font settling; shared CI runners receive only the explicit jitter allowance while the product target remains unchanged. Staging baselines must be attached to the release evidence packet."
   },
   "routes": {
     "/": {

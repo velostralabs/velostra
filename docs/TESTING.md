@@ -178,6 +178,11 @@ restoration, desktop overflow/collision assertions, home/marketplace baselines,
 canonical route history, rapid multi-filter URL-state preservation, an injected-wallet
 money/recovery path, and three route performance budgets.
 
+Synthetic INP is sampled only after network idle, font readiness, and two paint frames.
+The committed product target remains 200 ms. Shared CI runners receive a separately
+declared 50 ms scheduler-jitter allowance, and every run logs the raw route vitals plus
+the effective assertion limit so the allowance cannot hide silently.
+
 Real MetaMask is therefore automated but not yet evidenced. Execute
 `npm run test:wallet:metamask` only against isolated staging and attach its report to
 the Phase 2 evidence manifest.

@@ -81,8 +81,8 @@ gates.
   canonical URL/history behavior, injected-wallet money/recovery flow, and three
   route performance budgets. Result: **17 passed, 1 intentionally skipped**; the skip
   is the guarded real-MetaMask staging harness.
-- Build reference: initial entry 160,671 gzip bytes, largest async chunk 235,837,
-  total JavaScript 677,588; all are within committed budgets.
+- Build reference: initial entry 160,706 gzip bytes, largest async chunk 235,837,
+  total JavaScript 682,985; all are within committed budgets.
 - The six Moderate MetaMask-tree findings are one `uuid` advisory. Reviewed installed
   call sites use `uuid.v4()` without caller buffers; the time-bounded disposition and
   invalidation conditions are in `METAMASK_DEPENDENCY_DISPOSITION.md`.

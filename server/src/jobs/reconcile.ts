@@ -881,7 +881,23 @@ async function main(): Promise<void> {
   }
 
   if (!watch) {
-    await runReconciliation(options)
+    try {
+      const result = await runReconciliation(options)
+      await recordHeartbeat('reconciliation-worker', 'ok', {
+        safe_head: result.safeHead,
+        to_block: result.toBlock,
+        scanned_events: result.scannedEvents,
+        recovered_outbox: result.recoveredOutbox,
+        drift: result.drift.exceedsThreshold,
+        execution_mode: 'scheduled-once',
+      })
+    } catch (error) {
+      await recordHeartbeat('reconciliation-worker', 'failed', {
+        error: error instanceof Error ? error.name : 'UnknownError',
+        execution_mode: 'scheduled-once',
+      }).catch(() => undefined)
+      throw error
+    }
     await pool.end()
     return
   }

@@ -11,6 +11,7 @@ import { decryptAgentSecret } from '../lib/gateway/secrets.js'
 import { safeFetchAgent } from '../lib/gateway/ssrf.js'
 import { deliveryAttemptId, signWebhookBody, webhookBody } from '../lib/platform/webhooks.js'
 import { recordHeartbeat } from '../lib/observability/heartbeats.js'
+import { assertProductionConfiguration } from '../lib/config.js'
 
 function positiveInteger(name: string, fallback: number, maximum: number): number {
   const parsed = Number(process.env[name] ?? fallback)
@@ -217,6 +218,7 @@ export async function processWebhookBatch(): Promise<{ claimed: number; delivere
 }
 
 async function main() {
+  assertProductionConfiguration()
   const watch = process.argv.includes('--watch')
   const interval = positiveInteger('WEBHOOK_INTERVAL_MS', 5_000, 5 * 60 * 1000)
   let stopping = false

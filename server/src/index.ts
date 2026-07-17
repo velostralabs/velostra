@@ -23,7 +23,11 @@ async function main(): Promise<void> {
   const app = createApp()
   const stopObservability = startApiObservability()
   const server = app.listen(port, () => {
-    logger.info('api_listening', { port, chain: 'Robinhood Chain', chainId: 4663 })
+    logger.info('api_listening', {
+      port,
+      chain: 'Robinhood Chain',
+      chainId: Number(process.env.ROBINHOOD_CHAIN_ID),
+    })
   })
 
   let stopping = false

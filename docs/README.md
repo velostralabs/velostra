@@ -2,7 +2,8 @@
 
 > Last verified against the workspace and public frontend: 2026-07-18.
 
-Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and
+Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
+[ROADMAP.md](./ROADMAP.md), and
 [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md). Phase 0-4 repository implementation
 is complete and locally cleared. Phase 3 execution and closed-beta activation remain
 gated on independent review, managed evidence, immutable release approval, and
@@ -12,6 +13,7 @@ managed API, stateful backend, escrow deployment, closed beta, or real-value flo
 
 | Document | Purpose |
 |---|---|
+| [JOURNEY.md](./JOURNEY.md) | Chronological delivery record, completed work, open gates, and ordered handoff. |
 | [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Historical Phase 1 baseline, evidence, and original Phase 2 entry rules. |
 | [STATUS.md](./STATUS.md) | Current truth, internal-audit clearance, and mainnet prerequisites. |
 | [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md) | Frozen versioning, lifecycle, integration, trust/privacy, and exit contract. |

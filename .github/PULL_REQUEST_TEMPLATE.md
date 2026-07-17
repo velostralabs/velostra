@@ -11,7 +11,7 @@ this pull request.
 - [ ] `db:check`, fresh/upgrade migration, and restore impact were considered
 - [ ] Paid-call reservation/outbox/reconciliation failure paths were considered
 - [ ] Financial arithmetic, idempotency, and live/worker race safety were considered
-- [ ] Threat model, status, roadmap, and domain documentation were updated
+- [ ] Journey, threat model, status, roadmap, and domain documentation were updated when relevant
 - [ ] Frozen baseline, re-review, roadmap, deployment, and release-gate evidence was recorded when relevant
 - [ ] No secrets, personal data, `.env`, dumps, build output, or local paths were added
 

@@ -128,7 +128,7 @@ and concurrent live/worker finalization.
 |-- contracts/            VelostraEscrow, MockUSD, build/deploy/test scripts
 |-- deploy/               Portable topology plus US-only managed staging automation
 |-- sdk/                  Typed JavaScript and Python platform clients
-|-- docs/                 Architecture, security, audit, operations, roadmap
+|-- docs/                 Journey, status, architecture, security, audit, operations
 |-- public/               Brand and static delivery assets
 `-- .github/              CI and repository metadata
 ```
@@ -282,6 +282,7 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 
 | Read | Purpose |
 |---|---|
+| [Journey](./docs/JOURNEY.md) | Chronological delivery record, current checkpoint, open gates, and ordered next work. |
 | [Phase 1 handoff](./docs/PHASE_1_HANDOFF.md) | Historical verified Phase 1 baseline and original Phase 2 entry rules. |
 | [Phase 4 contract](./docs/PHASE_4_CONTRACT.md) | Versioning, lifecycle, webhook, trust/privacy, and exit compatibility baseline. |
 | [Status](./docs/STATUS.md) | Current implementation truth, audit clearance, and mainnet prerequisites. |
@@ -297,6 +298,9 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 | [US staging](./deploy/gcp/README.md) | Virginia-only testnet stack, cost policy, secrets, deployment, and evidence sequence. |
 
 ## Status
+
+The complete chronological handoff - what shipped, what remains external, and the
+exact next sequence - is maintained in [Journey](./docs/JOURNEY.md).
 
 Phase 0-4 repository preparation is implemented and locally verified: product,
 security, exactly-once recovery, staging/observability, immutable release identity,

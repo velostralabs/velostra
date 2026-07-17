@@ -5,6 +5,7 @@
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
 > not blockers for continued development.
+> Chronological delivery record and current handoff: [JOURNEY.md](./JOURNEY.md).
 
 ## Status model
 
@@ -366,6 +367,9 @@ closed-beta approval. Repository completion cannot enable real users or value.
 - evaluate multi-chain only after one deployment is operationally stable.
 
 ## Immediate ordered flow
+
+This ordered flow is mirrored with milestone context and checkpoint definitions in
+[JOURNEY.md](./JOURNEY.md).
 
 ### Staging/evidence lane (active external next)
 

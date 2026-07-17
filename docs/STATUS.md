@@ -6,6 +6,7 @@
 > No mainnet deployment or real-value authorization is recorded.
 > Public deployment: the static protocol preview is live at https://velostra.xyz/;
 > no managed API, database, Redis, signer, worker, or escrow deployment is claimed.
+> Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
 ## Executive status
 
@@ -69,7 +70,7 @@ Alchemy, and alert receiver accounts remain the current external provisioning ga
 | Signer/secrets | raw production key rejected; restricted remote signer plus managed secp256k1 KMS implementation, scoped identities, and hidden-prompt Secret Manager helper tested | KMS resource, secret versions, audit logs, rotations, and drills pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
-| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29455761339](https://github.com/velostralabs/velostra/actions/runs/29455761339) and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/actions/runs/29455761330) passed on `47747e4` |
+| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
 
 ## Public frontend deployment evidence
 
@@ -283,6 +284,10 @@ provider limits, block density, and managed DB throughput must be measured by th
 pending staging outage artifact.
 
 ## Next action
+
+The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). The next honest
+checkpoint is managed US staging online with a verified Robinhood testnet escrow
+while paid writes remain disabled.
 
 Keep the public preview stable, then activate only the user-owned US backend provider
 accounts, beginning with Google Cloud Billing. Apply the plan-tested bootstrap and

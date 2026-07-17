@@ -69,6 +69,10 @@ and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/
 both passed on `47747e4a1c85825975361e903f6ab0b2069b6cb2`. CI uses Node.js 22 with
 `actions/checkout@v6` and `actions/setup-node@v6`.
 
+The latest public-deployment truth checkpoint `6e83a04fca4c2eca7c82f59fe770955186366dfc`
+passed [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222)
+and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312).
+
 ## Public frontend deployment smoke
 
 The public protocol preview at `https://velostra.xyz/` was verified on 2026-07-18

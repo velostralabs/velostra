@@ -4,6 +4,7 @@ param(
   [ValidatePattern('^[0-9A-F]{6}-[0-9A-F]{6}-[0-9A-F]{6}$')]
   [string]$BillingAccount,
   [string]$ConfigPath = (Join-Path $PSScriptRoot 'staging.config.json'),
+  [switch]$UseExistingBillingBudget,
   [switch]$Apply
 )
 
@@ -258,7 +259,22 @@ $projectNumber = if ($Apply) {
 }
 $budgetDisplayName = 'Velostra Staging US - USD ' + $budgetUsd
 $budgetExists = $false
-if ($Apply) {
+if ($UseExistingBillingBudget) {
+  if ($Apply) {
+    $existingBudget = Get-GcloudValue @(
+      'billing', 'budgets', 'list',
+      ('--billing-account=' + $BillingAccount),
+      '--limit=1',
+      '--format=value(name)'
+    )
+    if ([string]::IsNullOrWhiteSpace($existingBudget)) {
+      throw 'UseExistingBillingBudget requires an existing billing-account budget'
+    }
+  } else {
+    Write-Output 'PLAN  verify an existing billing-account budget'
+  }
+  $budgetExists = $true
+} elseif ($Apply) {
   $existingBudget = Get-GcloudValue @(
     'billing', 'budgets', 'list',
     ('--billing-account=' + $BillingAccount),
@@ -283,7 +299,12 @@ if (-not $budgetExists) {
 Write-Output ''
 Write-Output 'Bootstrap scope complete.'
 Write-Output ('Region: ' + $region + ' (US only)')
-Write-Output ('GCP alert budget: USD ' + $budgetUsd + '; total cross-provider envelope: USD ' + $config.cost.totalMonthlyEnvelope)
+$budgetSummary = if ($UseExistingBillingBudget) {
+  'existing billing-account alert verified'
+} else {
+  'USD ' + $budgetUsd
+}
+Write-Output ('GCP alert budget: ' + $budgetSummary + '; total cross-provider envelope: USD ' + $config.cost.totalMonthlyEnvelope)
 Write-Output ('KMS key version: projects/' + $ProjectId + '/locations/' + $region + '/keyRings/' + $keyRing + '/cryptoKeys/' + $keyName + '/cryptoKeyVersions/1')
 if (-not $Apply) {
   Write-Output 'Plan-only: rerun with -Apply -BillingAccount XXXXXX-XXXXXX-XXXXXX after Cloud Billing is active.'

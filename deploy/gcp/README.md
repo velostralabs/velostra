@@ -83,7 +83,11 @@ After Cloud Billing is active:
 
 This creates only US resources, dedicated least-privilege runtime/build identities,
 the restricted KMS signer key, secret containers, and the USD 20 GCP budget
-alerts.
+alerts. Because Cloud Billing budgets must use the billing account currency,
+operators with a stricter account-native budget already configured must instead
+verify and reuse it without recording its currency in the repository:
+
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us -BillingAccount XXXXXX-XXXXXX-XXXXXX -UseExistingBillingBudget -Apply
 
 ## 3. Add secret versions
 

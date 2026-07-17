@@ -30,6 +30,8 @@ $web = & (Join-Path $PSScriptRoot 'deploy-web.ps1') -Release $release -WebImage 
 if ($LASTEXITCODE -ne 0) { throw 'Web plan failed' }
 $bootstrap = & (Join-Path $PSScriptRoot 'bootstrap-staging.ps1') -ProjectId $ProjectId
 if ($LASTEXITCODE -ne 0) { throw 'Bootstrap plan failed' }
+$existingBudgetBootstrap = & (Join-Path $PSScriptRoot 'bootstrap-staging.ps1') -ProjectId $ProjectId -UseExistingBillingBudget
+if ($LASTEXITCODE -ne 0) { throw 'Existing-budget bootstrap plan failed' }
 $serverBuildParameters = @{
   Component = 'server'
   Release = $release
@@ -51,6 +53,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Web image plan failed' }
 $runtimeText = $runtime -join [Environment]::NewLine
 $webText = $web -join [Environment]::NewLine
 $bootstrapText = $bootstrap -join [Environment]::NewLine
+$existingBudgetBootstrapText = $existingBudgetBootstrap -join [Environment]::NewLine
 $buildText = ($serverBuild + $webBuild) -join [Environment]::NewLine
 $all = $runtimeText + [Environment]::NewLine + $webText +
   [Environment]::NewLine + $bootstrapText + [Environment]::NewLine + $buildText
@@ -84,6 +87,8 @@ Require-Match $bootstrapText 'service-accounts create velostra-scheduler' 'Boots
 Require-Match $bootstrapText 'billingbudgets[.]googleapis[.]com' 'Bootstrap must enable the API used to create its billing budget'
 Require-Match $bootstrapText 'ec-sign-secp256k1-sha256 .*--protection-level=hsm' 'EVM signing must use supported multi-tenant HSM protection'
 Require-Match $bootstrapText 'repositories add-iam-policy-binding velostra .*velostra-builder@.*roles/artifactregistry.writer' 'Builder must receive repository-scoped image write access'
+Require-Match $existingBudgetBootstrapText 'verify an existing billing-account budget' 'Existing-budget mode must verify its prerequisite'
+Reject-Match $existingBudgetBootstrapText 'billing budgets create' 'Existing-budget mode must not create a duplicate budget'
 Require-Match $bootstrapText 'roles/logging.logWriter' 'Builder must receive Cloud Logging write access'
 Require-Match $bootstrapText 'roles/storage.objectViewer' 'Builder must receive source object read access'
 Require-Match $buildText 'velostra-builder@.*--default-buckets-behavior=regional-user-owned-bucket --region=us-east4' 'Builds must use the dedicated identity and regional user-owned bucket behavior'

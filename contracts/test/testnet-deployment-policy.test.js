@@ -41,7 +41,7 @@ assert(
 
 const rejected = [
   [{ ...base, ROBINHOOD_CHAIN_ID: '4663' }, 'ROBINHOOD_CHAIN_ID'],
-  [{ ...base, VELOSTRA_DEPLOY_REGION: 'asia-southeast1' }, 'VELOSTRA_DEPLOY_REGION'],
+  [{ ...base, VELOSTRA_DEPLOY_REGION: 'us-west1' }, 'VELOSTRA_DEPLOY_REGION'],
   [{ ...base, VELOSTRA_ENVIRONMENT: 'production' }, 'VELOSTRA_ENVIRONMENT'],
   [{ ...base, VELOSTRA_TESTNET_BROADCAST: 'explicitly-approved' }, 'VELOSTRA_TESTNET_BROADCAST'],
   [{ ...base, VELOSTRA_TESTNET_SETTLEMENT_TOKEN_MODE: 'mainnet-token' }, 'VELOSTRA_TESTNET_SETTLEMENT_TOKEN_MODE'],

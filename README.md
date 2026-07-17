@@ -161,6 +161,7 @@ bounded, retried with backoff, and adaptively split.
 ```bash
 npm run lint
 npm run build
+npm run test:privacy
 npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
@@ -236,8 +237,8 @@ signer, bounded web/API services, and staggered one-task jobs:
 
 No managed staging resource or cost exists yet because Cloud Billing and the other
 user-owned provider accounts are not active. See the
-[US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled, and this
-path cannot target Singapore, Indonesia, another Asia region, or mainnet.
+[US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled. This
+path is restricted to the approved US regions and cannot target mainnet.
 
 ## Controlled release tooling
 
@@ -299,6 +300,11 @@ traffic by itself.
 
 Never post private keys, tokens, personal data, private prompts, or exploit details
 in a public issue. Use GitHub's private security advisory flow for the repository.
+
+Public metadata uses only the Velostra brand and US locale. It does not claim a
+legal office or incorporation address. Personal names, personal mailbox addresses,
+operator locations, local filesystem paths, account identifiers, and credentials
+must never be committed or published.
 
 ---
 

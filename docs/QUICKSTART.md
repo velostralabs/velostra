@@ -135,6 +135,7 @@ Isolated gates:
 ```powershell
 npm run lint
 npm run build
+npm run test:privacy
 npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
@@ -188,8 +189,8 @@ The bootstrap remains plan-only unless Apply and a billing account are supplied.
 No resource currently exists because Cloud Billing is not active for the
 authenticated account. Follow [the US staging runbook](../deploy/gcp/README.md) only
 after the user-owned GCP, Neon, Upstash, Alchemy, and alert receiver accounts exist.
-Never use Singapore, Indonesia, another Asia region, mainnet chain 4663, or real
-value for this staging path.
+Use only the approved US regions and Robinhood testnet chain 46630. Never use
+mainnet or real value for this staging path.
 
 ## Phase 3 release preparation
 

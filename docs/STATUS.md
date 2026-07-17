@@ -207,6 +207,9 @@ Closeout evidence:
   entries remain the reviewed, time-bounded MetaMask/UUID advisory;
 - tracked Markdown links resolve, tracked paths have no case collisions, secret-pattern
   scanning finds no credential material, and the Git author/remote remain Velostra;
+- the public-privacy CI gate rejects personal mailbox addresses, local user-profile
+  paths, private-key blocks, and non-Velostra HEAD attribution without echoing matched
+  values; public web metadata is explicitly US-locale;
 - Three.js remains isolated in a lazy chunk. Vite's raw warning threshold now matches
   that intentional split, while the stricter committed gzip budgets still fail builds
   on meaningful entry, async, or total JavaScript regressions.

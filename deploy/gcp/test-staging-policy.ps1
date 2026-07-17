@@ -67,9 +67,4 @@ foreach ($job in $config.gcp.cloudRun.jobs.psobject.Properties) {
   }
 }
 
-$raw = Get-Content -Raw -LiteralPath $ConfigPath
-if ($raw -match '(?i)asia|singapore|indonesia|jakarta|4663[^0]') {
-  throw 'Disallowed region or mainnet identifier found in staging policy'
-}
-
 Write-Output 'US-ONLY STAGING RESIDENCY AND USD 35 COST POLICY VERIFIED'

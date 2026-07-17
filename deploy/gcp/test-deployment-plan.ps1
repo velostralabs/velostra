@@ -64,7 +64,15 @@ function Reject-Match {
 }
 
 Require-Match $all '(?i)us-east4' 'Deployment plan must use us-east4'
-Reject-Match $all '(?i)asia|singapore|indonesia|us-west|europe' 'Deployment plan escaped US Virginia'
+$regionMentions = [regex]::Matches(
+  $all,
+  '(?i)(?:--(?:region|location)(?:=|\s+)|/locations/)([a-z0-9-]+)'
+)
+foreach ($regionMention in $regionMentions) {
+  if ($regionMention.Groups[1].Value -ne 'us-east4') {
+    throw 'Deployment plan escaped the approved US region'
+  }
+}
 Reject-Match $all '(?m)^APPLY ' 'Plan validation must never mutate resources'
 Require-Match $bootstrapText 'service-accounts create web' 'Bootstrap must create the unprivileged web identity'
 Require-Match $bootstrapText 'service-accounts create builder' 'Bootstrap must create a dedicated build identity'

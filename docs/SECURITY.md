@@ -93,7 +93,10 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
 - deletion anonymizes personal fields but retains required financial/settlement/
   security/audit evidence;
 - telemetry fields must be classified, owned, bounded by retention, and enabled;
-  prohibited/unclassified fields fail closed.
+  prohibited/unclassified fields fail closed;
+- public metadata is US-locale and Velostra-attributed; CI rejects local user-profile
+  paths, private-key blocks, non-public email domains, and non-Velostra HEAD attribution
+  while reporting only the category and file path.
 
 ## Production startup checks
 

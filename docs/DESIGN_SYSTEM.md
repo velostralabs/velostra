@@ -24,6 +24,7 @@ type, dense data labels, dan depth/motion yang tetap menjaga keterbacaan.
 | `src/lib/chain.ts`, `src/components/WalletButton.*` | Chain definition, provider order, dan wallet-picker interaction. |
 | `public/velostra-crystal-v*`, `favicon.svg`, `site.webmanifest` | Browser tab, launcher, dan installable identity assets. |
 | `brand/*`, `docs/assets/velostra-hero.svg` | Editable public logo kit dan animated GitHub presentation asset. |
+| `brand/social/*`, `public/velostra-social-card-1200x630.png` | X profile/header exports dan Open Graph/X link preview. |
 
 Karena CSS cascade tersebar di global dan component files, perubahan token sebaiknya
 dilakukan di `index.css`, sedangkan perubahan local harus tetap di component CSS.
@@ -47,6 +48,14 @@ Rules:
 - outer card/connector pada README SVG tetap fixed. Motion hanya berada pada scan,
   pulse, line flow, dan facet shimmer supaya setiap captured GitHub frame lurus;
 - semua SVG publik memiliki title/description atau konteks alt text yang sesuai.
+
+### Social identity exports
+
+Social exports berada di `brand/social/`: profile image 800 x 800 yang aman untuk
+circular crop dan header X 1500 x 500. Website link preview memakai
+`public/velostra-social-card-1200x630.png`; `index.html` menerbitkan metadata Open
+Graph dan X yang sesuai. Semua asset publik hanya membawa atribusi Velostra.
+`npm run test:social-assets` mengunci dimensi, metadata hygiene, dan link-preview tags.
 
 ## Color tokens
 

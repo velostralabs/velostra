@@ -12,6 +12,7 @@
 | Web lint | `npm run lint` | none | source/static checks |
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
+| Social assets | `npm run test:social-assets` | none | X/OG dimensions, metadata hygiene, and link-preview tags |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
 | Phase 3 release | npm run test:phase3-release | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |

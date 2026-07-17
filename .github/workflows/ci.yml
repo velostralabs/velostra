@@ -26,6 +26,7 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run test:privacy
+      - run: npm run test:social-assets
       - run: npm run audit:metamask
       - run: npm run test:phase2-evidence
       - run: npm run lint

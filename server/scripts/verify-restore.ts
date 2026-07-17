@@ -29,23 +29,33 @@ const expectedPublicTables = [
   'admin_audit_logs',
   'admin_role_assignments',
   'agent_calls',
+  'agent_revisions',
   'agent_tags',
   'agents',
+  'api_idempotency_records',
   'builder_earnings',
   'builders',
   'chain_events',
   'chain_sync_state',
   'credit_balances',
   'earnings_claims',
+  'moderation_actions',
   'operational_alerts',
   'operational_heartbeats',
   'platform_stats',
+  'privacy_requests',
   'release_canary_admissions',
   'reports',
   'reviews',
   'settlement_attempts',
+  'telemetry_field_registry',
   'transactions',
+  'user_notifications',
   'users',
+  'webhook_deliveries',
+  'webhook_delivery_attempts',
+  'webhook_events',
+  'webhook_subscriptions',
 ]
 await Promise.all([source.connect(), restored.connect()])
 
@@ -135,12 +145,18 @@ try {
   const [before, after] = await Promise.all([snapshot(source), snapshot(restored)])
   assert.deepEqual(after, before)
   assert.deepEqual(after.tables, expectedPublicTables)
-  assert(after.migrations.length >= 8)
+  assert(after.migrations.length >= 9)
   assert(
     after.constraints.some((row) => row.conname === 'credit_reservation_within_balance')
   )
   assert(
     after.indexes.some((row) => row.indexname === 'settlement_attempt_status_updated_idx')
+  )
+  assert(
+    after.constraints.some((row) => row.conname === 'telemetry_prohibited_disabled')
+  )
+  assert(
+    after.indexes.some((row) => row.indexname === 'webhook_delivery_ready_idx')
   )
   const completedAt = new Date()
   const durationMs = completedAt.getTime() - startedAt.getTime()

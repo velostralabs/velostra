@@ -40,4 +40,4 @@ jobs:
           test "$(docker image inspect "$VELOSTRA_SERVER_IMAGE" --format '{{.Config.User}}')" = "velostra"
           test -n "$(docker image inspect "$VELOSTRA_WEB_IMAGE" --format '{{.Config.User}}')"
           docker run --rm --entrypoint node "$VELOSTRA_SERVER_IMAGE" \
-            -e "const fs=require('fs'); process.exit(fs.existsSync('/app/dist/scripts/migrate.js') && fs.existsSync('/app/dist/scripts/capture-phase3-readiness.js') && fs.existsSync('/app/dist/scripts/capture-phase3-canary.js') && fs.existsSync('/app/drizzle/0007_phase3_canary_admissions.sql') && fs.existsSync('/app/drizzle/meta/_journal.json') ? 0 : 1)"
+            -e "const fs=require('fs'); process.exit(fs.existsSync('/app/dist/scripts/migrate.js') && fs.existsSync('/app/dist/scripts/capture-phase3-readiness.js') && fs.existsSync('/app/dist/scripts/capture-phase3-canary.js') && fs.existsSync('/app/drizzle/0007_phase3_canary_admissions.sql') && fs.existsSync('/app/drizzle/0008_phase4_platform.sql') && fs.existsSync('/app/drizzle/meta/_journal.json') ? 0 : 1)"

@@ -1,7 +1,7 @@
 # Local quickstart
 
-> Last verified against package scripts and env templates: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against package scripts and env templates: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -45,6 +45,7 @@ AGENT_SECRET_ENCRYPTION_KEY_ID=local
 WEB_ORIGIN=http://localhost:5173
 REDIS_URL=redis://127.0.0.1:6379
 REDIS_FAILURE_MODE=open
+PLATFORM_CURSOR_SECRET=a-separate-local-secret-at-least-32-chars
 ```
 
 Generate a local encryption key without printing any wallet key into source, for
@@ -114,6 +115,19 @@ npm --prefix server run reconcile:worker
 Retroactive scans preserve the normal cursor unless the requested range begins at
 its exact next block.
 
+## Webhook worker
+
+For local builder webhook delivery, start a separate terminal:
+
+~~~powershell
+npm --prefix server run webhooks
+npm --prefix server run webhooks:worker
+~~~
+
+The one-shot command drains one due batch; worker mode repeats using the configured
+interval. Local endpoints still pass the webhook URL security policy. Use stable
+event-ID deduplication in the receiver.
+
 ## Verification
 
 Isolated gates:
@@ -125,6 +139,7 @@ npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
 npm run test:phase3-release
+npm run test:phase4-unit
 npm --prefix server run build
 npm --prefix server run db:check
 npm --prefix server run test:config
@@ -150,6 +165,7 @@ npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
 npm --prefix server run test:phase3-canary-db
+npm run test:phase4-db
 npm --prefix server run test:money
 ```
 
@@ -182,6 +198,10 @@ local preview.
 - Paid call 503 ambiguous: do not retry blindly; run/observe worker by `call_id`.
 - Worker starts from genesis: set exact `VELOSTRA_DEPLOYMENT_BLOCK`.
 - Direct route 404 after static deploy: configure SPA rewrite to `/index.html`.
+- Webhook remains pending: start the webhook worker and inspect receiver HTTPS/status,
+  signature verification, delivery attempts, and worker heartbeat.
+- IDEMPOTENCY_INDETERMINATE: inspect the call/resource first; never blindly repeat
+  the mutation under a new key.
 - Production startup fails: the message names the unsafe/missing guardrail; do not
   bypass it.
 

@@ -1,10 +1,10 @@
 # Velostra threat model
 
-> Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against the workspace: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> Scope: verified Phase 1-2 foundation plus Phase 3 controlled-release preparation.
+> Scope: Phase 1-2 foundation, Phase 3 release controls, and Phase 4 platform/integration controls.
 
 ## Security objective
 
@@ -24,7 +24,10 @@ governance, or treasury authority.
 7. per-agent HMAC secrets;
 8. durable call output, settlement attempts, event ledger, and sync cursor;
 9. operator audit evidence, backups, and migration history;
-10. immutable release manifest, approval packet, image digests, and canary exposure ledger.
+10. immutable release manifest, approval packet, image digests, and canary exposure ledger;
+11. API idempotency state, immutable agent revisions, notifications, and analytics;
+12. webhook subscription secrets, exact payloads, delivery/attempt/dead-letter history;
+13. moderation evidence/history, privacy requests/exports, and telemetry policy registry.
 
 Raw agent input/output may contain user-sensitive data. It is an application asset,
 but it is not required for chain accounting after a result has been durably linked
@@ -43,6 +46,8 @@ to its call.
 | EVM RPC | access to canonical chain data | a single unconfirmed response |
 | Escrow contract | token custody and onchain liabilities | offchain user credit or agent metadata |
 | Reconciliation worker | deterministic repair from chain evidence | creating new business intent |
+| Webhook worker | delivering existing stable events with conditional ownership | inventing events or authorizing business transitions |
+| Webhook receiver | acknowledging delivery and deduplicating event IDs | platform financial/product authority |
 | Governance multisig | delayed role administration and unpause | hot-path settlement |
 | Settler signer | correlated earnings credit only | fee, pause, treasury, default admin |
 | Treasury | platform withdrawal and successor liquidity migration | settlement, pause, fee, admin |
@@ -78,6 +83,13 @@ to its call.
 - Mainnet paid writes default disabled and every canary admission is bound to the exact release, manifest, policy, subject, and amount.
 - Canary capacity read/check/insert is serialized in the same transaction as call/reservation/outbox creation.
 - Claims and reconciliation remain live during a canary stop; rollback is forward repair, never destructive database rollback.
+- Idempotency keys bind actor/operation/fingerprint; expired uncertain PROCESSING
+  state cannot be reclaimed blindly.
+- Published revisions are immutable; every call records its execution revision.
+- Webhook events/deliveries are unique, attempts append history, and only a conditional
+  worker claim or audited dead-letter replay can transition delivery state.
+- Personal deletion cannot remove required financial, settlement, security, or audit
+  evidence; telemetry cannot collect prohibited/unclassified fields.
 
 ### Authentication and secrets
 
@@ -112,15 +124,23 @@ to its call.
 | Release manifest tamper/cross-release replay | canonical self-hash, clean commit, file/image/policy/evidence hashes, stage-specific validation | operator custody of approved artifacts remains external |
 | Canary cap race | transaction-scoped advisory lock plus durable unique admission row before reservation | initial design intentionally serializes one release/policy admission stream |
 | Unsafe canary expansion | disabled default, bounded window/subjects/exposure, automatic STOP, hash-bound PASS evidence, separate approval | human approval and real operator response remain external |
+| Duplicate/conflicting API retry | durable actor/operation/fingerprint idempotency; exact replay; indeterminate fail-closed state | clients must inspect state before new intent after indeterminate response |
+| Revision publish race/history rewrite | advisory serialization, conditional DRAFT publish, immutable published rows | authorized content quality still needs moderation |
+| Webhook forgery/replay | one-time secret, exact-body HMAC, timestamp, stable event ID | receiver clock/secret custody/idempotency remain external |
+| Webhook endpoint outage | durable attempt history, bounded retry, dead-letter, audited replay | delivery SLO depends on receiver/network |
+| Moderation race/evidence leak | classified bounded evidence, conditional transitions, append-only actions, RBAC/audit | human decision quality and legal review remain external |
+| Privacy/telemetry overcollection | allowlist/classification/retention/owner controls, prohibited-field fail closed, anonymization | managed storage access and jurisdictional policy require review |
 
 ## Abuse and privacy
 
-- Public browsing may degrade during Redis trouble; paid execution must fail closed
-  when its abuse/nonce dependency is unavailable.
-- Logs must never include private keys, JWTs, HMAC plaintext, cookies, signatures,
-  or raw user prompts/outputs.
-- Agent input/output retention, deletion, export, and field-level encryption policy
-  remain a product/privacy task before broad external beta.
+- Public browsing may degrade during Redis trouble; paid execution and auth-sensitive
+  operations fail closed when required abuse/nonce dependencies are unavailable.
+- Logs and telemetry must never include private keys, JWTs, HMAC/webhook plaintext
+  secrets, cookies, signatures, raw private prompts, or raw sensitive outputs.
+- Report evidence is classified and bounded. Privacy export/delete has explicit
+  workflow, retained-evidence policy, anonymization, RBAC, audit, and notification.
+- Telemetry requires registered classification, purpose, owner, retention, and
+  enabled state; prohibited or unclassified fields are rejected.
 
 ## Assumptions
 
@@ -133,7 +153,7 @@ to its call.
 
 ## Review status
 
-Phase 0-3 repository controls/adversarial tests have passed internal
+Phase 0-4 repository controls/adversarial tests have passed internal
 engineering/CI review. This document is still an internal threat model, not an
 independent audit. Managed-staging evidence and independent contract/focused-backend
 review remain mandatory before real-value/mainnet release, but do not block continued

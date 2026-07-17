@@ -1,15 +1,15 @@
 # Operations and incident runbook
 
-> Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against the workspace: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > No mainnet deployment is recorded in this repository.
 
 ## Production process model
 
-Run the API and reconciliation worker as separate supervised processes from the
-same immutable backend build. Use managed PostgreSQL with PITR, managed Redis,
+Run the API, reconciliation worker, webhook worker, and operational monitor as
+separate supervised processes from the same immutable backend build. Use managed PostgreSQL with PITR, managed Redis,
 dedicated primary/fallback HTTPS RPCs, TLS at the edge, and a secret manager.
 
 ```bash
@@ -21,11 +21,18 @@ node server/dist/index.js
 
 # continuous recovery process
 node server/dist/jobs/reconcile.js --watch
+
+# durable webhook delivery
+node server/dist/jobs/webhooks.js --watch
+
+# readiness/alert evaluation
+node server/dist/jobs/monitor.js --watch
 ```
 
 A scheduler may run `--once` every 30 seconds instead, but overlapping schedules
 must have a runtime limit and alert on repeated failure. Unique constraints make
-overlap idempotent; initial production still uses one supervised worker.
+overlap idempotent; initial production still uses one supervised reconciliation
+worker, one webhook worker, and one logical signer writer.
 
 ## Reconciliation commands
 
@@ -78,10 +85,42 @@ endpoint remains unavailable, the watch loop resumes from the unchanged cursor. 
 load/reorg evidence proves correctness, but only the pending managed-staging one-hour
 drill may freeze the catch-up SLO.
 
+## Webhook delivery and recovery
+
+The webhook worker is a separate supervised role:
+
+~~~bash
+npm --prefix server run webhooks
+npm --prefix server run webhooks:worker
+~~~
+
+It claims due deliveries conditionally, records an attempt, signs exact body bytes,
+and then marks DELIVERED, reschedules with bounded exponential backoff, or moves an
+exhausted row to DEAD_LETTER. Multiple workers may overlap safely because only one
+conditional claim owns an active lock; an expired lock is recoverable.
+
+Alert on stale webhook heartbeat, oldest pending delivery above the agreed threshold,
+dead-letter growth, repeated 429/5xx/timeouts, and signature rejection. /ready can
+require both reconciliation and webhook heartbeats.
+
+Incident procedure:
+
+1. verify subscription status, URL policy, event type, and secret version;
+2. inspect delivery plus ordered attempt history; never edit attempt rows;
+3. pause a compromised/noisy subscription and rotate its secret when appropriate;
+4. fix endpoint/network policy and verify exact-body signature independently;
+5. replay only DEAD_LETTER through the RBAC-protected audited endpoint;
+6. confirm one consumer business effect by stable event ID and a DELIVERED row;
+7. record operator, delivery/event IDs, timestamps, and cause in the incident log.
+
+At-least-once delivery means a timeout can occur after the receiver applied the
+event. Receivers must deduplicate by event ID; operator replay is never proof that
+the previous HTTP effect did not happen.
+
 ## Phase 3 readiness, canary, and stop procedure
 
 1. Mount immutable manifest/policy inputs read-only and evidence output separately.
-2. Start migration/API/worker/monitor with the exact deployed manifest. Leave
+2. Start migration/API/reconciliation/webhook/monitor roles with the exact deployed manifest. Leave
    `PHASE3_PAID_WRITES_MODE=disabled`.
 3. Capture `phase3:snapshot` and require `release:readiness` = `GO`.
 4. Set the reviewed canary policy hash, RFC3339 start, and mode `canary`.
@@ -106,7 +145,8 @@ settles them.
 Alert on:
 
 - `DRIFT WARNING` above `RECONCILE_DRIFT_THRESHOLD`;
-- worker heartbeat missing for two intervals;
+- reconciliation or webhook worker heartbeat missing for two intervals;
+- oldest pending webhook delivery or dead-letter count above policy;
 - cursor-to-safe-head lag above the agreed block/time SLO;
 - oldest unreconciled event or nonterminal settlement attempt age;
 - repeated RPC 429/timeout/range split;
@@ -191,7 +231,7 @@ pg_restore --no-owner --no-privileges --dbname="$RESTORED_DATABASE_URL" velostra
 SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restore:verify
 ```
 
-`restore:verify` compares all 20 public tables, eight migrations, exact transaction/
+`restore:verify` compares all 30 public tables, at least nine migrations, exact transaction/
 claim/credit/earnings/call/outbox aggregates, critical constraints, and indexes. When
 `RESTORE_DRILL_STARTED_AT`, `BACKUP_CAPTURED_AT`, and `RESTORE_EVIDENCE_PATH` are set,
 it writes a redacted RPO/RTO evidence artifact. The disposable timed drill passed; the
@@ -199,7 +239,7 @@ provider-native managed PITR drill remains an external mainnet release prerequis
 
 ## Secret rotation
 
-- JWT/HMAC/database/Redis/RPC/signer secrets are injected by the deployment secret
+- JWT/HMAC/webhook/database/Redis/RPC/signer secrets are injected by the deployment secret
   manager, never committed.
 - Agent envelope rotation: add the old key to
   `AGENT_SECRET_DECRYPTION_KEYS`, set the new current key/id, run

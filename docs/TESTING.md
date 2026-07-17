@@ -1,7 +1,7 @@
 # Testing and release evidence
 
-> Last verified against test files and scripts: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against test files and scripts: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 
@@ -13,8 +13,11 @@
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
-| Phase 3 release | `npm run test:phase3-release` | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
+| Phase 3 release | npm run test:phase3-release | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
 | Phase 3 aggregate | `npm run test:phase3` | root/server/contract installs | release gates, server compile/config, canary guard, migration consistency |
+| Phase 4 SDK | npm run test:phase4-sdk | Node + Python 3 | JS/Python client behavior and exact shared HMAC fixtures |
+| Phase 4 unit | npm run test:phase4-unit | root/server/Python installs | SDKs, cursors, idempotency policy, permissions, privacy/telemetry policy |
+| Phase 4 DB E2E | npm run test:phase4-db | migrated disposable Postgres | v1/idempotency/revision/webhook/moderation/privacy races and zero drift |
 | API build | `npm --prefix server run build` | none | strict server compile |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
@@ -33,22 +36,23 @@
 | Migration E2E | `npm --prefix server run test:migrations` | disposable Postgres | fresh + upgrade + invariants + indexes |
 | Money-loop E2E | `npm --prefix server run test:money` | disposable Postgres | real API/EVM/worker recovery and races |
 | Canary unit | `npm --prefix server run test:phase3-canary` | none | manifest/policy binding, disabled/public modes, allowlist/window/exposure caps |
-| Canary DB race | `npm --prefix server run test:phase3-canary-db` | migrated Postgres | simultaneous requests and manifest reissue cannot exceed release/policy cap; rollback removes admission |
+| Canary DB race | npm --prefix server run test:phase3-canary-db | migrated Postgres | simultaneous requests and manifest reissue cannot exceed release/policy cap; rollback removes admission |
 | Restore verify | `npm --prefix server run restore:verify` | source + restored DB | exact restore integrity |
 | Legacy platform smoke | `npm --prefix server run test:platform` | running local stack | older marketplace happy path |
 
 ## CI
 
-`.github/workflows/ci.yml` has six jobs:
+.github/workflows/ci.yml has seven jobs:
 
 - web: lockfile install, production audit, MetaMask reachability, evidence-validator, lint, build;
+- phase4-contracts: JavaScript/Python SDK fixtures plus platform/admin policy contracts;
 - phase3-release: immutable manifest, deployment plan, readiness, catch-up, and canary gates;
 - browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
 - server: lockfile install, production audit, build, migration check, resilience and all isolated
   security/unit suites;
 - contract: compile and local-EVM E2E;
 - money-loop: Postgres 16 service, versioned migrate, fresh/upgrade migration test,
-  money-loop test, then PostgreSQL 16 dump/clean restore/exact verification.
+  Phase 4 PostgreSQL E2E, money-loop test, then PostgreSQL 16 dump/clean restore/exact verification.
 
 CI has read-only repository permission and cancels superseded runs. The canonical
 Phase 1 handoff run is [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476):
@@ -98,7 +102,7 @@ planBlockRanges separately proves larger bounded ranges are contiguous and gap-f
 - all settlement states installed in order;
 - money constraints reject invalid reservation/splits, negative earnings, and
   non-positive claims;
-- fresh install creates 20 tables and required indexes.
+- fresh install creates 30 tables, 28 critical constraints, and 27 critical indexes.
 
 The completed Phase 1 restore drill used a disposable PostgreSQL 16 database,
 custom-format dump, clean restore, and `restore:verify`. Exact tables, row counts,
@@ -115,6 +119,7 @@ npm run audit:metamask
 npm run test:browser
 npm run test:phase2-evidence
 npm run test:phase3-release
+npm run test:phase4-unit
 
 npm --prefix server run build
 npm --prefix server run db:check
@@ -140,8 +145,27 @@ npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
 npm --prefix server run test:phase3-canary-db
+npm run test:phase4-db
 npm --prefix server run test:money
 ```
+
+## Phase 4 platform E2E coverage
+
+The isolated PostgreSQL suite proves:
+
+1. v1 submit/approve and stable response/version contract;
+2. concurrent identical idempotency has one mutation and exact replay;
+3. conflicting and expired-indeterminate keys fail closed;
+4. concurrent revision publish has one winner and published history is immutable;
+5. concurrent webhook workers claim once, sign exact bytes, and record one attempt;
+6. builder analytics match exact persisted calls/earnings/claims;
+7. invalid report evidence is rejected and valid evidence enters the queue;
+8. bounded retries dead-letter, audited replay preserves history, and replay races once;
+9. moderation races permit one valid transition;
+10. cursor pagination is stable and tampering/filter reuse fails;
+11. export/delete workflows anonymize personal data while retaining financial evidence;
+12. prohibited telemetry fails closed;
+13. final financial aggregate, webhook delivery, and duplicate counts have zero drift.
 
 ## Browser, wallet, and performance evidence
 

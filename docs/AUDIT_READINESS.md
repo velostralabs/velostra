@@ -1,6 +1,6 @@
-# Phase 1 audit readiness packet
+# External audit readiness packet
 
-> Prepared: 2026-07-16.
+> Prepared: 2026-07-17.
 > Status: internal engineering/CI audit passed and the repository is clear for
 > continued development; independent third-party review has not yet been performed
 > and remains a mainnet release prerequisite.
@@ -15,6 +15,12 @@
 > tooling, mainnet startup binding, canary admission serialization/caps, automatic
 > evidence collection, and public-expansion approval. Repository-side preparation is
 > implemented; no mainnet execution is claimed.
+
+> Phase 4 note: the current review scope also includes /api/v1 envelopes/cursors,
+> durable idempotency and its indeterminate-state policy, immutable agent revisions,
+> JavaScript/Python SDK signing fixtures, signed webhook delivery/replay, moderation,
+> privacy/anonymization, telemetry governance, dedicated worker readiness, and
+> migration 0008. No closed-beta activation is claimed.
 
 ## Review objective
 
@@ -75,7 +81,9 @@ addresses must be explicit and distinct; token decimals must be 6.
 - `server/src/lib/auth.ts`, `config.ts`, `redis.ts`, `security-readiness.ts`;
 - `server/src/lib/gateway/ssrf.ts` and gateway HMAC/secrets/onchain/settlement files;
 - `server/src/routes/agents.ts`, `dashboard.ts`, `builder.ts`, `admin.ts`;
-- `server/src/jobs/reconcile.ts`;
+- reconciliation and webhook worker jobs;
+- platform cursor/idempotency/HMAC/privacy/telemetry libraries and all platform routes;
+- JavaScript/Python SDK source, tests, and shared signing fixtures;
 - `server/src/lib/rpc.ts`, `chain-policy.ts`, remote signer, observability, and
   operational-readiness modules;
 - `server/src/db/schema.ts` and `server/drizzle/*.sql`;
@@ -87,16 +95,18 @@ addresses must be explicit and distinct; token decimals must be 6.
 Review focus: auth replay/multi-instance race, SSRF/DNS pinning, encrypted secret
 lifecycle, RBAC/audit, exact decimal arithmetic, reservation/outbox transitions,
 broadcast ambiguity, event-to-row correlation, live/worker race, cursor safety,
-manual rescan, drift, and production fail-closed configuration.
+manual rescan, drift, versioned response compatibility, signed cursor scope, durable
+idempotency conflict/indeterminate behavior, immutable revision races, webhook
+forgery/replay/dead-letter, moderation/privacy/telemetry controls, and production
+fail-closed configuration.
 
-## Explicitly out of scope for Phase 1 audit
+## Explicitly out of scope
 
 - AI model correctness or builder output quality;
 - frontend visual design;
 - vendor-managed cloud internals not present in this repository;
 - the truthfulness of future operator/PITR/wallet/soak evidence until that evidence
   is produced and hash-bound to the frozen release;
-- SDKs, pagination, webhooks, and beta product features.
 
 ## Reproducible evidence
 
@@ -107,6 +117,7 @@ npm run build
 npm run audit:metamask
 npm run test:browser
 npm run test:phase2-evidence
+npm run test:phase4-unit
 
 npm ci --prefix server
 npm --prefix server run build
@@ -121,6 +132,7 @@ npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
 npm --prefix server run test:secrets
 npm --prefix server run test:admin-policy
+npm run test:phase4-db
 npm --prefix server run test:money-unit
 
 npm ci --prefix contracts
@@ -129,6 +141,7 @@ npm test --prefix contracts
 # disposable PostgreSQL with migrations applied
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
+npm run test:phase4-db
 npm --prefix server run test:money
 ```
 
@@ -161,6 +174,13 @@ are the dependency source of truth. Optimizer configuration is defined by
 - Claims remain enabled during pause.
 - Successor migration never moves outstanding builder/platform liabilities.
 - Initial production uses one supervised worker and one logical signer writer.
+- Phase 4 externally retried mutations bind actor/operation/fingerprint; an expired
+  uncertain PROCESSING record fails closed rather than being reclaimed.
+- Published agent revisions are immutable and every call records the active revision.
+- Webhook delivery is at least once with exact-body HMAC and receiver event-ID
+  idempotency; dead-letter replay is RBAC-protected and audited.
+- Privacy deletion anonymizes personal fields while required financial/security/audit
+  evidence is retained; prohibited telemetry cannot be enabled.
 - Confirmation-delayed safe heads exclude unconfirmed forks; deep confirmed reorgs
   remain an incident requiring pause, exact-range review, and explicit remediation.
 

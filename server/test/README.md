@@ -1,7 +1,7 @@
 # Server test quick reference
 
-> Last verified: 2026-07-16. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
-> Evidence state: Phase 3 repository automation is complete; controlled mainnet
+> Last verified: 2026-07-17. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
+> Evidence state: Phase 0-4 repository automation is complete; controlled mainnet
 > execution and managed external evidence remain gated.
 
 Run from repository root:
@@ -21,6 +21,7 @@ npm --prefix server run test:observability
 npm --prefix server run test:admin-policy
 npm --prefix server run test:money-unit
 npm --prefix server run test:phase3-canary
+npm run test:phase4-unit
 npm test --prefix contracts
 ```
 
@@ -31,7 +32,8 @@ export DATABASE_URL=postgresql://postgres:password@127.0.0.1:5432/velostra_test
 npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
-npm --prefix server run test:phase3-canary-db
+npm --prefix server run test:phase3-canary
+npm run test:phase4-unit-db
 npm --prefix server run test:money
 ```
 
@@ -56,4 +58,15 @@ npm --prefix server run reconcile -- --from-block=123456 --to-block=125000
 npm --prefix server run reconcile:worker
 ```
 
+Webhook delivery:
+
+~~~bash
+npm --prefix server run webhooks
+npm --prefix server run webhooks:worker
+~~~
+
+The Phase 4 E2E suite uses disposable Postgres and covers v1 response/cursor/
+idempotency contracts, revision publish races, analytics, concurrent webhook claims,
+retry/dead-letter/replay, moderation races, privacy retention/anonymization,
+telemetry fail-closed behavior, and zero financial/delivery drift.
 Never run integration schema/data setup against staging or production.

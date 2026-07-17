@@ -1,14 +1,14 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against build/deploy scripts: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > No production or mainnet deployment is recorded.
 
 ## Release gates
 
-Phase 0-3 repository preparation is complete and has passed internal engineering/CI
+Phase 0-4 repository preparation is complete and has passed internal engineering/CI
 audit. This is not deployment authorization. Independent contract/backend review,
 the managed-staging evidence packet, an immutable approved release manifest, and an
 explicit operator broadcast remain mainnet release gates. Provision only isolated
@@ -25,12 +25,16 @@ flowchart LR
     API --> RPC["Dedicated HTTPS RPC"]
     WORKER["Supervised reconciliation worker"] --> PG
     WORKER --> RPC
+    HOOKS["Supervised webhook worker"] --> PG
+    HOOKS --> RECEIVER["Builder HTTPS webhook"]
+    MONITOR["Operational monitor"] --> PG
     API --> ESCROW["VelostraEscrow"]
     WALLETS["User wallets"] --> ESCROW
     SECRETS["Secret manager / restricted signer"] --> API
 ```
 
-Initial topology has one logical signer writer and one continuous worker. API read
+Initial topology has one logical signer writer, one continuous reconciliation worker,
+one continuous webhook worker, and one operational monitor. API read
 traffic may scale only after signer nonce behavior is isolated/tested.
 
 ## Database release
@@ -47,15 +51,17 @@ Release order is backup, migration, verification, then application rollout. Enab
 encrypted PITR/WAL and complete the restore procedure in
 [OPERATIONS.md](./OPERATIONS.md).
 
-## API and worker build
+## Backend role build
 
 ```bash
 npm --prefix server run build
 node server/dist/index.js
 node server/dist/jobs/reconcile.js --watch
+node server/dist/jobs/webhooks.js --watch
+node server/dist/jobs/monitor.js --watch
 ```
 
-Both processes run strict production configuration validation.
+All backend roles run strict role-aware production configuration validation.
 
 ## Required production environment
 
@@ -90,7 +96,13 @@ Both processes run strict production configuration validation.
 | `PHASE3_MAINNET_STARTUP_APPROVAL` | exactly `explicitly-approved` for mainnet-like processes |
 | `PHASE3_RELEASE_MANIFEST` | mounted deployed manifest path |
 | `PHASE3_RELEASE_MANIFEST_SHA256` | exact lowercase canonical manifest hash |
-| `PHASE3_PAID_WRITES_MODE` | `disabled` initially; `canary` only after readiness; `public` only after exit approval |
+| PHASE3_PAID_WRITES_MODE | disabled initially; canary only after readiness; public only after exit approval |
+| PLATFORM_CURSOR_SECRET | separate managed secret, at least 32 characters |
+| READINESS_REQUIRE_WEBHOOK_WORKER | true |
+| READINESS_WEBHOOK_WORKER_MAX_AGE_MS | bounded heartbeat age, default 90000 |
+| WEBHOOK_BATCH_SIZE / WEBHOOK_MAX_ATTEMPTS | bounded worker capacity/retry policy |
+| WEBHOOK_RETRY_BASE_MS / WEBHOOK_RETRY_MAX_MS | bounded exponential retry window |
+| WEBHOOK_LOCK_MS / WEBHOOK_INTERVAL_MS | bounded ownership lease and poll interval |
 
 Operational tuning is documented in `server/.env.example`: HTTP size/proxy, Redis
 timeout, agent egress caps, RPC timeout, reconciliation interval/range/
@@ -187,8 +199,9 @@ origins, and no server secret in `VITE_*`.
 1. freeze audited commit and constructor parameters;
 2. backup database and apply migrations;
 3. deploy and verify contract;
-4. configure API/worker with address and deployment block;
-5. start worker, catch up, require zero drift;
+4. configure API/reconciliation/webhook/monitor roles with scoped secrets;
+5. start reconciliation and webhook workers plus monitor; catch up and require zero
+   financial/delivery drift;
 6. deploy API with write traffic closed;
 7. deploy frontend with write actions closed;
 8. run read/auth/wallet smoke;
@@ -196,7 +209,8 @@ origins, and no server secret in `VITE_*`.
 10. verify deposit, paid call, claim, balances, liabilities, cursor, alerts, and
     recovery; only then expand.
 
-Rollback of API/frontend never reverts chain effects. Keep the worker active.
+Rollback of API/frontend never reverts chain effects. Keep reconciliation, webhook
+delivery, and monitoring active.
 Contract incidents use pause, settler revoke/rotation, and successor procedure from
 [OPERATIONS.md](./OPERATIONS.md).
 

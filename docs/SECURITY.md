@@ -1,7 +1,7 @@
 # Security posture
 
-> Last verified against the workspace: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation is complete and has passed internal
+> Last verified against the workspace: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > Internal engineering/CI audit: PASS. Independent third-party audit: not claimed; required before mainnet release.
@@ -77,6 +77,24 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
   safe retroactive cursor policy;
 - role-separated, pausable, collateral-checked contract and safe successor path.
 
+### Versioned platform, webhooks, and privacy
+
+- /api/v1 uses bounded signed cursors and stable envelopes; legacy compatibility
+  advertises explicit deprecation metadata.
+- durable idempotency binds actor, operation, route, and normalized fingerprint;
+  conflicts and uncertain expired processing states fail closed;
+- published agent revisions are immutable and per-agent activation is serialized;
+- webhook subscriptions are builder-owned and HTTPS-only; secrets are one-time
+  plaintext, exact bodies are HMAC signed, and stable event IDs support deduplication;
+- deliveries/attempts are durable with conditional claims, bounded retry, dead-letter,
+  RBAC/audited replay, heartbeat, readiness, metrics, and alerts;
+- moderation evidence is classified/size-bounded; conditional transition history,
+  notifications, and audit records prevent silent overwrite;
+- deletion anonymizes personal fields but retains required financial/settlement/
+  security/audit evidence;
+- telemetry fields must be classified, owned, bounded by retention, and enabled;
+  prohibited/unclassified fields fail closed.
+
 ## Production startup checks
 
 In `NODE_ENV=production`, startup rejects missing/unsafe:
@@ -88,12 +106,14 @@ In `NODE_ENV=production`, startup rejects missing/unsafe:
 - zero/invalid escrow or restricted signer configuration; raw signer keys;
 - non-required settlement mode;
 - non-4663 chain, non-6-decimal policy, zero deployment block, non-HTTPS RPC;
-- plaintext agent secrets or missing initial super-admin path.
+- plaintext agent secrets or missing initial super-admin path;
+- missing/short PLATFORM_CURSOR_SECRET, unsafe webhook worker limits, or production
+  readiness not requiring the webhook worker.
 - mainnet-like startup without explicit Phase 3 approval, exact deployed-manifest path/hash/release/environment/stage, or a safe paid-write mode;
 - incomplete or mismatched authority/canary policy, manifest-reissued cap bypass, or
   public mode without a hash-bound passing decision and separate approval.
 
-API and reconciliation worker both run these checks.
+API, reconciliation worker, webhook worker, and monitor run role-aware subsets of these checks.
 
 ## Residual risks and gates
 
@@ -107,8 +127,9 @@ API and reconciliation worker both run these checks.
 | Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
 | Sustained all-provider RPC outage/429 | ordered failover, cursor safety, retry/backoff | managed provider outage evidence + alert routing |
 | Alert delivery not yet proven to a real operator | durable metrics/alerts and lifecycle implemented | inject every required failure and capture delivery/acknowledgement |
+| Webhook receiver outage or replay | exact-body HMAC, stable event ID, durable attempts, bounded retry/dead-letter, audited replay | receiver must persist event-ID idempotency and prove rotation/incident drills |
 | Real MetaMask staging evidence absent | automated picker/a11y/layout suite; guarded external test | execute real extension + injected-provider scenarios |
-| Prompt/output retention policy open | avoid sensitive logs | privacy/retention/delete/export policy |
+| Sensitive prompt/output exposure | prohibited telemetry fields, evidence classification, export/delete policy, anonymization | managed retention/legal review and storage controls |
 | Six web transitive `uuid` moderate advisories | high threshold CI + tracking; no upstream fix | reachability/upstream review and acceptance/fix |
 
 ## Dependency and supply chain
@@ -118,7 +139,7 @@ lint/build/browser/performance gates, evidence-packet tamper tests, backend secu
 resilience/observability gates, contract E2E, migration/money-loop E2E, and restore
 verification. Generated builds, `.env`, deployments, dumps, and credentials are
 ignored. The historical Phase 1 evidence remains in
-[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md); the current six-job matrix is in
+[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md); the current seven-job matrix is in
 [TESTING.md](./TESTING.md).
 
 Run dependency audits before release:

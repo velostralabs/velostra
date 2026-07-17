@@ -127,6 +127,7 @@ if (-not (Test-GcloudResource @(
 }
 
 $serviceAccounts = [ordered]@{
+  web = 'Velostra public web'
   api = 'Velostra staging API'
   signer = 'Velostra restricted settlement signer'
   jobs = 'Velostra scheduled operational jobs'

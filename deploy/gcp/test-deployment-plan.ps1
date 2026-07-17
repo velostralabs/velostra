@@ -1,0 +1,64 @@
+param(
+  [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
+  [string]$ProjectId = 'velostra-staging-us'
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+$repositoryRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
+$release = (& git -C $repositoryRoot rev-parse HEAD | Out-String).Trim()
+if ($LASTEXITCODE -ne 0 -or $release -notmatch '^[0-9a-f]{40}$') {
+  throw 'Unable to resolve a full release SHA'
+}
+$serverImage = 'us-east4-docker.pkg.dev/' + $ProjectId +
+  '/velostra/server@sha256:' + ('a' * 64)
+$webImage = 'us-east4-docker.pkg.dev/' + $ProjectId +
+  '/velostra/web@sha256:' + ('b' * 64)
+
+$runtimeParameters = @{
+  Release = $release
+  ServerImage = $serverImage
+  EscrowAddress = '0x1111111111111111111111111111111111111111'
+  DeploymentBlock = 1
+  SignerAddress = '0x2222222222222222222222222222222222222222'
+  AdminWallet = '0x3333333333333333333333333333333333333333'
+}
+$runtime = & (Join-Path $PSScriptRoot 'deploy-runtime.ps1') @runtimeParameters
+if ($LASTEXITCODE -ne 0) { throw 'Runtime plan failed' }
+$web = & (Join-Path $PSScriptRoot 'deploy-web.ps1') -Release $release -WebImage $webImage
+if ($LASTEXITCODE -ne 0) { throw 'Web plan failed' }
+$bootstrap = & (Join-Path $PSScriptRoot 'bootstrap-staging.ps1') -ProjectId $ProjectId
+if ($LASTEXITCODE -ne 0) { throw 'Bootstrap plan failed' }
+
+$runtimeText = $runtime -join [Environment]::NewLine
+$webText = $web -join [Environment]::NewLine
+$bootstrapText = $bootstrap -join [Environment]::NewLine
+$all = $runtimeText + [Environment]::NewLine + $webText + [Environment]::NewLine + $bootstrapText
+
+function Require-Match {
+  param([string]$Text, [string]$Pattern, [string]$Message)
+  if ($Text -notmatch $Pattern) { throw $Message }
+}
+function Reject-Match {
+  param([string]$Text, [string]$Pattern, [string]$Message)
+  if ($Text -match $Pattern) { throw $Message }
+}
+
+Require-Match $all '(?i)us-east4' 'Deployment plan must use us-east4'
+Reject-Match $all '(?i)asia|singapore|indonesia|us-west|europe' 'Deployment plan escaped US Virginia'
+Reject-Match $all '(?m)^APPLY ' 'Plan validation must never mutate resources'
+Require-Match $bootstrapText 'service-accounts create web' 'Bootstrap must create the unprivileged web identity'
+Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--command=node --args=dist/signer/index[.]js --no-allow-unauthenticated' 'Signer must be private, bounded, and use its dedicated entrypoint'
+Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
+Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
+Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'
+Require-Match $runtimeText 'run jobs deploy velostra-monitor ' 'Monitor job is missing'
+Require-Match $runtimeText 'scheduler jobs create http velostra-reconciliation-every-15m .*--schedule=[*]/15 [*] [*] [*] [*]' 'Reconciliation schedule is not every 15 minutes'
+Require-Match $runtimeText 'scheduler jobs create http velostra-webhooks-every-15m .*--schedule=2-59/15 [*] [*] [*] [*]' 'Webhook schedule is not staggered'
+Require-Match $runtimeText 'scheduler jobs create http velostra-monitor-every-15m .*--schedule=5-59/15 [*] [*] [*] [*]' 'Monitor schedule is not staggered'
+Reject-Match $runtimeText 'run jobs execute velostra-migration' 'Migration execution must require explicit opt-in'
+Require-Match $webText 'run deploy velostra-web .*--service-account=web@.*--min-instances=0 --max-instances=2 .*--allow-unauthenticated' 'Web service policy is incomplete'
+Require-Match $runtimeText ([regex]::Escape('--image=' + $serverImage)) 'Runtime must use the immutable server digest'
+Require-Match $webText ([regex]::Escape('--image=' + $webImage)) 'Web must use the immutable web digest'
+
+Write-Output 'US staging deployment plan: PASS'

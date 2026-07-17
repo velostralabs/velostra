@@ -5,7 +5,7 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$WebImage,
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
-  [string]$ProjectId = 'velostra-staging-us',
+  [string]$ProjectId = 'velostra-production',
   [string]$ConfigPath,
   [switch]$Apply
 )

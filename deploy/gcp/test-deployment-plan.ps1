@@ -1,6 +1,6 @@
 param(
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
-  [string]$ProjectId = 'velostra-staging-us'
+  [string]$ProjectId = 'velostra-production'
 )
 
 Set-StrictMode -Version Latest
@@ -85,6 +85,11 @@ Require-Match $bootstrapText 'service-accounts create velostra-signer' 'Bootstra
 Require-Match $bootstrapText 'service-accounts create velostra-jobs' 'Bootstrap must create the jobs identity'
 Require-Match $bootstrapText 'service-accounts create velostra-scheduler' 'Bootstrap must create the scheduler identity'
 Require-Match $bootstrapText 'billingbudgets[.]googleapis[.]com' 'Bootstrap must enable the API used to create its billing budget'
+Require-Match $bootstrapText ('projects remove-iam-policy-binding ' + [regex]::Escape($ProjectId) + ' .*compute@developer[.]gserviceaccount[.]com --role=roles/editor') 'Bootstrap must remove the broad default Compute Editor grant'
+Reject-Match $bootstrapText 'managed-by=codex' 'Cloud labels must not expose tool identity'
+Require-Match $bootstrapText 'repositories update velostra .*managed-by=velostra' 'Repository labels must remain Velostra-owned'
+Require-Match $bootstrapText 'kms keys update settlement-signer .*managed-by=velostra' 'Signer key labels must remain Velostra-owned'
+Require-Match $bootstrapText 'secrets update database-url .*managed-by=velostra' 'Secret labels must remain Velostra-owned'
 Require-Match $bootstrapText 'ec-sign-secp256k1-sha256 .*--protection-level=hsm' 'EVM signing must use supported multi-tenant HSM protection'
 Require-Match $bootstrapText 'repositories add-iam-policy-binding velostra .*velostra-builder@.*roles/artifactregistry.writer' 'Builder must receive repository-scoped image write access'
 Require-Match $existingBudgetBootstrapText 'verify an existing billing-account budget' 'Existing-budget mode must verify its prerequisite'

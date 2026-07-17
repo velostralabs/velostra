@@ -1,6 +1,6 @@
 param(
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
-  [string]$ProjectId = 'velostra-staging-us',
+  [string]$ProjectId = 'velostra-production',
   [ValidatePattern('^[0-9A-F]{6}-[0-9A-F]{6}-[0-9A-F]{6}$')]
   [string]$BillingAccount,
   [string]$ConfigPath = (Join-Path $PSScriptRoot 'staging.config.json'),
@@ -50,8 +50,16 @@ function Invoke-Gcloud {
   param([string[]]$CommandArgs)
   Write-Output ($(if ($Apply) { 'APPLY ' } else { 'PLAN  ' }) + (Format-Command $CommandArgs))
   if (-not $Apply) { return }
-  & $script:gcloud @CommandArgs
-  if ($LASTEXITCODE -ne 0) {
+  $previousErrorActionPreference = $ErrorActionPreference
+  $exitCode = 1
+  try {
+    $ErrorActionPreference = 'Continue'
+    & $script:gcloud @CommandArgs
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) {
     throw 'gcloud failed: ' + (Format-Command $CommandArgs)
   }
 }
@@ -74,8 +82,16 @@ function Test-GcloudResource {
 function Get-GcloudValue {
   param([string[]]$CommandArgs)
   if (-not $Apply) { return '' }
-  $value = & $script:gcloud @CommandArgs
-  if ($LASTEXITCODE -ne 0) {
+  $previousErrorActionPreference = $ErrorActionPreference
+  $exitCode = 1
+  try {
+    $ErrorActionPreference = 'Continue'
+    $value = & $script:gcloud @CommandArgs
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) {
     throw 'gcloud query failed: ' + (Format-Command $CommandArgs)
   }
   return ($value | Out-String).Trim()
@@ -88,11 +104,11 @@ if ($Apply) {
   }
 }
 
-$labels = 'application=velostra,environment=staging,residency=us-only,managed-by=codex'
+$labels = 'application=velostra,environment=staging,residency=us-only,managed-by=velostra'
 if (-not (Test-GcloudResource @('projects', 'describe', $ProjectId))) {
   Invoke-Gcloud @(
     'projects', 'create', $ProjectId,
-    '--name=Velostra Staging US',
+    '--name=Velostra Production',
     ('--labels=' + $labels)
   )
 }
@@ -120,6 +136,36 @@ $apis = @(
   'secretmanager.googleapis.com'
 )
 Invoke-Gcloud (@('services', 'enable') + $apis + @(('--project=' + $ProjectId)))
+$projectNumber = if ($Apply) {
+  Get-GcloudValue @(
+    'projects', 'describe', $ProjectId,
+    '--format=value(projectNumber)'
+  )
+} else {
+  '<project-number>'
+}
+$defaultComputeMember = 'serviceAccount:' + $projectNumber + '-compute@developer.gserviceaccount.com'
+$removeDefaultComputeEditor = -not $Apply
+if ($Apply) {
+  $projectPolicyJson = Get-GcloudValue @(
+    'projects', 'get-iam-policy', $ProjectId,
+    '--format=json'
+  )
+  $projectPolicy = $projectPolicyJson | ConvertFrom-Json
+  $removeDefaultComputeEditor = @(
+    $projectPolicy.bindings | Where-Object {
+      $_.role -eq 'roles/editor' -and $_.members -contains $defaultComputeMember
+    }
+  ).Count -gt 0
+}
+if ($removeDefaultComputeEditor) {
+  Invoke-Gcloud @(
+    'projects', 'remove-iam-policy-binding', $ProjectId,
+    ('--member=' + $defaultComputeMember),
+    '--role=roles/editor'
+  )
+}
+
 
 if (-not (Test-GcloudResource @(
   'artifacts', 'repositories', 'describe', $repository,
@@ -135,6 +181,12 @@ if (-not (Test-GcloudResource @(
     ('--project=' + $ProjectId)
   )
 }
+Invoke-Gcloud @(
+  'artifacts', 'repositories', 'update', $repository,
+  ('--location=' + $region),
+  ('--update-labels=' + $labels),
+  ('--project=' + $ProjectId)
+)
 
 $serviceAccounts = [ordered]@{
   'velostra-web' = 'Velostra public web'
@@ -203,6 +255,13 @@ if (-not (Test-GcloudResource @(
   )
 }
 Invoke-Gcloud @(
+  'kms', 'keys', 'update', $keyName,
+  ('--keyring=' + $keyRing),
+  ('--location=' + $region),
+  ('--update-labels=' + $labels),
+  ('--project=' + $ProjectId)
+)
+Invoke-Gcloud @(
   'kms', 'keys', 'add-iam-policy-binding', $keyName,
   ('--keyring=' + $keyRing),
   ('--location=' + $region),
@@ -238,6 +297,11 @@ foreach ($entry in $secretAccess.GetEnumerator()) {
       ('--project=' + $ProjectId)
     )
   }
+  Invoke-Gcloud @(
+    'secrets', 'update', $entry.Key,
+    ('--update-labels=' + $labels),
+    ('--project=' + $ProjectId)
+  )
   foreach ($serviceAccount in $entry.Value) {
     Invoke-Gcloud @(
       'secrets', 'add-iam-policy-binding', $entry.Key,
@@ -249,14 +313,6 @@ foreach ($entry in $secretAccess.GetEnumerator()) {
 }
 
 
-$projectNumber = if ($Apply) {
-  Get-GcloudValue @(
-    'projects', 'describe', $ProjectId,
-    '--format=value(projectNumber)'
-  )
-} else {
-  '<project-number>'
-}
 $budgetDisplayName = 'Velostra Staging US - USD ' + $budgetUsd
 $budgetExists = $false
 if ($UseExistingBillingBudget) {

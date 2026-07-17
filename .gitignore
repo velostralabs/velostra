@@ -40,6 +40,7 @@ secrets/
 **/secrets/
 
 # Local data and deployment artifacts
+.netlify/
 *.db
 *.sqlite
 *.sqlite3

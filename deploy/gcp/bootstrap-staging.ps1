@@ -58,8 +58,16 @@ function Invoke-Gcloud {
 function Test-GcloudResource {
   param([string[]]$CommandArgs)
   if (-not $Apply) { return $false }
-  & $script:gcloud @CommandArgs *> $null
-  return $LASTEXITCODE -eq 0
+  $previousErrorActionPreference = $ErrorActionPreference
+  $exitCode = 1
+  try {
+    $ErrorActionPreference = 'Continue'
+    & $script:gcloud @CommandArgs *> $null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  return $exitCode -eq 0
 }
 
 function Get-GcloudValue {

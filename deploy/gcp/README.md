@@ -31,6 +31,7 @@ separate release decision and is not authorized here.
 powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
 powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
 powershell -NoProfile -File deploy/gcp/export-signer-address.ps1 -ProjectId velostra-staging-us
+powershell -NoProfile -File deploy/gcp/build-image.ps1 -Component server -Release <full-commit-sha>
 \`\`\`
 
 The bootstrap command is plan-only by default. It mutates Google Cloud only

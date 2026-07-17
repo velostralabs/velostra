@@ -1,0 +1,18 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --file=Dockerfile
+      - --build-arg
+      - PUBLIC_API_URL=${_PUBLIC_API_URL}
+      - --build-arg
+      - PUBLIC_ESCROW_ADDRESS=${_PUBLIC_ESCROW_ADDRESS}
+      - --build-arg
+      - PUBLIC_SETTLEMENT_TOKEN_ADDRESS=${_PUBLIC_SETTLEMENT_TOKEN_ADDRESS}
+      - --tag
+      - ${_IMAGE}
+      - .
+images:
+  - ${_IMAGE}
+options:
+  logging: CLOUD_LOGGING_ONLY

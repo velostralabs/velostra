@@ -21,7 +21,10 @@
     "build": "node scripts/build.js",
     "test": "npm run build && node test/VelostraEscrow.e2e.test.js",
     "deploy:robinhood": "npm run build && node scripts/deploy.js",
-    "verify:robinhood": "npm run build && node scripts/verify-deployment.js"
+    "verify:robinhood": "npm run build && node scripts/verify-deployment.js",
+    "deploy:robinhood-testnet": "npm run build && node scripts/deploy-testnet.js",
+    "verify:robinhood-testnet": "npm run build && node scripts/verify-testnet-deployment.js",
+    "test:testnet-policy": "node test/testnet-deployment-policy.test.js"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.1.0",

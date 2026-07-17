@@ -37,8 +37,8 @@ if ($keyVersion.name -notmatch ('/locations/' + [regex]::Escape($region) + '/'))
 if ($keyVersion.algorithm -ne 'EC_SIGN_SECP256K1_SHA256') {
   throw 'KMS key version does not use secp256k1'
 }
-if ($keyVersion.protectionLevel -ne 'SOFTWARE') {
-  throw 'KMS key version does not use the approved staging protection level'
+if ($keyVersion.protectionLevel -ne 'HSM') {
+  throw 'KMS key version does not use the approved multi-tenant HSM protection level'
 }
 if ($keyVersion.state -ne 'ENABLED') { throw 'KMS key version is not enabled' }
 

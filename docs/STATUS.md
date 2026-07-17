@@ -41,8 +41,8 @@ and financial flows are not activated and must not be represented as operational
 
 A low-cost US-only backend staging deployment path is committed and locally validated:
 Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
-us-east4; bounded Cloud Run services/jobs; immutable image digests; managed software
-KMS signing; and a USD 35 monthly envelope. No managed backend/staging provider
+us-east4; bounded Cloud Run services/jobs; immutable image digests; multi-tenant
+Cloud HSM signing; and a USD 35 monthly envelope. No managed backend/staging provider
 resource has been created yet. Google Cloud Billing and the user-owned Neon, Upstash,
 Alchemy, and alert receiver accounts remain the current external provisioning gate.
 

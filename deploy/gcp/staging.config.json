@@ -54,7 +54,7 @@
       "version": 1,
       "purpose": "asymmetric-signing",
       "algorithm": "ec-sign-secp256k1-sha256",
-      "protectionLevel": "software"
+      "protectionLevel": "hsm"
     },
     "cloudRun": {
       "services": {

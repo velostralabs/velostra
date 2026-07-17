@@ -82,6 +82,7 @@ Require-Match $bootstrapText 'service-accounts create velostra-signer' 'Bootstra
 Require-Match $bootstrapText 'service-accounts create velostra-jobs' 'Bootstrap must create the jobs identity'
 Require-Match $bootstrapText 'service-accounts create velostra-scheduler' 'Bootstrap must create the scheduler identity'
 Require-Match $bootstrapText 'billingbudgets[.]googleapis[.]com' 'Bootstrap must enable the API used to create its billing budget'
+Require-Match $bootstrapText 'ec-sign-secp256k1-sha256 .*--protection-level=hsm' 'EVM signing must use supported multi-tenant HSM protection'
 Require-Match $bootstrapText 'repositories add-iam-policy-binding velostra .*velostra-builder@.*roles/artifactregistry.writer' 'Builder must receive repository-scoped image write access'
 Require-Match $bootstrapText 'roles/logging.logWriter' 'Builder must receive Cloud Logging write access'
 Require-Match $bootstrapText 'roles/storage.objectViewer' 'Builder must receive source object read access'

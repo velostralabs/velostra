@@ -46,8 +46,8 @@ $kms = $config.gcp.kms
 if ($kms.algorithm -ne 'ec-sign-secp256k1-sha256') {
   throw 'KMS algorithm must be EVM-compatible secp256k1'
 }
-if ($kms.protectionLevel -ne 'software') {
-  throw 'Low-cost staging KMS must use managed software protection'
+if ($kms.protectionLevel -ne 'hsm') {
+  throw 'EVM-compatible staging signing must use multi-tenant Cloud HSM protection'
 }
 
 foreach ($service in $config.gcp.cloudRun.services.psobject.Properties) {

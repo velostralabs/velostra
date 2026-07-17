@@ -26,8 +26,10 @@ contingency. A GCP budget is an alert rather than a spending cap. Scale to
 zero, bounded instances, one-task jobs, provider caps, and 15-minute schedules
 are the actual cost controls.
 
-Staging uses a managed SOFTWARE secp256k1 Cloud KMS key. Mainnet key protection
-is a separate release decision and is not authorized by these scripts.
+Staging uses a multi-tenant Cloud HSM secp256k1 key in us-east4. The single
+active EC key version is budgeted at the current list price of about USD 2.50
+per month, plus bounded signing operations. Mainnet key protection is a separate
+release decision and is not authorized by these scripts.
 
 ## Safety model
 

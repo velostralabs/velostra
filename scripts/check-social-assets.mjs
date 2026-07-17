@@ -32,10 +32,13 @@ for (const [file, width, height] of assets) inspectPng(file, width, height)
 
 const html = readFileSync(path.join(root, 'index.html'), 'utf8')
 const imageUrl =
-  'https://raw.githubusercontent.com/velostralabs/velostra/main/public/' +
+  'https://velostra.xyz/' +
   'velostra-social-card-1200x630.png'
 assert(html.includes('property="og:image" content="' + imageUrl + '"'))
 assert(html.includes('name="twitter:image" content="' + imageUrl + '"'))
+assert(html.includes('rel="canonical" href="https://velostra.xyz/"'))
+assert(html.includes('property="og:url" content="https://velostra.xyz/"'))
+assert(!html.includes('raw.githubusercontent.com'))
 assert(html.includes('property="og:image:width" content="1200"'))
 assert(html.includes('property="og:image:height" content="630"'))
 

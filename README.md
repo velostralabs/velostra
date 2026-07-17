@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="./docs/ARCHITECTURE.md">
+  <a href="https://velostra.xyz">
     <img src="./docs/assets/velostra-hero.svg" width="100%" alt="Velostra - Verified AI Execution Market" />
   </a>
 </p>

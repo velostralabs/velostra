@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "environment": "staging-isolated",
+  "environment": "staging",
   "release": "0000000000000000000000000000000000000000",
   "frozenCommit": "0000000000000000000000000000000000000000",
   "generatedAt": "2026-07-15T00:00:00Z",

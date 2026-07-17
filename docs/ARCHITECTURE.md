@@ -28,6 +28,31 @@ Frontend, API, reconciliation worker, webhook worker, Postgres, Redis, RPC, and
 contract are separate failure domains. Backend roles use the same immutable build but
 run as separate supervised processes.
 
+## US-only staging runtime
+
+The low-cost managed translation preserves those failure domains in Virginia:
+
+- public velostra-web and velostra-api Cloud Run services scale from zero to at most
+  two instances;
+- private velostra-signer scales from zero to one instance and runs a dedicated
+  signer entrypoint under its own identity;
+- reconciliation, webhook delivery, monitoring, and migration are separate one-task
+  Cloud Run Jobs;
+- Scheduler invokes only the three recurring jobs at staggered 15-minute intervals;
+- the API and jobs may invoke the private signer, while the web identity has no
+  backend or signer authority;
+- a dedicated build identity can read regional build source, write Cloud Logging,
+  and push only to the Velostra Artifact Registry repository; it has no runtime,
+  signer, database, or secret authority;
+- Neon Postgres uses aws-us-east-1, Upstash uses GCP us-east4, and every GCP resource
+  is locked to us-east4;
+- staging chain identity is Robinhood testnet 46630; mainnet 4663 is not accepted by
+  this deployment policy.
+
+The same immutable server image supplies API, signer, and job code, but command
+overrides select the exact role. Secret Manager grants are per service identity.
+The signer alone receives Cloud KMS signerVerifier on the managed secp256k1 key.
+
 ## Authority boundaries
 
 | Domain | Authority |
@@ -193,6 +218,11 @@ exponential retry, adaptive splitting, and range-level cursor commits bound each
 Sustained failure across every endpoint can extend catch-up indefinitely; it cannot
 skip failed work. Local catch-up/failover invariants pass; the timed managed-staging
 one-hour SLO remains an external gate.
+
+The cost-bounded staging cadence can add up to 15 minutes before a scheduled repair
+starts, so readiness and stale-worker alerts use a 20-minute maximum age. Once a job
+starts, it still catches up through bounded contiguous ranges. This cadence is a
+staging cost choice, not the future production recovery SLO.
 
 ## Phase 3 release control plane
 

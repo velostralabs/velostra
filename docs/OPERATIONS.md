@@ -29,10 +29,29 @@ node server/dist/jobs/webhooks.js --watch
 node server/dist/jobs/monitor.js --watch
 ```
 
-A scheduler may run `--once` every 30 seconds instead, but overlapping schedules
-must have a runtime limit and alert on repeated failure. Unique constraints make
-overlap idempotent; initial production still uses one supervised reconciliation
-worker, one webhook worker, and one logical signer writer.
+Production should keep continuous supervised workers unless its measured operating
+model chooses an equivalent scheduler. The low-cost US staging target intentionally
+uses one-shot Cloud Run Jobs every 15 minutes, staggered at minute 0, 2, and 5.
+Each job has one task, a bounded timeout, at most one retry, and a 20-minute
+heartbeat/readiness age. Unique constraints make overlap idempotent; the private
+signer remains a single bounded nonce writer.
+
+## US-only staging operations
+
+The executable runbook is [deploy/gcp/README.md](../deploy/gcp/README.md). Before
+any Apply action:
+
+1. run both staging policy and deployment-plan tests;
+2. confirm the project and every provider region is the selected US Virginia region;
+3. confirm the release equals the clean current full commit;
+4. use immutable server/web image digests;
+5. keep paid writes disabled;
+6. use the hidden-prompt helper for Secret Manager values;
+7. retain generated records only under ignored artifacts/staging.
+
+Google Cloud Billing is not active for the authenticated account, so no GCP staging
+resource exists yet. Do not record readiness, rotation, alert, outage, PITR, or soak
+evidence until the actual managed service produced it.
 
 ## Reconciliation commands
 
@@ -240,7 +259,9 @@ provider-native managed PITR drill remains an external mainnet release prerequis
 ## Secret rotation
 
 - JWT/HMAC/webhook/database/Redis/RPC/signer secrets are injected by the deployment secret
-  manager, never committed.
+  manager, never committed. For the US GCP target, use
+  deploy/gcp/set-secret-version.ps1 so the value is hidden, streamed over stdin, and
+  never placed in command history or a local file.
 - Agent envelope rotation: add the old key to
   `AGENT_SECRET_DECRYPTION_KEYS`, set the new current key/id, run
   `npm --prefix server run secrets:reencrypt`, verify, then remove the old key after
@@ -257,12 +278,12 @@ attestation variables are present. Never point them at production/mainnet value.
 ```bash
 # measured paid-call load; writes artifacts/phase2/load-*.json
 PHASE2_DRILL_APPROVED=isolated-staging-only \
-PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_SESSION_COOKIE=... PHASE2_AGENT_SLUG=... npm run phase2:load
 
 # minimum 72 hours; writes interrupt-safe JSONL checkpoints and summary
 PHASE2_SOAK_APPROVED=isolated-staging-72h \
-PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_BASE_URL=https://... PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_METRICS_TOKEN=... PHASE2_SESSION_COOKIE=... PHASE2_AGENT_SLUG=... \
 PHASE2_WORKER_RESTART_EVIDENCE_PATH=... PHASE2_FINDINGS_EVIDENCE_PATH=... \
 npm run phase2:soak

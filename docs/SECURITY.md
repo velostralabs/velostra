@@ -105,13 +105,16 @@ In `NODE_ENV=production`, startup rejects missing/unsafe:
 - memory nonce storage;
 - zero/invalid escrow or restricted signer configuration; raw signer keys;
 - non-required settlement mode;
-- non-4663 chain, non-6-decimal policy, zero deployment block, non-HTTPS RPC;
+- a chain mismatch for the declared environment: 46630 for non-mainnet staging and 4663 only for mainnet-like releases; non-6-decimal policy, zero deployment block, or non-HTTPS RPC;
 - plaintext agent secrets or missing initial super-admin path;
 - missing/short PLATFORM_CURSOR_SECRET, unsafe webhook worker limits, or production
   readiness not requiring the webhook worker.
 - mainnet-like startup without explicit Phase 3 approval, exact deployed-manifest path/hash/release/environment/stage, or a safe paid-write mode;
 - incomplete or mismatched authority/canary policy, manifest-reissued cap bypass, or
   public mode without a hash-bound passing decision and separate approval.
+- the US staging deployment plan rejects any region outside GCP us-east4, Neon
+  aws-us-east-1, and Upstash GCP us-east4; it also rejects mutable image references,
+  mainnet chain identity, unbounded instances, and paid RPC policy.
 
 API, reconciliation worker, webhook worker, and monitor run role-aware subsets of these checks.
 
@@ -122,7 +125,7 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | Independent review absent | release blocked | contract + focused backend review |
 | Release/canary artifact tampering | canonical hashes, exact required sets, authority/constructor binding, deployment init-code provenance, immutable mounts, explicit approvals | protected operator artifact custody |
 | Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial canary intentionally serialized |
-| Restricted signer custody not yet proven on managed staging | process refuses raw production keys | KMS/restricted signer deployment + rotation drill evidence |
+| Restricted signer custody not yet proven on managed staging | raw keys rejected; dedicated private signer, scoped invokers, managed software secp256k1 KMS implementation, nonce lock, and local signer tests are committed | apply the US KMS/signer deployment and capture rotation plus audit-log evidence |
 | One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |
 | Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
 | Sustained all-provider RPC outage/429 | ordered failover, cursor safety, retry/backoff | managed provider outage evidence + alert routing |

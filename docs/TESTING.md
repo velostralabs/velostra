@@ -29,6 +29,9 @@
 | HTTP security | `npm --prefix server run test:http-security` | none | origin, headers, request IDs, body/JSON/404 codes |
 | Secret envelope | `npm --prefix server run test:secrets` | none | encrypt/decrypt/tamper/rotation/revoke behavior |
 | Restricted signer | `npm --prefix server run test:signer` | local HTTP double | allowlist, idempotency, auth, timeout, and response validation |
+| Managed KMS signer | `npm --prefix server run test:kms-signer` | none | DER/PEM handling, low-S signature, sender recovery, durable concurrent idempotency, and conflicting-payload rejection |
+| US staging policy | `powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1` | PowerShell | chain 46630, Virginia-only residency, provider caps, schedules, and USD 35 envelope |
+| US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, private signer entrypoint, bounded services, staggered jobs, and no migration without opt-in |
 | Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
@@ -210,8 +213,10 @@ time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPO
 - independent contract and focused backend review before real-value/mainnet release.
 
 The RPC failover, concurrent load, dense local catch-up, reorg, browser, disposable
-restore, soak-runner, and evidence-validator implementations are complete and locally
-verified. They do not substitute for the external items above.
+restore, soak-runner, evidence-validator, managed KMS signer, and US-only deployment
+policy/plan implementations are complete and locally verified. The deployment-plan
+test performs no external mutation. These checks do not substitute for the external
+items above.
 
 Warnings from Ganache's optional native µWS fallback or listener count are test-runtime
 fallback notices; receipt assertions, financial invariants, and process exit remain the

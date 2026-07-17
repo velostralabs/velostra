@@ -5,9 +5,11 @@ and Prometheus exposition at /metrics. Metrics require the managed scrape bearer
 token. Readiness remains closed until PostgreSQL, Redis, the configured RPC, escrow
 bytecode/solvency, operational tables, reconciliation heartbeat, and configured webhook-worker heartbeat are healthy.
 
-The operational-monitor process evaluates the same state every 30 seconds, persists
-deduplicated alerts in PostgreSQL, and sends actionable webhook notifications. Alert
-state survives restarts and supports OPEN, ACKNOWLEDGED, and RESOLVED lifecycle.
+The operational-monitor role persists deduplicated alerts in PostgreSQL and sends
+actionable webhook notifications. Continuous production may evaluate every 30
+seconds. The low-cost US staging target invokes a one-shot monitor job every 15
+minutes and therefore uses a 20-minute heartbeat/staleness threshold. Alert state
+survives restarts and supports OPEN, ACKNOWLEDGED, and RESOLVED lifecycle.
 
 ## Deployment
 
@@ -18,9 +20,10 @@ state survives restarts and supports OPEN, ACKNOWLEDGED, and RESOLVED lifecycle.
 3. Import grafana-dashboard.json and prometheus-rules.yml, then replace datasource
    and runbook destinations through reviewed configuration.
 4. Configure ALERT_WEBHOOK_URL, ALERT_WEBHOOK_TOKEN, and ALERT_RUNBOOK_BASE_URL.
-5. Start supervised reconciliation and webhook workers plus one operational-monitor;
-   prove every required rule
-   reaches a real operator.
+5. Start supervised reconciliation/webhook/monitor roles in production. In the
+   selected US staging target, deploy their separate staggered one-task Cloud Run
+   Jobs from deploy/gcp/deploy-runtime.ps1. Prove every required rule reaches a real
+   operator.
 6. Have the managed backup/PITR job record a successful heartbeat:
 
        npm run heartbeat:record --prefix server -- backup ok

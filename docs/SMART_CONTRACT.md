@@ -160,6 +160,19 @@ Ten Phase 1 groups cover:
 9. successor declaration, exact unencumbered migration, and predecessor exits;
 10. lifetime accounting consistency.
 
+## Guarded US staging deployment
+
+deploy:robinhood-testnet is isolated to Robinhood testnet chain 46630 and GCP
+deployment region us-east4. It is inert without broadcast plus the exact
+isolated-staging approval phrase, rejects duplicate operational role addresses, and
+can deploy a 6-decimal MockUSD for synthetic value. The SETTLER role uses the
+address derived from the managed secp256k1 KMS public key.
+
+The verifier checks receipt success, runtime bytecode with immutable references,
+token decimals, fee, unpaused/solvent state, unset successor, deployment block, and
+all constructor roles. Both deployment and verification outputs stay under ignored
+artifacts/staging. This testnet path does not weaken or authorize the mainnet flow.
+
 ## Guarded Phase 3 deployment
 
 `deploy:robinhood` is no longer a plain environment-driven broadcast. It first

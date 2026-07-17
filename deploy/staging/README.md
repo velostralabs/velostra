@@ -2,8 +2,12 @@
 
 This directory is the reviewable managed-staging, Phase 3 release, and Phase 4 platform topology. It connects the
 Velostra containers to externally managed PostgreSQL, Redis, RPC, TLS ingress, and
-secret storage. It deliberately does not provision or embed those vendor-specific
-resources.
+secret storage. It deliberately does not embed credentials or provider outputs.
+
+This Compose topology remains the portable/local specification. The selected managed
+staging implementation is the [US-only GCP runbook](../gcp/README.md): Robinhood
+testnet 46630, GCP us-east4, Neon aws-us-east-1, Upstash GCP us-east4, and a
+USD 35 envelope. No managed resource has been provisioned yet.
 
 ## Invariants
 
@@ -16,7 +20,7 @@ resources.
   supervised processes; the reconciliation path has one active logical signer writer;
 - role-specific API/reconciliation/webhook/monitor secrets are isolated; webhook
   delivery has bounded retry/lock settings and no signer authority;
-- image references are immutable tags or digests generated from a reviewed commit;
+- image references are immutable digests generated from the exact reviewed commit;
 - role-specific common/api/worker/webhook/monitor env files are materialized from separate
   secret scopes and never committed;
 - the immutable Phase 3 input packet is mounted read-only, while readiness/canary
@@ -68,13 +72,13 @@ injection and refuse production/mainnet targets:
 ```bash
 PHASE2_DRILL_APPROVED=isolated-staging-only \
 PHASE2_BASE_URL=https://staging.example \
-PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
 PHASE2_AGENT_SLUG=<synthetic-agent> npm run phase2:load
 
 PHASE2_SOAK_APPROVED=isolated-staging-72h \
 PHASE2_BASE_URL=https://staging.example \
-PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_METRICS_TOKEN='<managed-token>' \
 PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
 PHASE2_AGENT_SLUG=<synthetic-agent> \

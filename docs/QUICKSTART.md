@@ -148,6 +148,9 @@ npm --prefix server run test:ssrf
 npm --prefix server run test:http-security
 npm --prefix server run test:secrets
 npm --prefix server run test:signer
+npm --prefix server run test:kms-signer
+powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
+powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
 npm --prefix server run test:authority
 npm --prefix server run test:resilience
 npm --prefix server run test:observability
@@ -171,6 +174,22 @@ npm --prefix server run test:money
 
 The money-loop suite resets application state in that database. Never point it at
 staging or production.
+
+## US-only managed testnet staging
+
+The selected staging target is Robinhood testnet chain 46630 with every managed
+resource in a US Virginia region. Validate the non-mutating deployment plan:
+
+    powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
+    powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
+
+The bootstrap remains plan-only unless Apply and a billing account are supplied.
+No resource currently exists because Cloud Billing is not active for the
+authenticated account. Follow [the US staging runbook](../deploy/gcp/README.md) only
+after the user-owned GCP, Neon, Upstash, Alchemy, and alert receiver accounts exist.
+Never use Singapore, Indonesia, another Asia region, mainnet chain 4663, or real
+value for this staging path.
 
 ## Phase 3 release preparation
 

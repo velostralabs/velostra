@@ -15,6 +15,23 @@ explicit operator broadcast remain mainnet release gates. Provision only isolate
 non-mainnet-value staging, execute the real-wallet/alert/outage/PITR/72-hour drills,
 and pass every signed validator. Do not deploy mainnet value until all gates close.
 
+## Current US-only staging target
+
+The authorized non-mainnet target is Robinhood testnet chain 46630. Its executable
+policy is [deploy/gcp](../deploy/gcp/README.md):
+
+- GCP Cloud Run, Scheduler, KMS, Secret Manager, and Artifact Registry in us-east4;
+- Neon Postgres in aws-us-east-1;
+- Upstash Redis on GCP us-east4 with no replicas and a USD 5 hard cap;
+- Alchemy Free primary plus Robinhood public testnet fallback RPC;
+- scale-to-zero web/API/private-signer services and staggered 15-minute jobs;
+- paid writes disabled and a USD 35 cross-provider monthly envelope.
+
+All mutation scripts are plan-only without Apply. They require a clean full release
+SHA and immutable image digests. No US staging resource has been provisioned yet
+because the authenticated Google account has no Cloud Billing account. This is the
+current external blocker, not a completed deployment.
+
 ## Target topology
 
 ```mermaid
@@ -33,9 +50,12 @@ flowchart LR
     SECRETS["Secret manager / restricted signer"] --> API
 ```
 
-Initial topology has one logical signer writer, one continuous reconciliation worker,
-one continuous webhook worker, and one operational monitor. API read
-traffic may scale only after signer nonce behavior is isolated/tested.
+Initial production topology has one logical signer writer, one continuous
+reconciliation worker, one continuous webhook worker, and one operational monitor.
+The low-cost US staging translation keeps the signer at one instance and invokes
+reconciliation, webhooks, and monitoring as separate one-task Cloud Run Jobs on
+staggered 15-minute schedules. API read traffic may scale only within its bounded
+two-instance cap; signer nonce behavior stays isolated.
 
 ## Database release
 
@@ -88,7 +108,7 @@ All backend roles run strict role-aware production configuration validation.
 | `SETTLEMENT_SIGNER_AUTH_TOKEN` | managed secret, at least 32 characters |
 | `SETTLEMENT_SIGNER_ADDRESS` | non-zero authorized settler |
 | `ONCHAIN_SETTLEMENT_MODE` | exactly `required` |
-| `ROBINHOOD_CHAIN_ID` | `4663` |
+| `ROBINHOOD_CHAIN_ID` | 46630 for non-mainnet staging; 4663 only for an approved mainnet-like release |
 | `SETTLEMENT_TOKEN_DECIMALS` | `6` |
 | `ROBINHOOD_RPC_URL` | dedicated primary HTTPS endpoint |
 | `ROBINHOOD_RPC_FALLBACK_URLS` | optional comma-separated credential-free HTTPS fallbacks |
@@ -195,6 +215,14 @@ for HTML, immutable cache for hashed assets, CSP appropriate to wallet/RPC/API
 origins, and no server secret in `VITE_*`.
 
 ## Release sequence
+
+For the current Robinhood testnet staging sequence, follow the guarded two-pass
+runtime/web origin procedure in [deploy/gcp/README.md](../deploy/gcp/README.md).
+It deploys and verifies the testnet contract before building immutable images, runs
+migration only with explicit opt-in, keeps paid writes disabled, and finally rebinds
+the API to the generated canonical web origin.
+
+The mainnet sequence remains gated:
 
 1. freeze audited commit and constructor parameters;
 2. backup database and apply migrations;

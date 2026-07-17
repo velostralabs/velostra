@@ -65,7 +65,7 @@ if ($Apply) {
 $imageTag = $region + '-docker.pkg.dev/' + $ProjectId + '/' +
   $repository + '/' + $Component + ':' + $Release.ToLowerInvariant()
 $buildServiceAccount = 'projects/' + $ProjectId +
-  '/serviceAccounts/builder@' + $ProjectId + '.iam.gserviceaccount.com'
+  '/serviceAccounts/velostra-builder@' + $ProjectId + '.iam.gserviceaccount.com'
 if (-not $Apply) {
   Write-Output ('PLAN  immutable image: ' + $imageTag)
   Write-Output ('PLAN  Cloud Build identity: ' + $buildServiceAccount)

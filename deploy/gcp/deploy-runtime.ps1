@@ -167,7 +167,7 @@ function Deploy-Job {
   Invoke-Gcloud @(
     'run', 'jobs', 'deploy', $Name,
     ('--image=' + $ServerImage), ('--region=' + $region), ('--project=' + $ProjectId),
-    ('--service-account=jobs@' + $ProjectId + '.iam.gserviceaccount.com'),
+    ('--service-account=velostra-jobs@' + $ProjectId + '.iam.gserviceaccount.com'),
     '--cpu=1', '--memory=512Mi', '--tasks=1', ('--max-retries=' + $MaxRetries),
     ('--task-timeout=' + $TimeoutSeconds + 's'), '--command=node',
     ('--args=' + $EntryPoint), ('--set-env-vars=' + (Join-Environment $Environment)),
@@ -216,7 +216,7 @@ $signerEnv = [ordered]@{
   SIGNER_MAX_GAS = 500000
   SIGNER_MAX_FEE_PER_GAS_WEI = 10000000000
 }
-Deploy-Service 'velostra-signer' 'signer' $signerEnv 'REDIS_URL=redis-url:latest,ROBINHOOD_RPC_URL=primary-rpc-url:latest,SETTLEMENT_SIGNER_AUTH_TOKEN=signer-auth-token:latest' 1 4 '256Mi' $false 'dist/signer/index.js'
+Deploy-Service 'velostra-signer' 'velostra-signer' $signerEnv 'REDIS_URL=redis-url:latest,ROBINHOOD_RPC_URL=primary-rpc-url:latest,SETTLEMENT_SIGNER_AUTH_TOKEN=signer-auth-token:latest' 1 4 '256Mi' $false 'dist/signer/index.js'
 $signerUrl = if ($Apply) {
   Get-GcloudValue @(
     'run', 'services', 'describe', 'velostra-signer',
@@ -262,7 +262,7 @@ $apiEnv.READINESS_WEBHOOK_WORKER_MAX_AGE_MS = 1200000
 $apiEnv.PHASE3_PAID_WRITES_MODE = 'disabled'
 $apiEnv.PHASE3_CANARY_EXIT_APPROVAL = 'not-approved'
 $apiSecrets = 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,JWT_SECRET=jwt-secret:latest,GATEWAY_HMAC_SECRET=gateway-hmac-secret:latest,PLATFORM_CURSOR_SECRET=platform-cursor-secret:latest,AGENT_SECRET_ENCRYPTION_KEY=agent-secret-encryption-key:latest,METRICS_AUTH_TOKEN=metrics-auth-token:latest,SETTLEMENT_SIGNER_AUTH_TOKEN=signer-auth-token:latest,ROBINHOOD_RPC_URL=primary-rpc-url:latest,ROBINHOOD_RPC_FALLBACK_URLS=fallback-rpc-urls:latest'
-Deploy-Service 'velostra-api' 'api' $apiEnv $apiSecrets 2 40 '512Mi' $true
+Deploy-Service 'velostra-api' 'velostra-api' $apiEnv $apiSecrets 2 40 '512Mi' $true
 $apiUrl = if ($Apply) {
   Get-GcloudValue @(
     'run', 'services', 'describe', 'velostra-api',
@@ -339,7 +339,7 @@ foreach ($schedule in $schedules) {
   Invoke-Gcloud @(
     'run', 'jobs', 'add-iam-policy-binding', $schedule.Job,
     ('--region=' + $region), ('--project=' + $ProjectId),
-    ('--member=serviceAccount:scheduler@' + $ProjectId + '.iam.gserviceaccount.com'),
+    ('--member=serviceAccount:velostra-scheduler@' + $ProjectId + '.iam.gserviceaccount.com'),
     '--role=roles/run.invoker'
   )
   $exists = Test-GcloudResource @(
@@ -354,7 +354,7 @@ foreach ($schedule in $schedules) {
     ('--location=' + $region), ('--project=' + $ProjectId),
     ('--schedule=' + $schedule.Cron), '--time-zone=Etc/UTC',
     ('--uri=' + $jobUri), '--http-method=POST',
-    ('--oauth-service-account-email=scheduler@' + $ProjectId + '.iam.gserviceaccount.com'),
+    ('--oauth-service-account-email=velostra-scheduler@' + $ProjectId + '.iam.gserviceaccount.com'),
     '--attempt-deadline=300s'
   )
 }

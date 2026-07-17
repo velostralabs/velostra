@@ -136,12 +136,12 @@ if (-not (Test-GcloudResource @(
 }
 
 $serviceAccounts = [ordered]@{
-  web = 'Velostra public web'
-  builder = 'Velostra immutable image builder'
-  api = 'Velostra staging API'
-  signer = 'Velostra restricted settlement signer'
-  jobs = 'Velostra scheduled operational jobs'
-  scheduler = 'Velostra Cloud Scheduler invoker'
+  'velostra-web' = 'Velostra public web'
+  'velostra-builder' = 'Velostra immutable image builder'
+  'velostra-api' = 'Velostra staging API'
+  'velostra-signer' = 'Velostra restricted settlement signer'
+  'velostra-jobs' = 'Velostra scheduled operational jobs'
+  'velostra-scheduler' = 'Velostra Cloud Scheduler invoker'
 }
 foreach ($entry in $serviceAccounts.GetEnumerator()) {
   $email = $entry.Key + '@' + $ProjectId + '.iam.gserviceaccount.com'
@@ -157,7 +157,7 @@ foreach ($entry in $serviceAccounts.GetEnumerator()) {
   }
 }
 
-$builderMember = 'serviceAccount:builder@' + $ProjectId + '.iam.gserviceaccount.com'
+$builderMember = 'serviceAccount:velostra-builder@' + $ProjectId + '.iam.gserviceaccount.com'
 Invoke-Gcloud @(
   'artifacts', 'repositories', 'add-iam-policy-binding', $repository,
   ('--location=' + $region),
@@ -205,24 +205,24 @@ Invoke-Gcloud @(
   'kms', 'keys', 'add-iam-policy-binding', $keyName,
   ('--keyring=' + $keyRing),
   ('--location=' + $region),
-  ('--member=serviceAccount:signer@' + $ProjectId + '.iam.gserviceaccount.com'),
+  ('--member=serviceAccount:velostra-signer@' + $ProjectId + '.iam.gserviceaccount.com'),
   '--role=roles/cloudkms.signerVerifier',
   ('--project=' + $ProjectId)
 )
 
 $secretAccess = [ordered]@{
-  'database-url' = @('api', 'jobs')
-  'redis-url' = @('api', 'signer', 'jobs')
-  'jwt-secret' = @('api')
-  'gateway-hmac-secret' = @('api')
-  'platform-cursor-secret' = @('api')
-  'agent-secret-encryption-key' = @('api', 'jobs')
-  'metrics-auth-token' = @('api')
-  'signer-auth-token' = @('api', 'signer', 'jobs')
-  'primary-rpc-url' = @('api', 'signer', 'jobs')
-  'fallback-rpc-urls' = @('api', 'jobs')
-  'alert-webhook-url' = @('jobs')
-  'alert-webhook-token' = @('jobs')
+  'database-url' = @('velostra-api', 'velostra-jobs')
+  'redis-url' = @('velostra-api', 'velostra-signer', 'velostra-jobs')
+  'jwt-secret' = @('velostra-api')
+  'gateway-hmac-secret' = @('velostra-api')
+  'platform-cursor-secret' = @('velostra-api')
+  'agent-secret-encryption-key' = @('velostra-api', 'velostra-jobs')
+  'metrics-auth-token' = @('velostra-api')
+  'signer-auth-token' = @('velostra-api', 'velostra-signer', 'velostra-jobs')
+  'primary-rpc-url' = @('velostra-api', 'velostra-signer', 'velostra-jobs')
+  'fallback-rpc-urls' = @('velostra-api', 'velostra-jobs')
+  'alert-webhook-url' = @('velostra-jobs')
+  'alert-webhook-token' = @('velostra-jobs')
 }
 foreach ($entry in $secretAccess.GetEnumerator()) {
   if (-not (Test-GcloudResource @(

@@ -33,7 +33,9 @@ is supplied. Runtime and image deployment additionally require:
 - a clean worktree;
 - immutable Artifact Registry image digests;
 - chain 46630 and us-east4;
-- non-zero contract and operational addresses.
+- non-zero contract and operational addresses;
+- a dedicated Cloud Build identity with repository-scoped Artifact Registry write,
+  Cloud Logging write, source-object read, and regional user-owned bucket behavior.
 
 Generated deployment evidence is written below artifacts/staging, which is
 ignored by Git. Secret values are accepted only through an interactive hidden
@@ -72,7 +74,7 @@ After Cloud Billing is active:
 
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us -BillingAccount XXXXXX-XXXXXX-XXXXXX -Apply
 
-This creates only US resources, dedicated least-privilege service identities,
+This creates only US resources, dedicated least-privilege runtime/build identities,
 the restricted KMS signer key, secret containers, and the USD 20 GCP budget
 alerts.
 

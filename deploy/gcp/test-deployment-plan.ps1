@@ -29,11 +29,30 @@ $web = & (Join-Path $PSScriptRoot 'deploy-web.ps1') -Release $release -WebImage 
 if ($LASTEXITCODE -ne 0) { throw 'Web plan failed' }
 $bootstrap = & (Join-Path $PSScriptRoot 'bootstrap-staging.ps1') -ProjectId $ProjectId
 if ($LASTEXITCODE -ne 0) { throw 'Bootstrap plan failed' }
+$serverBuildParameters = @{
+  Component = 'server'
+  Release = $release
+  ProjectId = $ProjectId
+}
+$serverBuild = & (Join-Path $PSScriptRoot 'build-image.ps1') @serverBuildParameters
+if ($LASTEXITCODE -ne 0) { throw 'Server image plan failed' }
+$webBuildParameters = @{
+  Component = 'web'
+  Release = $release
+  ProjectId = $ProjectId
+  ApiUrl = 'https://velostra-api.example.invalid'
+  EscrowAddress = '0x1111111111111111111111111111111111111111'
+  SettlementTokenAddress = '0x4444444444444444444444444444444444444444'
+}
+$webBuild = & (Join-Path $PSScriptRoot 'build-image.ps1') @webBuildParameters
+if ($LASTEXITCODE -ne 0) { throw 'Web image plan failed' }
 
 $runtimeText = $runtime -join [Environment]::NewLine
 $webText = $web -join [Environment]::NewLine
 $bootstrapText = $bootstrap -join [Environment]::NewLine
-$all = $runtimeText + [Environment]::NewLine + $webText + [Environment]::NewLine + $bootstrapText
+$buildText = ($serverBuild + $webBuild) -join [Environment]::NewLine
+$all = $runtimeText + [Environment]::NewLine + $webText +
+  [Environment]::NewLine + $bootstrapText + [Environment]::NewLine + $buildText
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -48,6 +67,11 @@ Require-Match $all '(?i)us-east4' 'Deployment plan must use us-east4'
 Reject-Match $all '(?i)asia|singapore|indonesia|us-west|europe' 'Deployment plan escaped US Virginia'
 Reject-Match $all '(?m)^APPLY ' 'Plan validation must never mutate resources'
 Require-Match $bootstrapText 'service-accounts create web' 'Bootstrap must create the unprivileged web identity'
+Require-Match $bootstrapText 'service-accounts create builder' 'Bootstrap must create a dedicated build identity'
+Require-Match $bootstrapText 'repositories add-iam-policy-binding velostra .*builder@.*roles/artifactregistry.writer' 'Builder must receive repository-scoped image write access'
+Require-Match $bootstrapText 'roles/logging.logWriter' 'Builder must receive Cloud Logging write access'
+Require-Match $bootstrapText 'roles/storage.objectViewer' 'Builder must receive source object read access'
+Require-Match $buildText 'builder@.*--default-buckets-behavior=regional-user-owned-bucket --region=us-east4' 'Builds must use the dedicated identity and regional user-owned bucket behavior'
 Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--command=node --args=dist/signer/index[.]js --no-allow-unauthenticated' 'Signer must be private, bounded, and use its dedicated entrypoint'
 Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'

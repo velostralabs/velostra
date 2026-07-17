@@ -128,6 +128,7 @@ if (-not (Test-GcloudResource @(
 
 $serviceAccounts = [ordered]@{
   web = 'Velostra public web'
+  builder = 'Velostra immutable image builder'
   api = 'Velostra staging API'
   signer = 'Velostra restricted settlement signer'
   jobs = 'Velostra scheduled operational jobs'
@@ -145,6 +146,22 @@ foreach ($entry in $serviceAccounts.GetEnumerator()) {
       ('--project=' + $ProjectId)
     )
   }
+}
+
+$builderMember = 'serviceAccount:builder@' + $ProjectId + '.iam.gserviceaccount.com'
+Invoke-Gcloud @(
+  'artifacts', 'repositories', 'add-iam-policy-binding', $repository,
+  ('--location=' + $region),
+  ('--member=' + $builderMember),
+  '--role=roles/artifactregistry.writer',
+  ('--project=' + $ProjectId)
+)
+foreach ($role in @('roles/logging.logWriter', 'roles/storage.objectViewer')) {
+  Invoke-Gcloud @(
+    'projects', 'add-iam-policy-binding', $ProjectId,
+    ('--member=' + $builderMember),
+    ('--role=' + $role)
+  )
 }
 
 if (-not (Test-GcloudResource @(

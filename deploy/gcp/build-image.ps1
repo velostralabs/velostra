@@ -64,22 +64,28 @@ if ($Apply) {
 
 $imageTag = $region + '-docker.pkg.dev/' + $ProjectId + '/' +
   $repository + '/' + $Component + ':' + $Release.ToLowerInvariant()
+$buildServiceAccount = 'projects/' + $ProjectId +
+  '/serviceAccounts/builder@' + $ProjectId + '.iam.gserviceaccount.com'
 if (-not $Apply) {
   Write-Output ('PLAN  immutable image: ' + $imageTag)
-  if ($Component -eq 'server') {
-    Write-Output ('PLAN  gcloud builds submit server --tag=' + $imageTag + ' --region=' + $region)
-  } else {
+  Write-Output ('PLAN  Cloud Build identity: ' + $buildServiceAccount)
+  Write-Output (
+    'PLAN  gcloud builds submit ' + $Component +
+    ' --service-account=' + $buildServiceAccount +
+    ' --default-buckets-behavior=regional-user-owned-bucket --region=' + $region
+  )
+  if ($Component -eq 'web') {
     Write-Output ('PLAN  Cloud Build web image with API ' + $ApiUrl)
   }
   return
 }
 
 if ($Component -eq 'server') {
+  $substitutions = '_IMAGE=' + $imageTag
   $buildArgs = @(
     'builds', 'submit', (Join-Path $repositoryRoot 'server'),
-    ('--tag=' + $imageTag),
-    ('--region=' + $region),
-    ('--project=' + $ProjectId)
+    ('--config=' + (Join-Path $PSScriptRoot 'cloudbuild-server.yaml')),
+    ('--substitutions=' + $substitutions)
   )
 } else {
   $substitutions = '_IMAGE=' + $imageTag +
@@ -89,11 +95,15 @@ if ($Component -eq 'server') {
   $buildArgs = @(
     'builds', 'submit', $repositoryRoot,
     ('--config=' + (Join-Path $PSScriptRoot 'cloudbuild-web.yaml')),
-    ('--substitutions=' + $substitutions),
-    ('--region=' + $region),
-    ('--project=' + $ProjectId)
+    ('--substitutions=' + $substitutions)
   )
 }
+$buildArgs += @(
+  ('--service-account=' + $buildServiceAccount),
+  '--default-buckets-behavior=regional-user-owned-bucket',
+  ('--region=' + $region),
+  ('--project=' + $ProjectId)
+)
 & $gcloud @buildArgs
 if ($LASTEXITCODE -ne 0) { throw 'Cloud Build failed' }
 

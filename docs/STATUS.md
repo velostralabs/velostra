@@ -26,6 +26,13 @@ one-hour outage/PITR/72-hour soak, real operator alert delivery, deployment
 verification, low-value canary, and accountable closed-beta approval remain external
 gates.
 
+A low-cost US-only staging deployment path is now committed and locally validated:
+Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
+us-east4; bounded Cloud Run services/jobs; immutable image digests; managed software
+KMS signing; and a USD 35 monthly envelope. No provider resource has been created
+yet. Google Cloud Billing and the user-owned Neon, Upstash, Alchemy, and alert
+receiver accounts remain the current external provisioning gate.
+
 ## Audit decision
 
 - **Internal engineering audit:** PASS for Phase 0-4 repository preparation.
@@ -45,8 +52,8 @@ gates.
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | non-root web/API/reconciliation/webhook/monitor/migration roles with scoped env and mounts | managed services not provisioned here |
-| Signer/secrets | raw production key rejected; remote signer/authority policy tested | managed KMS/secret rotations and drills pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | Google billing/provider accounts and managed resources not provisioned yet |
+| Signer/secrets | raw production key rejected; restricted remote signer plus managed secp256k1 KMS implementation, scoped identities, and hidden-prompt Secret Manager helper tested | KMS resource, secret versions, audit logs, rotations, and drills pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29455761339](https://github.com/velostralabs/velostra/actions/runs/29455761339) and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/actions/runs/29455761330) passed on `47747e4` |
@@ -55,6 +62,14 @@ gates.
 
 ### Staging, secrets, and authority
 
+- Executable US-only policy fixes GCP to us-east4, Neon to aws-us-east-1,
+  Upstash to GCP us-east4, Robinhood testnet to chain 46630, and the total monthly
+  envelope to USD 35.
+- Plan-only bootstrap, KMS public-key/address derivation, immutable Cloud Build,
+  bounded Cloud Run web/API/private-signer services, scheduled reconciliation/
+  webhook/monitor jobs, and migration opt-in are committed and plan-tested.
+- The private signer runs its dedicated entrypoint, permits only API/job invokers,
+  uses managed secp256k1 Cloud KMS signing, and never receives a raw wallet key.
 - Portable Compose topology with separate API, reconciliation worker, operational
   monitor, migration job, and web ingress; images run as non-root.
 - Role-specific environment scopes, network boundaries, health checks, resource
@@ -234,8 +249,9 @@ pending staging outage artifact.
 
 ## Next action
 
-Keep the Phase 0-4 regression gates green and freeze Phase 5 scope before changing
-the public platform contract. In parallel, close the independent-review and managed
-evidence prerequisites before mainnet or closed-beta activation. Do not put real
-value or public users at risk until the Phase 3 canary is operationally stable and
-explicit activation approval is recorded.
+Activate only the user-owned US provider accounts, beginning with Google Cloud
+Billing, then apply the plan-tested bootstrap and load secrets through the hidden
+prompt helper. Deploy and verify the Robinhood testnet contract, runtime, and web
+origin before running wallet, alert, one-hour outage, PITR, and 72-hour evidence.
+No external gate may be marked complete from the local plan. Keep paid writes
+disabled and do not use mainnet value.

@@ -112,6 +112,7 @@ and concurrent live/worker finalization.
 |-- src/                  React + TypeScript product experience
 |-- server/               Express API, exact ledger, outbox, migrations, worker
 |-- contracts/            VelostraEscrow, MockUSD, build/deploy/test scripts
+|-- deploy/               Portable topology plus US-only managed staging automation
 |-- sdk/                  Typed JavaScript and Python platform clients
 |-- docs/                 Architecture, security, audit, operations, roadmap
 |-- public/               Brand and static delivery assets
@@ -202,13 +203,13 @@ environment:
 ```bash
 PHASE2_DRILL_APPROVED=isolated-staging-only \
 PHASE2_BASE_URL=https://staging.example \
-PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
 PHASE2_AGENT_SLUG=<synthetic-agent> npm run phase2:load
 
 PHASE2_SOAK_APPROVED=isolated-staging-72h \
 PHASE2_BASE_URL=https://staging.example \
-PHASE2_EXPECTED_ENVIRONMENT=staging-isolated \
+PHASE2_EXPECTED_ENVIRONMENT=staging \
 PHASE2_METRICS_TOKEN='<managed-token>' \
 PHASE2_SESSION_COOKIE='<synthetic-session-cookie>' \
 PHASE2_AGENT_SLUG=<synthetic-agent> \
@@ -221,6 +222,22 @@ npm run phase2:evidence -- --manifest=artifacts/phase2/evidence-manifest.json
 The load and soak commands require their documented approval sentinels. The final
 validator hashes every required artifact and fails closed if evidence is missing,
 tampered, cross-release, or unsigned.
+
+## US-only managed staging
+
+The selected low-cost staging path uses Robinhood testnet chain 46630 and Virginia
+regions only: GCP us-east4, Neon aws-us-east-1, and Upstash GCP us-east4. It includes
+plan-only bootstrap, managed secp256k1 KMS signing, immutable image builds, a private
+signer, bounded web/API services, and staggered one-task jobs:
+
+    powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1
+    powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
+    powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-staging-us
+
+No managed staging resource or cost exists yet because Cloud Billing and the other
+user-owned provider accounts are not active. See the
+[US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled, and this
+path cannot target Singapore, Indonesia, another Asia region, or mainnet.
 
 ## Controlled release tooling
 
@@ -261,6 +278,7 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 | [API](./docs/API_REFERENCE.md) | HTTP routes, RBAC, stable errors, HMAC. |
 | [Security](./docs/SECURITY.md) | Implemented controls and release gates. |
 | [Deployment](./docs/DEPLOYMENT.md) | Production topology and release order. |
+| [US staging](./deploy/gcp/README.md) | Virginia-only testnet stack, cost policy, secrets, deployment, and evidence sequence. |
 
 ## Status
 
@@ -268,7 +286,8 @@ Phase 0-4 repository preparation is implemented and locally verified: product,
 security, exactly-once recovery, staging/observability, immutable release identity,
 guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
-governance.
+governance. The US-only Robinhood testnet deployment policy and dry-run plan also
+pass locally; no managed resource has been provisioned.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
 recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,

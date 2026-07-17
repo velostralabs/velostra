@@ -129,8 +129,15 @@ and must never be inferred from local tests.
   deep readiness, and reproducible configuration part of the deployment contract.
 - [x] Require a full 40-character frozen release SHA and block production or any
   mainnet-like startup unless the later release approval is explicit.
-- [ ] Instantiate managed Postgres with PITR, managed Redis, dedicated primary and
-  fallback RPCs, TLS ingress, registry, and secret store in an isolated account.
+- [x] Freeze the low-cost staging target to Robinhood testnet chain 46630, GCP
+  us-east4, Neon aws-us-east-1, Upstash GCP us-east4, no paid RPC, and a USD 35
+  monthly envelope.
+- [x] Commit plan-only US bootstrap, bounded Cloud Run service/job deployment,
+  immutable image build/deploy, safe Secret Manager input, KMS address derivation,
+  explicit migration, and a fail-closed deployment-plan test.
+- [ ] Instantiate Neon Postgres with PITR, Upstash Redis, Alchemy primary plus
+  Robinhood public fallback RPC, GCP registry/KMS/Secret Manager/Cloud Run, and
+  alert delivery in the selected US regions.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
 
@@ -211,7 +218,6 @@ and must never be inferred from local tests.
 Phase 2 repository exit is **CLOSED / PASS**. Continued non-mainnet development is
 approved. Every unchecked external item remains a mainnet release prerequisite and
 must be satisfied before real value is authorized.
-
 
 ## Phase 3 - Controlled mainnet release preparation (REPOSITORY DONE; EXECUTION GATED)
 
@@ -344,6 +350,18 @@ closed-beta approval. Repository completion cannot enable real users or value.
 - evaluate multi-chain only after one deployment is operationally stable.
 
 ## Immediate ordered flow
+
+### Staging/evidence lane (active external next)
+
+1. activate Google Cloud Billing and create the user-owned Neon, Upstash, Alchemy,
+   and alert receiver accounts;
+2. apply the plan-tested US-only bootstrap and load scoped secret versions;
+3. derive the KMS signer, deploy and verify VelostraEscrow on Robinhood testnet, then
+   deploy immutable server/web images with paid writes disabled;
+4. bind the generated web origin and prove readiness plus wallet/alert flows;
+5. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
+   claiming completion early;
+6. retain all outputs under ignored artifacts until the final signed evidence packet.
 
 ### Repository/product lane
 

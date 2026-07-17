@@ -23,6 +23,7 @@ explicit operator authorization; no mainnet deployment is recorded.
 | [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 30 tables, money/platform invariants, nine migrations, indexes, restore. |
 | [API_REFERENCE.md](./API_REFERENCE.md) | /api/v1, cursors/idempotency, builder, webhook, trust/privacy, RBAC, HMAC. |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production topology, configuration, release order, and gates. |
+| [US staging runbook](../deploy/gcp/README.md) | Robinhood testnet 46630, Virginia-only providers, bounded GCP deployment, costs, secrets, and evidence order. |
 | [TESTING.md](./TESTING.md) | Automated/CI matrix, money-loop, migration, and restore evidence. |
 | [QUICKSTART.md](./QUICKSTART.md) | Safe local setup and verification commands. |
 | [BUILDER_GUIDE.md](./BUILDER_GUIDE.md) | SDKs, revisions, probes, analytics, webhooks, HMAC, recovery, secrets. |
@@ -40,8 +41,10 @@ explicit operator authorization; no mainnet deployment is recorded.
    moderation, privacy, and telemetry authority;
 6. JavaScript and Python SDK source for public client contracts;
 7. guarded Phase 3 deployment/canary runtime for release authority;
-8. frontend source for wallet/provider and product behavior;
-9. docs for reviewed explanation and operating policy.
+8. deploy/gcp/staging.config.json plus its policy and plan tests for the selected
+   US-only non-mainnet staging deployment;
+9. frontend source for wallet/provider and product behavior;
+10. docs for reviewed explanation and operating policy.
 
 Behavior changes require matching tests and updates to status/domain docs. Priority
 or sequencing changes require a roadmap update.
@@ -52,5 +55,7 @@ The repository has passed automated and internal engineering review for Phase 0-
 which clears continued non-mainnet development. This is not an independent audit,
 deployment, closed-beta approval, or real-value authorization. Managed infrastructure,
 signer custody, operator alerts, real-wallet staging, load/outage/PITR drills, and a
-72-hour soak remain release prerequisites. The committed Phase 4 CI expansion must
-still execute remotely after push; local completion never overrides activation gates.
+72-hour soak remain release prerequisites. The repository now includes a locally
+validated US-only staging plan, but Google Cloud Billing and all managed provider
+resources/evidence are still external and unprovisioned. Local completion never
+overrides activation gates.

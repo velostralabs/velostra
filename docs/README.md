@@ -1,18 +1,18 @@
 # Velostra documentation
 
-> Last verified against the workspace: 2026-07-16.
+> Last verified against the workspace: 2026-07-17.
 
-Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and the historical
-[PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md). Phase 0-3 repository preparation is
-complete and has passed internal engineering/CI audit. Phase 4 is the next non-mainnet
-repository focus. Phase 3 execution and any closed-beta activation remain deliberately
-gated on independent review, managed-staging evidence, immutable release approval, and
-explicit operator broadcast; no mainnet deployment is recorded.
+Start with [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md), and
+[PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md). Phase 0-4 repository implementation
+is complete and locally cleared. Phase 3 execution and closed-beta activation remain
+gated on independent review, managed evidence, immutable release approval, and
+explicit operator authorization; no mainnet deployment is recorded.
 
 | Document | Purpose |
 |---|---|
 | [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Historical Phase 1 baseline, evidence, and original Phase 2 entry rules. |
 | [STATUS.md](./STATUS.md) | Current truth, internal-audit clearance, and mainnet prerequisites. |
+| [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md) | Frozen versioning, lifecycle, integration, trust/privacy, and exit contract. |
 | [ROADMAP.md](./ROADMAP.md) | Completed phases, release prerequisites, and ordered next work. |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker, and failures. |
 | [THREAT_MODEL.md](./THREAT_MODEL.md) | Assets, actors, invariants, threats, controls, residual risks. |
@@ -20,12 +20,14 @@ explicit operator broadcast; no mainnet deployment is recorded.
 | [OPERATIONS.md](./OPERATIONS.md) | Worker, incidents, one-hour catch-up, backups, secrets, successor. |
 | [SECURITY.md](./SECURITY.md) | Implemented controls and remaining production gates. |
 | [SMART_CONTRACT.md](./SMART_CONTRACT.md) | Roles, ABI behavior, solvency, migration, and test evidence. |
-| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 20 tables, money/outbox invariants, migrations, indexes, restore. |
-| [API_REFERENCE.md](./API_REFERENCE.md) | Current HTTP routes, RBAC, errors, and HMAC protocol. |
+| [DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md) | 30 tables, money/platform invariants, nine migrations, indexes, restore. |
+| [API_REFERENCE.md](./API_REFERENCE.md) | /api/v1, cursors/idempotency, builder, webhook, trust/privacy, RBAC, HMAC. |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Production topology, configuration, release order, and gates. |
 | [TESTING.md](./TESTING.md) | Automated/CI matrix, money-loop, migration, and restore evidence. |
 | [QUICKSTART.md](./QUICKSTART.md) | Safe local setup and verification commands. |
-| [BUILDER_GUIDE.md](./BUILDER_GUIDE.md) | Builder onboarding, HMAC, egress, recovery, secret lifecycle. |
+| [BUILDER_GUIDE.md](./BUILDER_GUIDE.md) | SDKs, revisions, probes, analytics, webhooks, HMAC, recovery, secrets. |
+| [JavaScript SDK](../sdk/javascript/README.md) | Typed v1 client, retry/idempotency, signing verification. |
+| [Python SDK](../sdk/python/README.md) | Dependency-free v1 client, pagination, signing verification. |
 | [DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md) | Crystal V visual system, interaction, motion, accessibility. |
 
 ## Source-of-truth order
@@ -34,19 +36,21 @@ explicit operator broadcast; no mainnet deployment is recorded.
 2. `server/src/db/schema.ts` and `server/drizzle` for persisted invariants;
 3. `server/src/lib/gateway/settlement.ts` and `server/src/routes` for live effects;
 4. `server/src/jobs/reconcile.ts` for chain repair/cursor/drift;
-5. `scripts/lib/phase3-*` plus guarded deployment/canary runtime for release authority;
-6. frontend source for wallet/provider and product behavior;
-7. docs for reviewed explanation and operating policy.
+5. platform libraries, routes, and webhook worker for versioned interface, integration,
+   moderation, privacy, and telemetry authority;
+6. JavaScript and Python SDK source for public client contracts;
+7. guarded Phase 3 deployment/canary runtime for release authority;
+8. frontend source for wallet/provider and product behavior;
+9. docs for reviewed explanation and operating policy.
 
 Behavior changes require matching tests and updates to status/domain docs. Priority
 or sequencing changes require a roadmap update.
 
 ## Scope statement
 
-The repository has passed its automated and internal engineering audit, which closes
-Phase 0-3 repository preparation and clears continued non-mainnet development. This is
-not a claim that an independent third-party audit or production approval has occurred.
-Managed infrastructure, signer custody, operator alerts, real-wallet staging,
-load/outage/PITR drills, and a 72-hour soak remain mainnet release prerequisites.
-They do not block Phase 4 repository work; Phase 3 execution, closed-beta activation,
-and all real-value use remain gated.
+The repository has passed automated and internal engineering review for Phase 0-4,
+which clears continued non-mainnet development. This is not an independent audit,
+deployment, closed-beta approval, or real-value authorization. Managed infrastructure,
+signer custody, operator alerts, real-wallet staging, load/outage/PITR drills, and a
+72-hour soak remain release prerequisites. The committed Phase 4 CI expansion must
+still execute remotely after push; local completion never overrides activation gates.

@@ -2,8 +2,9 @@
 
 > Recorded: 2026-07-15.
 > Canonical implementation baseline: `ea1b61de20613edd3727f90efb86766918152b07`.
-> Historical snapshot: Phase 2 later completed and passed internal engineering/CI
-> audit. [STATUS.md](./STATUS.md) is authoritative for current sequencing.
+> Historical snapshot: Phase 2-4 later completed repository implementation and
+> internal engineering review. [STATUS.md](./STATUS.md) is authoritative for current
+> sequencing and activation gates.
 
 This record separates repository implementation completion from external release approval.
 Phase 1 implementation is complete and verified; independent contract and backend review

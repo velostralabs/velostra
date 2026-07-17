@@ -1,7 +1,7 @@
 # Design system
 
-> Last verified against frontend source: 2026-07-16.
-> Phase state: Phase 0-3 repository preparation has passed internal engineering/CI
+> Last verified against frontend source: 2026-07-17.
+> Phase state: Phase 0-4 repository preparation has passed internal engineering/CI
 > audit. The visual system remains current while mainnet execution stays gated.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
@@ -17,6 +17,9 @@ type, dense data labels, dan depth/motion yang tetap menjaga keterbacaan.
 | `src/luxury.css` | Ambient layers, premium motion, interaction effects, final refinements. |
 | `src/components/PageShell.css` | Shared shell dan console surface. |
 | Component CSS | Local section/page layout dan visuals. |
+| BuilderPlatform.* | Revision, probe, analytics, notification, webhook operations. |
+| GovernanceConsole.* | Moderation, privacy, telemetry, webhook recovery. |
+| PrivacyCenter.* | User export/delete policy and request state. |
 | `src/components/BrandMark.*` | Code-native Crystal V untuk navigation, footer, dan product motion. |
 | `src/lib/chain.ts`, `src/components/WalletButton.*` | Chain definition, provider order, dan wallet-picker interaction. |
 | `public/velostra-crystal-v*`, `favicon.svg`, `site.webmanifest` | Browser tab, launcher, dan installable identity assets. |
@@ -213,8 +216,11 @@ capped DPR, visibility/intersection suspension, passive pointer/scroll listeners
 requestAnimationFrame batching pada interface cursor, dan lazy MetaMask SDK chunks
 yang baru dimuat ketika connection path memerlukannya.
 
-Release budget formal belum diset. Phase 2 harus mencatat baseline per route dan
-menetapkan budget untuk JS gzip, LCP, INP, CLS, WebGL memory, and mobile CPU.
+Committed browser gates enforce entry/async/total gzip budgets plus route LCP, INP,
+CLS, accessibility, collision/overflow, routing-state, and visual baselines.
+The guarded real-MetaMask and managed-staging performance evidence remain external
+release gates. New Phase 4 panels must preserve async/error/empty states and must not
+pull Three.js or wallet SDK chunks into unrelated routes.
 
 ## Visual QA checklist
 
@@ -226,4 +232,6 @@ menetapkan budget untuk JS gzip, LCP, INP, CLS, WebGL memory, and mobile CPU.
 - menu safe area dan sticky navigation;
 - 3D fallback/scene parity;
 - direct route refresh dan back/forward transition;
+- revision publish/rollback/probe, webhook rotation/pause, moderation/privacy/
+  telemetry loading/error/empty/success states;
 - typography fallback ketika Google Fonts gagal.

@@ -1,7 +1,7 @@
 # Velostra roadmap
 
-> Updated after final internal audit clearance: 2026-07-16.
-> Baseline: Phase 0-3 repository preparation is complete and internally cleared;
+> Updated after Phase 4 repository completion review: 2026-07-17.
+> Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
 > not blockers for continued development.
@@ -271,62 +271,69 @@ external evidence and accountable operator authorization.
 
 Repository exit: **PASS**. Operational/mainnet exit: **NOT RUN / GATED**.
 
-## Phase 4 - Closed beta and builder platform (NEXT; REPOSITORY WORK CLEAR)
+## Phase 4 - Closed beta and builder platform (REPOSITORY DONE; ACTIVATION GATED)
 
-Status: **next repository focus**. Local and isolated non-mainnet implementation may
-begin from the cleared Phase 0-3 baseline. Closed-beta activation, public traffic,
-and real-value use remain gated by the operational Phase 3 exit.
+Status: **repository implementation complete**. The versioned platform, SDKs,
+builder lifecycle, webhook delivery, trust/privacy controls, migrations, console
+surfaces, operations roles, and repository tests are implemented. Closed-beta
+activation, public traffic, and real-value use remain gated by the operational
+Phase 3 exit and accountable approval.
 
-### 4.1 Versioned platform interfaces
+### 4.1 Versioned platform interfaces (DONE)
 
-- [ ] Freeze a backward-compatible `/api/v1` contract and deprecation policy.
-- [ ] Add cursor pagination and bounded query contracts to list/history surfaces.
-- [ ] Add durable idempotency keys to externally retried mutation endpoints.
-- [ ] Publish typed JavaScript and Python SDKs for wallet/HMAC auth, agent calls,
-  errors, pagination, and idempotent retries.
-- [ ] Add contract/SDK fixtures that prove byte-for-byte HMAC compatibility.
+- [x] Freeze a backward-compatible /api/v1 contract and deprecation policy.
+- [x] Add tamper-evident cursor pagination and bounded query contracts.
+- [x] Add durable actor/operation/fingerprint-bound idempotency records.
+- [x] Fail closed on expired indeterminate mutations instead of risking blind replay.
+- [x] Publish typed JavaScript and Python SDKs for auth, calls, errors, pagination,
+  idempotent retries, HMAC, and webhook verification.
+- [x] Prove byte-for-byte JavaScript/Python/server HMAC compatibility with shared fixtures.
 
-### 4.2 Agent lifecycle and builder operations
+### 4.2 Agent lifecycle and builder operations (DONE)
 
-- [ ] Add agent edit/version history with immutable published revisions and rollback.
-- [ ] Add guarded endpoint tests that reuse the production SSRF/timeout/size policy.
-- [ ] Add approval-state notifications and builder-owned webhook subscriptions.
-- [ ] Add builder analytics for calls, success/error rates, gross volume, earnings,
-  claims, latency, and version performance.
-- [ ] Preserve the current settlement/outbox invariants across every new workflow.
+- [x] Add immutable published revisions, active-revision call correlation, publish,
+  approval reset, and rollback.
+- [x] Add guarded endpoint probes that reuse production SSRF/timeout/size policy.
+- [x] Add approval-state notifications and builder-owned webhook subscriptions.
+- [x] Add bounded call history and exact builder analytics for calls, success/errors,
+  gross, earnings, claims, latency, agents, and revisions.
+- [x] Preserve settlement/reservation/outbox invariants across every workflow.
 
-### 4.3 Reliable integrations
+### 4.3 Reliable integrations (DONE)
 
-- [ ] Sign webhooks, store delivery attempts, and implement bounded exponential retry.
-- [ ] Prevent duplicate delivery effects with stable event and idempotency identities.
-- [ ] Add pause/replay/dead-letter operator controls with RBAC and audit logs.
-- [ ] Document event schemas, rotation, verification, retry, and recovery behavior.
+- [x] Sign exact webhook body bytes and persist events, deliveries, and every attempt.
+- [x] Deliver at least once with stable event identity, claim locks, bounded exponential
+  retry, pause/resume, secret rotation, and soft deletion.
+- [x] Add RBAC/audited dead-letter inspection, attempt history, replay, and emergency pause.
+- [x] Add a separately supervised webhook worker, heartbeat, readiness, metrics, and alerts.
 
-### 4.4 Trust, moderation, privacy, and telemetry
+### 4.4 Trust, moderation, privacy, and telemetry (DONE)
 
-- [ ] Add user report creation, evidence-safe moderation queues, and resolution history.
-- [ ] Add builder/user export, deletion, and retention controls with financial/audit
-  records retained only where policy requires them.
-- [ ] Classify every telemetry field, prohibit secrets/private prompts, and define
-  retention/ownership before enabling collection.
-- [ ] Extend admin permissions, audit logging, and adversarial tests for the new scope.
+- [x] Add authenticated user reports with classified, size-bounded evidence.
+- [x] Add assign/resolve transition history, conditional race safety, notifications,
+  builder webhooks, RBAC, and audit logs.
+- [x] Add export/delete requests with explicit retention of required financial,
+  settlement, security, and audit evidence plus anonymization of personal fields.
+- [x] Add allowlisted telemetry classification/ownership/retention controls and fail
+  closed on prohibited or unclassified fields.
 
-### 4.5 Phase 4 proof and exit
+### 4.5 Phase 4 proof and exit (DONE LOCALLY)
 
-- [ ] Add migrations, upgrade/rollback fixtures, API/SDK contract tests, webhook race
-  tests, and end-to-end builder/report/moderation journeys.
-- [ ] Keep accessibility, collision, routing-state, performance, security, dependency,
-  and financial recovery gates green.
-- [ ] Update every affected architecture, API, schema, builder, operations, security,
-  testing, status, and roadmap document.
-- [ ] Complete one isolated closed-beta product loop with synthetic value and no
-  unexplained financial or delivery drift.
+- [x] Add migration 0008_phase4_platform.sql, fresh/upgrade/restore inventory checks,
+  API/SDK contracts, race tests, and isolated PostgreSQL platform E2E.
+- [x] Prove concurrent idempotency, immutable revision publish, webhook claiming,
+  dead-letter replay, moderation, privacy, cursor tamper, and zero aggregate drift.
+- [x] Keep the existing lint, build, browser, security, contract, financial recovery,
+  Phase 2 evidence, and Phase 3 release/canary gates in the CI matrix.
+- [x] Update architecture, API, schema, builder, operations, security, testing,
+  status, roadmap, deployment, and audit documents.
 
-Repository exit gate: Phase 4 implementation, tests, migrations, and documentation
-pass locally and in CI. Activation gate: operational Phase 3 exit plus accountable
-closed-beta approval; repository completion alone cannot enable real users or value.
+Repository exit: **PASS locally after final audit**. The Phase 4 CI job is committed
+but not claimed as a remote run until these commits are pushed and GitHub executes it.
+Activation gate: operational Phase 3 exit plus managed evidence and accountable
+closed-beta approval. Repository completion cannot enable real users or value.
 
-## Phase 5 - Scale and product expansion (LATER)
+## Phase 5 - Scale and product expansion (NEXT REPOSITORY PLANNING)
 
 - distributed worker lease and isolated horizontally scalable signer service;
 - adaptive provider scoring, backpressure, autoscaling, and cost controls;
@@ -337,13 +344,14 @@ closed-beta approval; repository completion alone cannot enable real users or va
 
 ## Immediate ordered flow
 
-### Repository/product lane (next)
+### Repository/product lane
 
-1. freeze Phase 4 API, identity, pagination, idempotency, and migration contracts;
-2. implement versioned interfaces plus JavaScript/Python SDK compatibility fixtures;
-3. build agent versioning, endpoint tests, builder analytics, and notifications;
-4. build signed/retried webhooks, reports, moderation, privacy, and telemetry controls;
-5. close the isolated Phase 4 E2E, security, migration, browser, and documentation gates.
+1. keep Phase 0-4 regression, migration, browser, SDK, and financial gates green;
+2. freeze Phase 5 scope before implementation;
+3. prioritize distributed work ownership, rollups/exports, provider backpressure,
+   and cost/performance observability;
+4. retain backward-compatible /api/v1 and published revision/webhook contracts;
+5. treat any contract or financial-boundary change as a new audit-scope change.
 
 ### Mainnet/activation lane (still gated)
 
@@ -351,7 +359,9 @@ closed-beta approval; repository completion alone cannot enable real users or va
 2. freeze commit, image digests, policies, constructor, and approvals;
 3. run plan/readiness with paid writes disabled;
 4. broadcast only through the guarded command under the approved ticket;
-5. run bounded canary and expand only after separate operator approval.
+5. run bounded canary and expand only after separate operator approval;
+6. activate closed beta only after webhook/operator/retention controls are proven in
+   the same managed environment.
 
-Phase 4 code may be developed and tested locally while the activation lane is open.
-No Phase 4 feature may bypass the existing deployment, canary, money, or operator gates.
+No Phase 4 or Phase 5 feature may bypass deployment, canary, money, privacy, or
+operator gates.

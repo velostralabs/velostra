@@ -33,6 +33,7 @@ repair the exact database row after process, RPC, or database failure.
 | **Gateway** | Bound EIP-191 auth, HMAC-signed agent requests, SSRF-safe egress, quotas, rate limits, and receipt verification. |
 | **Settlement** | Role-separated 6-decimal ERC-20 escrow with collateral guards, deterministic fee routing, pause, rotation, and successor controls. |
 | **Recovery** | Credit reservation, durable outbox, four-event indexer, persistent cursor, idempotent backfill, ambiguity recovery, and drift warnings. |
+| **Platform** | Versioned API, typed JS/Python SDKs, immutable agent revisions, analytics, notifications, reliable signed webhooks, moderation, privacy, and telemetry governance. |
 | **Release safety** | Immutable release identity, inert deployment planning, deployment verification, deterministic readiness, serialized low-value canary, and non-destructive stop controls. |
 
 <p align="center">
@@ -68,6 +69,8 @@ flowchart LR
     Worker["Reconciliation worker"] --> RPC["EVM RPC"]
     RPC --- Escrow
     Worker --> DB
+    Hooks["Webhook worker"] --> DB
+    Hooks --> BuilderHook["Builder webhook"]
 ```
 
 Authority is intentionally split:
@@ -109,6 +112,7 @@ and concurrent live/worker finalization.
 |-- src/                  React + TypeScript product experience
 |-- server/               Express API, exact ledger, outbox, migrations, worker
 |-- contracts/            VelostraEscrow, MockUSD, build/deploy/test scripts
+|-- sdk/                  Typed JavaScript and Python platform clients
 |-- docs/                 Architecture, security, audit, operations, roadmap
 |-- public/               Brand and static delivery assets
 `-- .github/              CI and repository metadata
@@ -160,6 +164,7 @@ npm run test:browser
 npm run audit:metamask
 npm run test:phase2-evidence
 npm run test:phase3-release
+npm run test:phase4-unit
 
 npm --prefix server run build
 npm --prefix server run db:check
@@ -183,6 +188,7 @@ npm --prefix server run db:migrate
 npm --prefix server run test:migrations
 npm --prefix server run test:observability-db
 npm --prefix server run test:phase3-canary-db
+npm run test:phase4-db
 npm --prefix server run test:money
 ```
 
@@ -244,6 +250,7 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 | Read | Purpose |
 |---|---|
 | [Phase 1 handoff](./docs/PHASE_1_HANDOFF.md) | Historical verified Phase 1 baseline and original Phase 2 entry rules. |
+| [Phase 4 contract](./docs/PHASE_4_CONTRACT.md) | Versioning, lifecycle, webhook, trust/privacy, and exit compatibility baseline. |
 | [Status](./docs/STATUS.md) | Current implementation truth, audit clearance, and mainnet prerequisites. |
 | [Roadmap](./docs/ROADMAP.md) | Phase completion and ordered next work. |
 | [Architecture](./docs/ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker. |
@@ -257,18 +264,17 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 
 ## Status
 
-Phase 0-3 repository preparation is implemented and locally verified: product,
+Phase 0-4 repository preparation is implemented and locally verified: product,
 security, exactly-once recovery, staging/observability, immutable release identity,
-guarded deployment/verification, readiness/catch-up decisions, and a bounded
-transaction-safe canary control plane.
+guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
+immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
+governance.
 
-Phase 4 versioned platform, SDK, builder lifecycle, reliable integration, moderation,
-and privacy work is the next non-mainnet repository focus.
-
-No mainnet deployment or real-value authorization is recorded. Independent review,
-managed MetaMask/alert/outage/PITR/72-hour evidence, accountable approvals, actual
-deployment verification, and the low-value canary remain mandatory. A passing canary
-returns `PASS_AWAITING_OPERATOR` and never expands traffic by itself.
+No mainnet deployment, closed-beta activation, or real-value authorization is
+recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,
+accountable approvals, actual deployment verification, and the low-value canary
+remain mandatory. A passing canary returns PASS_AWAITING_OPERATOR and never expands
+traffic by itself.
 
 ## Security
 

@@ -30,6 +30,25 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+  phase4-contracts:
+    name: Phase 4 API and SDK contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: npm ci
+      - run: npm ci --prefix server
+      - run: npm run test:phase4-unit
+
   phase3-release:
     name: Phase 3 immutable release and safety gates
     runs-on: ubuntu-latest
@@ -98,6 +117,7 @@ jobs:
       - run: npm run test:observability
       - run: npm run test:resilience
       - run: npm run authority:validate -- ../deploy/staging/authority-policy.example.json
+      - run: npm run test:phase4-platform
       - run: npm run test:admin-policy
       - run: npm run test:money-unit
 
@@ -161,6 +181,7 @@ jobs:
       - run: npm --prefix server run test:migrations
       - run: npm --prefix server run test:observability-db
       - run: npm --prefix server run test:phase3-canary-db
+      - run: npm --prefix server run test:phase4-e2e
       - run: npm --prefix server run test:money
       - name: Start restore drill timer
         run: echo "RESTORE_DRILL_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"

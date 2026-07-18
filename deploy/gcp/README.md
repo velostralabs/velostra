@@ -8,9 +8,9 @@ Deployment truth as of 2026-07-18: the separate static protocol preview is live 
 Netlify at `velostra.xyz`. It has no managed API or contract build values and is not
 the staging stack described here. Project `velostra-production` contains the applied
 us-east4 foundation, namespaced identities, one multi-tenant HSM key, managed Neon/
-Upstash/Alchemy endpoints, and ten enabled scoped secret values. The registry remains
-empty; a private Telegram bot/channel is selected but its secrets are not loaded.
-No runtime workload, scheduler trigger, verified alert delivery, or contract is deployed.
+Upstash/Alchemy endpoints, and all twelve enabled scoped secret values. The registry
+remains empty; direct delivery to a private Telegram bot/channel is verified. No
+runtime workload, scheduler trigger, runtime alert lifecycle, or contract is deployed.
 
 ## Fixed policy
 
@@ -231,7 +231,7 @@ Google Cloud Billing, the account-native alert budget, regional registry, identi
 and multi-tenant HSM key are active. Neon Free is provisioned in aws-us-east-1 with
 the nine migrations/30 tables applied; Upstash Free is provisioned on GCP us-east4;
 Alchemy Free is restricted to Robinhood Testnet and the official public fallback is
-verified. Ten scoped secret containers have enabled values. The public Netlify
-preview remains separate. The private Telegram bot/channel exists, but its token,
-channel ID, and real delivery evidence are still pending. No application workload,
-Scheduler trigger, or contract exists.
+verified. All twelve scoped secret containers have enabled values, and direct
+private-Telegram connection delivery is verified. The public Netlify preview remains
+separate. No application workload, Scheduler trigger, runtime alert-lifecycle
+evidence, or contract exists.

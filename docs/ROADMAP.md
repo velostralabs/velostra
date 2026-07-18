@@ -26,9 +26,10 @@ verified on 2026-07-18.
 
 No managed API, signer runtime, reconciliation/webhook/monitor runtime, Robinhood
 testnet escrow, closed beta, mainnet contract, or real-value flow is live. The GCP US
-foundation, managed Neon Postgres, Upstash Redis, primary/fallback RPC, and ten of
-twelve scoped secret values are provisioned in approved US regions. The public preview
-has no API/escrow/token build values and closes no Phase 2/3/4 activation or evidence
+foundation, managed Neon Postgres, Upstash Redis, primary/fallback RPC, all twelve
+scoped secret values, and direct private-Telegram delivery are provisioned in approved
+US regions. The public preview has no API/escrow/token build values and closes no
+Phase 2/3/4 activation or evidence
 gate.
 
 ## Phase 0 - Recoverable product foundation (DONE)
@@ -158,8 +159,10 @@ and must never be inferred from local tests.
   fallback RPC, and the GCP registry/KMS/Secret Manager foundation in approved US
   regions; verify connectivity and chain identity without publishing credentials.
 - [x] Select a private Telegram bot/channel transport with bounded, redacted payloads.
-- [ ] Load its bot-token/channel-ID secrets, prove delivery, deploy Cloud Run workloads,
-  and attach provider-native backup/recovery evidence.
+- [x] Load its bot-token/channel-ID secrets through a hidden prompt and prove direct
+  delivery without exposing either value.
+- [ ] Deploy Cloud Run workloads, prove the runtime alert lifecycle, and attach
+  provider-native backup/recovery evidence.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
 
@@ -379,15 +382,14 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 ### Staging/evidence lane (active external next)
 
 1. retain the verified public preview, GCP foundation, managed data plane, and RPCs;
-2. securely load the private Telegram bot token/channel ID and prove redacted delivery;
-3. define and fund an isolated testnet deployer plus distinct contract-role addresses;
-4. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
+2. define and fund an isolated testnet deployer plus distinct contract-role addresses;
+3. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
    server/staging-web images with paid writes disabled;
-5. bind the generated staging web/API origin and prove readiness plus wallet/alert
+4. bind the generated staging web/API origin and prove readiness plus wallet/alert
    flows before any explicit public-domain integration;
-6. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
+5. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
    claiming completion early;
-7. retain all outputs under ignored artifacts until the final signed evidence packet.
+6. retain all outputs under ignored artifacts until the final signed evidence packet.
 
 ### Repository/product lane
 

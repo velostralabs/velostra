@@ -144,6 +144,21 @@ enabled. The private bot/channel exists, but its bot token/channel ID have not b
 loaded or delivery-tested. The testnet contract and every Cloud Run application
 workload remain pending; paid writes remain disabled.
 
+### 2026-07-18 - Private Telegram alert transport activated
+
+- created the two us-east4 Telegram Secret Manager containers with access limited to
+  the jobs identity;
+- accepted both values only through a hidden local prompt and retained neither value
+  in terminal output, tracked files, or evidence;
+- required a private channel with no public username and verified a direct connection
+  message before storing the credentials;
+- removed the two superseded empty generic-webhook containers after confirming they
+  had no versions and no runtime references.
+
+Checkpoint: all twelve scoped secret containers now have one enabled value and direct
+private-Telegram delivery is verified. Runtime alert failure, acknowledgement, and
+resolution evidence remains pending until the monitor workload is deployed.
+
 ## What is complete
 
 ### Product and identity
@@ -182,40 +197,37 @@ workload remain pending; paid writes remain disabled.
 
 These are real external/runtime gates, not hidden repository TODOs:
 
-1. Private Telegram credentials and real delivery/acknowledgement are not provisioned.
-2. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
-   Redis, primary/fallback RPC, registry, HSM, identities, and ten other secrets exist.
-3. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
-4. The public frontend has no production API, escrow, or settlement-token build values.
-5. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
+1. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
+   Redis, primary/fallback RPC, registry, HSM, identities, and all twelve secrets exist.
+2. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
+3. The public frontend has no production API, escrow, or settlement-token build values.
+4. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
    logs, and signed ownership evidence are pending.
-6. Real alert delivery/acknowledgement plus production error-tracking redaction
-   evidence are pending.
-7. Real MetaMask staging, managed performance baselines, one-hour outage, provider
+5. Runtime alert failure/acknowledgement/resolution plus production error-tracking
+   redaction evidence are pending; direct Telegram connection delivery is verified.
+6. Real MetaMask staging, managed performance baselines, one-hour outage, provider
    fault injection, provider-native PITR, calibrated SLOs, and minimum 72-hour soak
    evidence are pending.
-8. Independent smart-contract and focused backend security review are pending.
-9. No broadcast-approved mainnet manifest, low-value canary, closed beta, public paid
+7. Independent smart-contract and focused backend security review are pending.
+8. No broadcast-approved mainnet manifest, low-value canary, closed beta, public paid
    writes, or real-value authorization exists.
-10. Phase 5 remains a planning lane; its scope is not frozen for implementation.
+9. Phase 5 remains a planning lane; its scope is not frozen for implementation.
 
 ## Next ordered work
 
 ### Lane A - Managed US staging (active external next)
 
-1. Load the private Telegram bot token/channel ID through the hidden-prompt flow;
-   prove redacted delivery and acknowledgement without exposing either value.
-2. Define and fund an isolated Robinhood-testnet deployer plus four distinct contract
+1. Define and fund an isolated Robinhood-testnet deployer plus four distinct contract
    role addresses. Use the retained HSM-derived public address exactly as the settler.
-3. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
+2. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
    block, roles, token, fee, and verification evidence under ignored artifacts.
-4. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
+3. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
    staging-web workloads with paid writes disabled.
-5. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert
+4. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert
    delivery/acknowledgement.
-6. Execute managed secret/authority rotation, pause/unpause, compromise response,
+5. Execute managed secret/authority rotation, pause/unpause, compromise response,
    audit-log ownership, error-tracking, and redaction drills.
-7. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
+6. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
    the minimum 72-hour soak; calibrate SLOs, then hash and sign the evidence packet.
 
 ### Lane B - Independent review and controlled release

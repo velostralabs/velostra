@@ -62,8 +62,9 @@ deployment, closed-beta approval, or real-value authorization. Managed infrastru
 signer custody, operator alerts, real-wallet staging, load/outage/PITR drills, and a
 72-hour soak remain release prerequisites. The repository now includes a locally
 validated US-only staging plan. Its GCP foundation, scoped identities, HSM key,
-managed Neon/Upstash data plane, primary/fallback RPC, and ten scoped secret values
-are provisioned. A private Telegram bot/channel is selected, but its two values,
-application runtimes, contract deployment, and managed evidence remain pending.
+managed Neon/Upstash data plane, primary/fallback RPC, and all twelve scoped secret
+values are provisioned. Direct delivery to a private Telegram bot/channel is
+verified; application runtimes, runtime alert-lifecycle evidence, contract deployment,
+and the remaining managed evidence are pending.
 Local completion never
 overrides activation gates.

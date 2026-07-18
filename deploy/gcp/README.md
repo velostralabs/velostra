@@ -6,10 +6,11 @@ region.
 
 Deployment truth as of 2026-07-18: the separate static protocol preview is live on
 Netlify at `velostra.xyz`. It has no managed API or contract build values and is not
-the staging stack described here. Project `velostra-production` now contains only
-the applied us-east4 bootstrap foundation: an empty registry, namespaced identities,
-one multi-tenant HSM key, and empty secret containers. No provider data service,
-secret value, runtime workload, scheduler trigger, or contract is deployed.
+the staging stack described here. Project `velostra-production` contains the applied
+us-east4 foundation, namespaced identities, one multi-tenant HSM key, managed Neon/
+Upstash/Alchemy endpoints, and ten enabled scoped secret values. The registry remains
+empty; no runtime workload, scheduler trigger, alert receiver, or contract is
+deployed.
 
 ## Fixed policy
 
@@ -17,14 +18,14 @@ secret value, runtime workload, scheduler trigger, or contract is deployed.
 - GCP Cloud Run, Scheduler, KMS, Secret Manager, and Artifact Registry:
   us-east4 (Northern Virginia).
 - Neon: AWS us-east-1 (N. Virginia).
-- Upstash: GCP us-east4 (Virginia), one primary and no paid replicas.
+- Upstash: Free on GCP us-east4 (Virginia), one primary and no paid read replicas.
 - Alchemy Free primary RPC with the Robinhood public testnet RPC as fallback.
 - No mainnet value, no paid RPC, and paid API writes disabled.
 - USD 35 total monthly envelope.
 
-The envelope is allocated as a USD 20 GCP alert budget, a USD 5 Upstash hard
-cap, USD 5 for Neon usage during the recovery evidence window, and USD 5
-contingency. A GCP budget is an alert rather than a spending cap. Scale to
+The envelope is allocated as a USD 20 GCP alert budget, USD 0 for Upstash Free,
+USD 5 for Neon usage during the recovery evidence window, and USD 10 contingency.
+A GCP budget is an alert rather than a spending cap. Scale to
 zero, bounded instances, one-task jobs, provider caps, and 15-minute schedules
 are the actual cost controls.
 
@@ -58,8 +59,8 @@ Create the following provider resources before applying the GCP runtime:
 1. Neon Postgres in aws-us-east-1. Start on Free, enable the Launch recovery
    window only for the PITR evidence drill, cap compute at 0.25 CU, and retain
    the pooled TLS connection URL.
-2. Upstash Redis on GCP us-east4, PAYG, no replicas, with a USD 5 hard budget
-   cap. Retain the rediss TLS URL.
+2. Upstash Redis Free on GCP us-east4 with no paid read replicas. Retain the
+   rediss TLS URL and upgrade only after a separately approved capacity decision.
 3. Alchemy Robinhood Testnet Free endpoint. Retain the HTTPS endpoint and use
    the official Robinhood public testnet endpoint as the fallback.
 4. An alert receiver that accepts the monitor webhook.
@@ -216,8 +217,9 @@ substitute for these external runtime evidence gates.
 ## Current external blockers
 
 Google Cloud Billing, the account-native alert budget, regional registry, identities,
-multi-tenant HSM key, and empty secret containers are active. The public Netlify
-preview remains separate. No secret version or application workload exists.
-Neon, Upstash, Alchemy, and the alert receiver still require user-owned accounts
-in the approved US regions before their values can be loaded and the testnet
-contract/runtime sequence can continue.
+and multi-tenant HSM key are active. Neon Free is provisioned in aws-us-east-1 with
+the nine migrations/30 tables applied; Upstash Free is provisioned on GCP us-east4;
+Alchemy Free is restricted to Robinhood Testnet and the official public fallback is
+verified. Ten scoped secret containers have enabled values. The public Netlify
+preview remains separate. The alert receiver and its two secrets are still pending,
+and no application workload, Scheduler trigger, or contract exists.

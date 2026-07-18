@@ -20,9 +20,9 @@
     "currency": "USD",
     "totalMonthlyEnvelope": 35,
     "gcpBudgetAlert": 20,
-    "upstashHardCap": 5,
+    "upstashHardCap": 0,
     "neonAllowance": 5,
-    "contingency": 5
+    "contingency": 10
   },
   "providers": {
     "postgres": {
@@ -36,8 +36,8 @@
     },
     "redis": {
       "name": "Upstash",
-      "plan": "pay-as-you-go",
-      "hardBudgetCapUsd": 5,
+      "plan": "Free",
+      "hardBudgetCapUsd": 0,
       "globalReplication": false
     },
     "rpc": {

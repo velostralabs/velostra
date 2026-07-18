@@ -27,7 +27,11 @@ if ($config.cost.totalMonthlyEnvelope -gt 35) {
   throw 'Monthly staging envelope cannot exceed USD 35'
 }
 if ($config.providers.redis.hardBudgetCapUsd -ne $config.cost.upstashHardCap) {
-  throw 'Redis hard cap and budget allocation differ'
+  throw 'Redis budget ceiling and allocation differ'
+}
+if ($config.providers.redis.plan -ne 'Free' -or
+    [decimal]$config.providers.redis.hardBudgetCapUsd -ne 0) {
+  throw 'Staging Redis must remain on the zero-cost Free plan'
 }
 if ($config.providers.redis.globalReplication) {
   throw 'Staging Redis must not create paid read replicas'

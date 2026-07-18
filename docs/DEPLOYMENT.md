@@ -5,9 +5,10 @@
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > The static public frontend is deployed at https://velostra.xyz/. No managed API,
-> worker, database, Redis, signer runtime, escrow, closed-beta, or mainnet deployment
-> is recorded. The isolated GCP US bootstrap foundation exists without secret values
-> or application workloads.
+> worker, signer runtime, escrow, closed-beta, or mainnet deployment is recorded.
+> Managed Neon Postgres, Upstash Redis, Alchemy primary RPC, the public fallback RPC,
+> and ten scoped secret values are active in approved US regions; application
+> workloads and the alert receiver are not.
 
 ## Release gates
 
@@ -25,7 +26,7 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 
 - GCP Cloud Run, Scheduler, KMS, Secret Manager, and Artifact Registry in us-east4;
 - Neon Postgres in aws-us-east-1;
-- Upstash Redis on GCP us-east4 with no replicas and a USD 5 hard cap;
+- Upstash Redis Free on GCP us-east4 with no paid read replicas;
 - Alchemy Free primary plus Robinhood public testnet fallback RPC;
 - scale-to-zero web/API/private-signer services and staggered 15-minute jobs;
 - paid writes disabled and a USD 35 cross-provider monthly envelope.
@@ -34,10 +35,12 @@ All mutation scripts are plan-only without Apply. They require a clean full rele
 SHA and immutable image digests. The `velostra-production` project now has active
 billing and an account-native alert budget plus an empty Artifact Registry, six
 namespaced service accounts, one us-east4 multi-tenant HSM secp256k1 key, and twelve
-empty us-east4 secret containers. No secret version, Cloud Run service/job, Scheduler
-job, managed database/Redis/RPC, or contract is deployed. This bootstrap foundation
-is not a completed staging deployment, and the separate static Netlify preview does
-not satisfy any managed-staging evidence gate.
+us-east4 secret containers. Neon Free in aws-us-east-1, Upstash Free on GCP us-east4,
+Alchemy Free restricted to Robinhood Testnet, and the official public fallback have
+been endpoint-verified. Ten secret containers have one enabled operational value;
+only the alert webhook URL/token remain empty. No Cloud Run service/job, Scheduler
+job, or contract is deployed. This is not a completed staging deployment, and the
+separate static Netlify preview does not satisfy any managed-staging evidence gate.
 
 ## Target topology
 

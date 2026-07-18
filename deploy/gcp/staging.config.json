@@ -46,6 +46,10 @@
       "paidRpcAllowed": false
     }
   },
+  "alerts": {
+    "transport": "telegram",
+    "privateChannelRequired": true
+  },
   "gcp": {
     "artifactRepository": "velostra",
     "kms": {

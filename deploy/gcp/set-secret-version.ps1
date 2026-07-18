@@ -11,8 +11,8 @@ param(
     'signer-auth-token',
     'primary-rpc-url',
     'fallback-rpc-urls',
-    'alert-webhook-url',
-    'alert-webhook-token'
+    'telegram-bot-token',
+    'telegram-chat-id'
   )]
   [string]$Name,
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
@@ -38,6 +38,14 @@ $plain = $null
 try {
   $plain = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
   if ([string]::IsNullOrEmpty($plain)) { throw 'Secret value cannot be empty' }
+  if ($Name -eq 'telegram-bot-token' -and
+      $plain -notmatch '^\d{5,20}:[A-Za-z0-9_-]{30,}$') {
+    throw 'Telegram bot token format is invalid'
+  }
+  if ($Name -eq 'telegram-chat-id' -and
+      $plain -notmatch '^-100\d{5,16}$') {
+    throw 'Telegram private channel ID must begin with -100'
+  }
 
   $start = [Diagnostics.ProcessStartInfo]::new()
   $start.FileName = $env:ComSpec

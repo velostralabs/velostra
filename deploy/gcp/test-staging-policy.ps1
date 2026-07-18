@@ -45,6 +45,9 @@ if (-not $config.providers.postgres.scaleToZero) {
 if ([decimal]$config.providers.postgres.maxComputeUnits -gt 0.25) {
   throw 'Neon staging compute is above the approved ceiling'
 }
+if ($config.alerts.transport -ne 'telegram' -or -not $config.alerts.privateChannelRequired) {
+  throw 'Staging alerts must use the approved private Telegram transport'
+}
 
 $kms = $config.gcp.kms
 if ($kms.algorithm -ne 'ec-sign-secp256k1-sha256') {

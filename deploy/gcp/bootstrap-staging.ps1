@@ -281,8 +281,8 @@ $secretAccess = [ordered]@{
   'signer-auth-token' = @('velostra-api', 'velostra-signer', 'velostra-jobs')
   'primary-rpc-url' = @('velostra-api', 'velostra-signer', 'velostra-jobs')
   'fallback-rpc-urls' = @('velostra-api', 'velostra-jobs')
-  'alert-webhook-url' = @('velostra-jobs')
-  'alert-webhook-token' = @('velostra-jobs')
+  'telegram-bot-token' = @('velostra-jobs')
+  'telegram-chat-id' = @('velostra-jobs')
 }
 foreach ($entry in $secretAccess.GetEnumerator()) {
   if (-not (Test-GcloudResource @(

@@ -57,6 +57,8 @@ $existingBudgetBootstrapText = $existingBudgetBootstrap -join [Environment]::New
 $buildText = ($serverBuild + $webBuild) -join [Environment]::NewLine
 $all = $runtimeText + [Environment]::NewLine + $webText +
   [Environment]::NewLine + $bootstrapText + [Environment]::NewLine + $buildText
+$telegramHelperText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'configure-telegram-alerts.ps1')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -102,6 +104,13 @@ Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-monitor ' 'Monitor job is missing'
+Require-Match $runtimeText 'ALERT_TRANSPORT=telegram' 'Monitor must use the private Telegram transport'
+Require-Match $runtimeText 'TELEGRAM_BOT_TOKEN=telegram-bot-token:latest' 'Monitor must inject the Telegram bot token from Secret Manager'
+Require-Match $runtimeText 'TELEGRAM_CHAT_ID=telegram-chat-id:latest' 'Monitor must inject the private Telegram channel ID from Secret Manager'
+Require-Match $telegramHelperText 'Read-Host .* -AsSecureString' 'Telegram helper must use a secure token prompt'
+Require-Match $telegramHelperText 'chat[.]type -ne ''channel''' 'Telegram helper must reject non-channel destinations'
+Require-Match $telegramHelperText 'hasPublicUsername' 'Telegram helper must reject public channels'
+Reject-Match $telegramHelperText 'Write-Output.*(?:botToken|chatId)' 'Telegram helper must not print credentials or channel identity'
 Require-Match $runtimeText 'scheduler jobs create http velostra-reconciliation-every-15m .*--schedule=[*]/15 [*] [*] [*] [*]' 'Reconciliation schedule is not every 15 minutes'
 Require-Match $runtimeText 'scheduler jobs create http velostra-webhooks-every-15m .*--schedule=2-59/15 [*] [*] [*] [*]' 'Webhook schedule is not staggered'
 Require-Match $runtimeText 'scheduler jobs create http velostra-monitor-every-15m .*--schedule=5-59/15 [*] [*] [*] [*]' 'Monitor schedule is not staggered'

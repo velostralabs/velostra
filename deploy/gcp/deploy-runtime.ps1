@@ -186,7 +186,7 @@ if ($Apply) {
     'database-url', 'redis-url', 'jwt-secret', 'gateway-hmac-secret',
     'platform-cursor-secret', 'agent-secret-encryption-key', 'metrics-auth-token',
     'signer-auth-token', 'primary-rpc-url', 'fallback-rpc-urls',
-    'alert-webhook-url', 'alert-webhook-token'
+    'telegram-bot-token', 'telegram-chat-id'
   )) {
     $state = Get-GcloudValue @(
       'secrets', 'versions', 'describe', 'latest', ('--secret=' + $secret),
@@ -316,6 +316,7 @@ $monitorEnv.REDIS_FAILURE_MODE = 'closed'
 $monitorEnv.RECONCILE_CONFIRMATIONS = 12
 $monitorEnv.RECONCILE_DRIFT_THRESHOLD = '0.000001'
 $monitorEnv.MONITOR_INTERVAL_MS = 900000
+$monitorEnv.ALERT_TRANSPORT = [string]$config.alerts.transport
 $monitorEnv.ALERT_RUNBOOK_BASE_URL = $runbook.AbsoluteUri
 $monitorEnv.ALERT_REPEAT_SECONDS = 1800
 $monitorEnv.ALERT_WORKER_MAX_AGE_SECONDS = 1200
@@ -327,7 +328,7 @@ $monitorEnv.ALERT_OUTBOX_MAX_AGE_SECONDS = 1800
 $monitorEnv.ALERT_SIGNER_MIN_BALANCE_WEI = 10000000000000000
 $monitorEnv.ALERT_REQUIRE_BACKUP_HEARTBEAT = 'true'
 $monitorEnv.ALERT_BACKUP_MAX_AGE_SECONDS = 86400
-$monitorSecrets = 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,ROBINHOOD_RPC_URL=primary-rpc-url:latest,ROBINHOOD_RPC_FALLBACK_URLS=fallback-rpc-urls:latest,ALERT_WEBHOOK_URL=alert-webhook-url:latest,ALERT_WEBHOOK_TOKEN=alert-webhook-token:latest'
+$monitorSecrets = 'DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,ROBINHOOD_RPC_URL=primary-rpc-url:latest,ROBINHOOD_RPC_FALLBACK_URLS=fallback-rpc-urls:latest,TELEGRAM_BOT_TOKEN=telegram-bot-token:latest,TELEGRAM_CHAT_ID=telegram-chat-id:latest'
 Deploy-Job 'velostra-monitor' $monitorEnv $monitorSecrets 'dist/jobs/monitor.js' ([int]$config.gcp.cloudRun.jobs.monitor.timeoutSeconds) ([int]$config.gcp.cloudRun.jobs.monitor.maxRetries)
 
 $schedules = @(

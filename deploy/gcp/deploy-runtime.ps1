@@ -75,21 +75,49 @@ function Invoke-Gcloud {
   param([string[]]$CommandArgs)
   Write-Output ($(if ($Apply) { 'APPLY ' } else { 'PLAN  ' }) + (Format-Command $CommandArgs))
   if (-not $Apply) { return }
-  & $script:gcloud @CommandArgs
-  if ($LASTEXITCODE -ne 0) { throw 'gcloud failed: ' + (Format-Command $CommandArgs) }
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & $script:gcloud @CommandArgs 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) {
+    throw 'gcloud failed: ' + (Format-Command $CommandArgs)
+  }
+  foreach ($line in @($output)) {
+    Write-Output ([string]$line)
+  }
 }
 function Get-GcloudValue {
   param([string[]]$CommandArgs)
   if (-not $Apply) { return '' }
-  $value = & $script:gcloud @CommandArgs
-  if ($LASTEXITCODE -ne 0) { throw 'gcloud query failed: ' + (Format-Command $CommandArgs) }
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $value = & $script:gcloud @CommandArgs 2>$null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) {
+    throw 'gcloud query failed: ' + (Format-Command $CommandArgs)
+  }
   return ($value | Out-String).Trim()
 }
 function Test-GcloudResource {
   param([string[]]$CommandArgs)
   if (-not $Apply) { return $false }
-  & $script:gcloud @CommandArgs *> $null
-  return $LASTEXITCODE -eq 0
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    & $script:gcloud @CommandArgs *> $null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  return $exitCode -eq 0
 }
 function Join-Environment {
   param([System.Collections.IDictionary]$Values)

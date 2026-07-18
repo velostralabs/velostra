@@ -54,8 +54,11 @@ Require-Match $checkText 'TESTNET_DEPLOYER_ADDRESS' 'Readiness must check the is
 Reject-Match $checkText 'ProtectedData[]]::Unprotect' 'Readiness must not decrypt private keys'
 Require-Match $contractText 'ProtectedData[]]::Unprotect' 'Contract deploy must decrypt only at runtime'
 Require-Match $contractText 'robinhood-testnet-authorities[.]json' 'Contract deploy must consume verified Safe authorities'
-Require-Match $contractText 'run deploy:robinhood-testnet -- --broadcast' 'Guarded escrow broadcast is missing'
-Require-Match $contractText 'run verify:robinhood-testnet' 'Escrow verification must follow deployment'
+Require-Match $contractText 'Invoke-NpmChecked' 'Native npm commands must use the checked wrapper'
+Require-Match $contractText "ErrorActionPreference = 'Continue'" 'Native stderr warnings must not bypass exit-code handling'
+Require-Match $contractText "if [(][$]exitCode -ne 0[)]" 'Native npm exit codes must remain authoritative'
+Require-Match $contractText "(?s)'deploy:robinhood-testnet'.*'--broadcast'" 'Guarded escrow broadcast is missing'
+Require-Match $contractText "'verify:robinhood-testnet'" 'Escrow verification must follow deployment'
 Require-Match $contractText 'status --porcelain --untracked-files=no' 'Contract broadcast must require a clean worktree'
 Reject-Match $contractText 'Write-Output.*[$]privateKey' 'Contract deploy must not print a private key'
 

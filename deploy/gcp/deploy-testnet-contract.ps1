@@ -11,6 +11,29 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Security
 
+function Invoke-NpmChecked {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$Arguments,
+    [Parameter(Mandatory)]
+    [string]$FailureMessage
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  $output = $null
+  $exitCode = $null
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & npm @Arguments 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
+  foreach ($line in @($output)) {
+    Write-Output ([string]$line)
+  }
+}
+
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $artifactsRoot = [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'artifacts'))
 $authorityPath = [IO.Path]::GetFullPath((Join-Path $repositoryRoot $AuthorityDirectory))
@@ -76,10 +99,9 @@ if (-not $Apply) {
 $dirty = (& git -C $repositoryRoot status --porcelain --untracked-files=no | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Unable to inspect the Git worktree' }
 if ($dirty) { throw 'Tracked worktree must be clean before contract deployment' }
-& npm --silent --prefix (Join-Path $repositoryRoot 'contracts') test
-if ($LASTEXITCODE -ne 0) { throw 'Contract tests failed before deployment' }
-& npm --silent --prefix (Join-Path $repositoryRoot 'contracts') run test:testnet-policy
-if ($LASTEXITCODE -ne 0) { throw 'Testnet deployment policy tests failed' }
+$contractsPath = Join-Path $repositoryRoot 'contracts'
+Invoke-NpmChecked -Arguments @('--silent', '--prefix', $contractsPath, 'test') -FailureMessage 'Contract tests failed before deployment'
+Invoke-NpmChecked -Arguments @('--silent', '--prefix', $contractsPath, 'run', 'test:testnet-policy') -FailureMessage 'Testnet deployment policy tests failed'
 
 $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
 $gcloud = @(
@@ -129,13 +151,11 @@ try {
   $env:TREASURY_ADDRESS = [string]$authorities.roles.treasury.address
   $env:PAUSE_GUARDIAN_ADDRESS = [string]$authorities.roles.pauseGuardian.address
   $env:TESTNET_DEPLOYMENT_OUTPUT = 'artifacts/staging/robinhood-testnet-deployment.json'
-  & npm --silent --prefix (Join-Path $repositoryRoot 'contracts') run deploy:robinhood-testnet -- --broadcast
-  if ($LASTEXITCODE -ne 0) { throw 'Testnet escrow deployment failed' }
+  Invoke-NpmChecked -Arguments @('--silent', '--prefix', $contractsPath, 'run', 'deploy:robinhood-testnet', '--', '--broadcast') -FailureMessage 'Testnet escrow deployment failed'
 
   $env:TESTNET_DEPLOYMENT_RECORD = 'artifacts/staging/robinhood-testnet-deployment.json'
   $env:TESTNET_VERIFICATION_OUTPUT = 'artifacts/staging/robinhood-testnet-verification.json'
-  & npm --silent --prefix (Join-Path $repositoryRoot 'contracts') run verify:robinhood-testnet
-  if ($LASTEXITCODE -ne 0) { throw 'Testnet escrow verification failed' }
+  Invoke-NpmChecked -Arguments @('--silent', '--prefix', $contractsPath, 'run', 'verify:robinhood-testnet') -FailureMessage 'Testnet escrow verification failed'
 } finally {
   foreach ($name in @(
     'VELOSTRA_TESTNET_BROADCAST',

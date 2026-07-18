@@ -5,6 +5,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Net.Http
 
 $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
 $gcloud = @(
@@ -138,6 +139,7 @@ try {
 } finally {
   $botToken = $null
   if ($null -ne $client) { $client.Dispose() }
+  if ($null -ne $secure) { $secure.Dispose() }
   if ($bstr -ne [IntPtr]::Zero) {
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
   }

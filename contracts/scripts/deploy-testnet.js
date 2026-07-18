@@ -10,6 +10,9 @@ const path = require('path')
 const { ethers } = require('ethers')
 require('dotenv').config()
 
+const {
+  assertAuthorityPrincipals,
+} = require('./lib/testnet-authority-policy')
 const ROOT = path.join(__dirname, '..')
 const REPOSITORY_ROOT = path.join(ROOT, '..')
 const ARTIFACTS_ROOT = path.join(REPOSITORY_ROOT, 'artifacts')
@@ -132,6 +135,7 @@ async function main() {
       'RPC chain mismatch: expected ' + CHAIN_ID + ', received ' + network.chainId
     )
   }
+  await assertAuthorityPrincipals(provider, roles)
   const wallet = new ethers.Wallet(required('TESTNET_DEPLOYER_PRIVATE_KEY'), provider)
   if ((await provider.getBalance(wallet.address)) === 0n) {
     throw new Error('Testnet deployer has no native gas balance')
@@ -207,6 +211,12 @@ async function main() {
       deploymentBlock: escrowDeployment.blockNumber,
       platformFeeBps: feeBps,
       roles,
+      authorityPolicy: {
+        safeVersion: '1.4.1',
+        threshold: '2-of-3',
+        ownerSetsDisjoint: true,
+        settlerIsolated: true,
+      },
     },
   }
   const outputPath = ensureArtifactsPath(

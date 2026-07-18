@@ -4,6 +4,9 @@ const path = require('path')
 const { ethers } = require('ethers')
 require('dotenv').config()
 
+const {
+  assertAuthorityPrincipals,
+} = require('./lib/testnet-authority-policy')
 const ROOT = path.join(__dirname, '..')
 const REPOSITORY_ROOT = path.join(ROOT, '..')
 const ARTIFACTS_ROOT = path.join(REPOSITORY_ROOT, 'artifacts')
@@ -111,6 +114,24 @@ async function main() {
     provider
   )
   const roles = deployment.escrow.roles
+  const authorityPolicy = deployment.escrow.authorityPolicy
+  check(
+    'authority_policy_recorded',
+    authorityPolicy?.safeVersion === '1.4.1' &&
+      authorityPolicy?.threshold === '2-of-3' &&
+      authorityPolicy?.ownerSetsDisjoint === true &&
+      authorityPolicy?.settlerIsolated === true
+  )
+  try {
+    await assertAuthorityPrincipals(provider, roles)
+    check('authority_principals', true)
+    check('authority_owner_sets_disjoint', true)
+    check('settler_isolated', true)
+  } catch {
+    check('authority_principals', false)
+    check('authority_owner_sets_disjoint', false)
+    check('settler_isolated', false)
+  }
   const [
     onchainToken,
     feeBps,

@@ -24,13 +24,16 @@
     "verify:robinhood": "npm run build && node scripts/verify-deployment.js",
     "deploy:robinhood-testnet": "npm run build && node scripts/deploy-testnet.js",
     "verify:robinhood-testnet": "npm run build && node scripts/verify-testnet-deployment.js",
-    "test:testnet-policy": "node test/testnet-deployment-policy.test.js"
+    "test:testnet-policy": "node test/testnet-deployment-policy.test.js && node test/testnet-authority-policy.test.js",
+    "deploy:robinhood-testnet-authorities": "node scripts/deploy-testnet-authorities.mjs"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.1.0",
+    "@safe-global/protocol-kit": "^8.0.4",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.0",
     "ganache": "^7.9.0",
-    "solc": "0.8.24"
+    "solc": "0.8.24",
+    "viem": "^2.55.2"
   }
 }

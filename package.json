@@ -57,7 +57,8 @@
     "test:phase4-sdk": "npm run test:sdk:javascript && npm run test:sdk:python",
     "test:phase4-unit": "npm run test:phase4-sdk && npm --prefix server run test:phase4-platform && npm --prefix server run test:admin-policy",
     "test:phase4-db": "npm --prefix server run test:phase4-e2e",
-    "build:browser-fixture": "node scripts/build-browser-fixture.mjs"
+    "build:browser-fixture": "node scripts/build-browser-fixture.mjs",
+    "test:testnet-authorities": "powershell -NoProfile -File deploy/gcp/test-testnet-authority-tools.ps1 && npm --prefix contracts run test:testnet-policy"
   },
   "dependencies": {
     "@metamask/connect-evm": "^2.1.1",

@@ -1,6 +1,8 @@
 import { assertPhase3RuntimeConfiguration } from './phase3-canary.js'
 
 const EVM_ADDRESS = /^0x[0-9a-fA-F]{40}$/
+const TELEGRAM_BOT_TOKEN = /^\d{5,20}:[A-Za-z0-9_-]{30,}$/
+const TELEGRAM_CHAT_ID = /^-100\d{5,16}$/
 
 export type DeploymentProcessRole =
   | 'api'
@@ -217,8 +219,20 @@ function assertWebhookWorker(): void {
 function assertMonitor(environment: string): void {
   assertRedis()
   assertChain(environment, false)
-  httpsUrl('ALERT_WEBHOOK_URL')
-  secret('ALERT_WEBHOOK_TOKEN')
+  const transport = required('ALERT_TRANSPORT')
+  if (transport === 'telegram') {
+    if (!TELEGRAM_BOT_TOKEN.test(required('TELEGRAM_BOT_TOKEN'))) {
+      throw new Error('Production TELEGRAM_BOT_TOKEN is invalid')
+    }
+    if (!TELEGRAM_CHAT_ID.test(required('TELEGRAM_CHAT_ID'))) {
+      throw new Error('Production TELEGRAM_CHAT_ID is invalid')
+    }
+  } else if (transport === 'webhook') {
+    httpsUrl('ALERT_WEBHOOK_URL')
+    secret('ALERT_WEBHOOK_TOKEN')
+  } else {
+    throw new Error('Production ALERT_TRANSPORT is invalid')
+  }
   httpsUrl('ALERT_RUNBOOK_BASE_URL')
   positiveInteger('MONITOR_INTERVAL_MS', '30000')
   if (process.env.ALERT_REQUIRE_WEBHOOK_HEARTBEAT !== 'true') {

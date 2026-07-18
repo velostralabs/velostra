@@ -56,6 +56,7 @@ const drifted: OperationalSnapshot = {
 
 const original = {
   NODE_ENV: process.env.NODE_ENV,
+  ALERT_TRANSPORT: process.env.ALERT_TRANSPORT,
   ALERT_WEBHOOK_URL: process.env.ALERT_WEBHOOK_URL,
   ALERT_WEBHOOK_TOKEN: process.env.ALERT_WEBHOOK_TOKEN,
   ALERT_REQUIRE_BACKUP_HEARTBEAT: process.env.ALERT_REQUIRE_BACKUP_HEARTBEAT,
@@ -64,6 +65,7 @@ const original = {
 
 try {
   process.env.NODE_ENV = 'test'
+  process.env.ALERT_TRANSPORT = 'webhook'
   process.env.ALERT_WEBHOOK_URL =
     'http://127.0.0.1:' + webhookAddress.port + '/alerts'
   process.env.ALERT_WEBHOOK_TOKEN = 'test-alert-token-that-is-long-enough'

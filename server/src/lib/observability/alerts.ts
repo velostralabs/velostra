@@ -11,6 +11,27 @@ export interface AlertCandidate {
   details: Record<string, unknown>
 }
 
+const TELEGRAM_BOT_TOKEN = /^\d{5,20}:[A-Za-z0-9_-]{30,}$/
+const TELEGRAM_CHAT_ID = /^-100\d{5,16}$/
+const SENSITIVE_DETAIL_KEY =
+  /(authorization|cookie|credential|database.?url|dsn|email|mnemonic|password|phone|private|redis.?url|rpc.?url|secret|seed|token|webhook.?url)/i
+
+interface AlertEnvelope {
+  source: 'velostra'
+  environment: string
+  release: string
+  alert_id: string
+  rule: string
+  severity: AlertCandidate['severity']
+  summary: string
+  details: unknown
+  runbook?: string
+}
+
+type AlertTransport =
+  | { kind: 'webhook'; url: URL; token?: string }
+  | { kind: 'telegram'; botToken: string; chatId: string }
+
 function threshold(name: string, fallback: number): number {
   const parsed = Number(process.env[name] ?? fallback)
   if (!Number.isFinite(parsed) || parsed < 0) throw new Error(name + ' must be non-negative')
@@ -181,7 +202,87 @@ function fingerprint(rule: string): string {
   return crypto.createHash('sha256').update('velostra:' + rule).digest('hex')
 }
 
-function webhookConfiguration(): { url: URL; token?: string } | undefined {
+export function sanitizeAlertDetails(value: unknown, depth = 0): unknown {
+  if (depth > 4) return '[TRUNCATED]'
+  if (typeof value === 'bigint') return value.toString()
+  if (typeof value === 'string') {
+    return value.length > 256 ? value.slice(0, 253) + '...' : value
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map((entry) => sanitizeAlertDetails(entry, depth + 1))
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .slice(0, 30)
+        .map(([key, entry]) => [
+          key,
+          SENSITIVE_DETAIL_KEY.test(key)
+            ? '[REDACTED]'
+            : sanitizeAlertDetails(entry, depth + 1),
+        ])
+    )
+  }
+  return value
+}
+
+function alertEnvelope(candidate: AlertCandidate, id: string): AlertEnvelope {
+  return {
+    source: 'velostra',
+    environment: process.env.VELOSTRA_ENVIRONMENT ?? 'local',
+    release: process.env.VELOSTRA_RELEASE ?? 'development',
+    alert_id: id,
+    rule: candidate.rule,
+    severity: candidate.severity,
+    summary: candidate.summary,
+    details: sanitizeAlertDetails(candidate.details),
+    runbook: process.env.ALERT_RUNBOOK_BASE_URL
+      ? process.env.ALERT_RUNBOOK_BASE_URL.replace(/\/$/, '') + '#' + candidate.rule
+      : undefined,
+  }
+}
+
+export function formatTelegramAlert(candidate: AlertCandidate, id: string): string {
+  const envelope = alertEnvelope(candidate, id)
+  const details = JSON.stringify(envelope.details)
+  const release = envelope.release.length > 12
+    ? envelope.release.slice(0, 12)
+    : envelope.release
+  const lines = [
+    'Velostra operational alert',
+    '',
+    'Severity: ' + envelope.severity.toUpperCase(),
+    'Rule: ' + envelope.rule,
+    'Summary: ' + envelope.summary,
+    'Environment: ' + envelope.environment,
+    'Release: ' + release,
+    'Alert ID: ' + envelope.alert_id,
+    ...(details && details !== '{}'
+      ? ['', 'Details: ' + details]
+      : []),
+    ...(envelope.runbook ? ['', 'Runbook: ' + envelope.runbook] : []),
+  ]
+  const message = lines.join('\n')
+  return message.length > 3_900
+    ? message.slice(0, 3_886) + '\n[truncated]'
+    : message
+}
+
+function alertTransportConfiguration(): AlertTransport | undefined {
+  const kind = process.env.ALERT_TRANSPORT?.trim() || 'webhook'
+  if (kind === 'telegram') {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim()
+    const chatId = process.env.TELEGRAM_CHAT_ID?.trim()
+    if (!botToken || !TELEGRAM_BOT_TOKEN.test(botToken)) {
+      throw new Error('TELEGRAM_BOT_TOKEN is invalid')
+    }
+    if (!chatId || !TELEGRAM_CHAT_ID.test(chatId)) {
+      throw new Error('TELEGRAM_CHAT_ID is invalid')
+    }
+    return { kind, botToken, chatId }
+  }
+  if (kind !== 'webhook') throw new Error('ALERT_TRANSPORT is invalid')
+
   const raw = process.env.ALERT_WEBHOOK_URL?.trim()
   if (!raw) return undefined
   const url = new URL(raw)
@@ -191,37 +292,58 @@ function webhookConfiguration(): { url: URL; token?: string } | undefined {
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) {
     throw new Error('ALERT_WEBHOOK_URL must not contain embedded credentials')
   }
-  return { url, token: process.env.ALERT_WEBHOOK_TOKEN?.trim() || undefined }
+  return {
+    kind,
+    url,
+    token: process.env.ALERT_WEBHOOK_TOKEN?.trim() || undefined,
+  }
 }
 
-async function notify(candidate: AlertCandidate, id: string): Promise<void> {
-  const webhook = webhookConfiguration()
-  if (!webhook) {
+export async function dispatchAlertNotification(
+  candidate: AlertCandidate,
+  id: string
+): Promise<void> {
+  const transport = alertTransportConfiguration()
+  if (!transport) {
     logger.warn('alert_transport_unconfigured', { alertId: id, rule: candidate.rule })
     return
   }
-  const response = await fetch(webhook.url, {
-    method: 'POST',
-    signal: AbortSignal.timeout(Number(process.env.ALERT_WEBHOOK_TIMEOUT_MS ?? 5_000)),
-    headers: {
-      'content-type': 'application/json',
-      ...(webhook.token ? { authorization: 'Bearer ' + webhook.token } : {}),
-    },
-    body: JSON.stringify({
-      source: 'velostra',
-      environment: process.env.VELOSTRA_ENVIRONMENT ?? 'local',
-      release: process.env.VELOSTRA_RELEASE ?? 'development',
-      alert_id: id,
-      rule: candidate.rule,
-      severity: candidate.severity,
-      summary: candidate.summary,
-      details: candidate.details,
-      runbook: process.env.ALERT_RUNBOOK_BASE_URL
-        ? process.env.ALERT_RUNBOOK_BASE_URL.replace(/\/$/, '') + '#' + candidate.rule
-        : undefined,
-    }, (_key, value) => typeof value === 'bigint' ? value.toString() : value),
-  })
-  if (!response.ok) throw new Error('Alert webhook returned HTTP ' + response.status)
+
+  const isTelegram = transport.kind === 'telegram'
+  const url = isTelegram
+    ? 'https://api.telegram.org/bot' + transport.botToken + '/sendMessage'
+    : transport.url
+  let response: Response
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      signal: AbortSignal.timeout(Number(process.env.ALERT_WEBHOOK_TIMEOUT_MS ?? 5_000)),
+      headers: {
+        'content-type': 'application/json',
+        ...(!isTelegram && transport.token
+          ? { authorization: 'Bearer ' + transport.token }
+          : {}),
+      },
+      body: isTelegram
+        ? JSON.stringify({
+            chat_id: transport.chatId,
+            text: formatTelegramAlert(candidate, id),
+            disable_web_page_preview: true,
+            disable_notification: candidate.severity === 'warning',
+          })
+        : JSON.stringify(alertEnvelope(candidate, id)),
+    })
+  } catch {
+    throw new Error(
+      (isTelegram ? 'Telegram alert transport' : 'Alert webhook') + ' request failed'
+    )
+  }
+  if (!response.ok) {
+    throw new Error(
+      (isTelegram ? 'Telegram alert transport' : 'Alert webhook') +
+      ' returned HTTP ' + response.status
+    )
+  }
 }
 
 export async function persistAndDispatchAlerts(
@@ -289,7 +411,7 @@ export async function persistAndDispatchAlerts(
     )
     if ((claim.rowCount ?? 0) !== 1) continue
     try {
-      await notify(candidate, row.id)
+      await dispatchAlertNotification(candidate, row.id)
     } catch (error) {
       await pool.query(
         'update operational_alerts set last_notified_at = null, updated_at = now() where id = $1',

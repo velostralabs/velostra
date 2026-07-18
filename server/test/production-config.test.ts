@@ -14,8 +14,9 @@ const validProductionEnv: Record<string, string> = {
   READINESS_WORKER_MAX_AGE_MS: '90000',
   READINESS_WEBHOOK_WORKER_MAX_AGE_MS: '90000',
   MONITOR_INTERVAL_MS: '30000',
-  ALERT_WEBHOOK_URL: 'https://alerts.velostra.internal/events',
-  ALERT_WEBHOOK_TOKEN: 'a'.repeat(32),
+  ALERT_TRANSPORT: 'telegram',
+  TELEGRAM_BOT_TOKEN: '123456789:' + 'a'.repeat(35),
+  TELEGRAM_CHAT_ID: '-1001234567890',
   ALERT_RUNBOOK_BASE_URL: 'https://runbooks.velostra.internal/operations',
   ALERT_REQUIRE_BACKUP_HEARTBEAT: 'true',
   ALERT_REQUIRE_WEBHOOK_HEARTBEAT: 'true',
@@ -55,6 +56,8 @@ const validProductionEnv: Record<string, string> = {
 
 const managedKeys = new Set([
   ...Object.keys(validProductionEnv),
+  'ALERT_WEBHOOK_URL',
+  'ALERT_WEBHOOK_TOKEN',
   'AGENT_SECRET_DECRYPTION_KEYS',
   'BACKEND_SIGNER_PRIVATE_KEY',
   'PHASE3_MAINNET_STARTUP_APPROVAL',
@@ -129,8 +132,44 @@ try {
   rejects({ VELOSTRA_RELEASE: 'dev' }, /VELOSTRA_RELEASE/)
   rejects({ VELOSTRA_RELEASE: '1aab94d' }, /40-character commit SHA/)
   rejects({ METRICS_AUTH_TOKEN: 'weak' }, /METRICS_AUTH_TOKEN/)
-  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_URL: 'http://alerts.internal' }, /ALERT_WEBHOOK_URL/)
-  rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_WEBHOOK_TOKEN: 'weak' }, /ALERT_WEBHOOK_TOKEN/)
+  rejects(
+    { VELOSTRA_PROCESS_ROLE: 'operational-monitor', TELEGRAM_BOT_TOKEN: 'invalid' },
+    /TELEGRAM_BOT_TOKEN/
+  )
+  rejects(
+    { VELOSTRA_PROCESS_ROLE: 'operational-monitor', TELEGRAM_CHAT_ID: 'public-channel' },
+    /TELEGRAM_CHAT_ID/
+  )
+  rejects(
+    { VELOSTRA_PROCESS_ROLE: 'operational-monitor', TELEGRAM_CHAT_ID: '1234567890' },
+    /TELEGRAM_CHAT_ID/
+  )
+  rejects(
+    { VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_TRANSPORT: 'email' },
+    /ALERT_TRANSPORT/
+  )
+  configure({
+    VELOSTRA_PROCESS_ROLE: 'operational-monitor',
+    ALERT_TRANSPORT: 'webhook',
+    TELEGRAM_BOT_TOKEN: undefined,
+    TELEGRAM_CHAT_ID: undefined,
+    ALERT_WEBHOOK_URL: 'https://alerts.velostra.internal/events',
+    ALERT_WEBHOOK_TOKEN: 'a'.repeat(32),
+  })
+  assert.doesNotThrow(() => assertProductionConfiguration())
+  rejects(
+    { VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_TRANSPORT: 'webhook', ALERT_WEBHOOK_URL: 'http://alerts.internal' },
+    /ALERT_WEBHOOK_URL/
+  )
+  rejects(
+    {
+      VELOSTRA_PROCESS_ROLE: 'operational-monitor',
+      ALERT_TRANSPORT: 'webhook',
+      ALERT_WEBHOOK_URL: 'https://alerts.velostra.internal/events',
+      ALERT_WEBHOOK_TOKEN: 'weak',
+    },
+    /ALERT_WEBHOOK_TOKEN/
+  )
   rejects({ VELOSTRA_PROCESS_ROLE: 'operational-monitor', ALERT_RUNBOOK_BASE_URL: 'http://runbooks.internal' }, /ALERT_RUNBOOK_BASE_URL/)
   rejects({ READINESS_REQUIRE_WORKER: 'false' }, /READINESS_REQUIRE_WORKER/)
   rejects({ READINESS_REQUIRE_WEBHOOK_WORKER: 'false' }, /READINESS_REQUIRE_WEBHOOK_WORKER/)
@@ -154,8 +193,9 @@ try {
     SETTLEMENT_SIGNER_URL: undefined,
     SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
     METRICS_AUTH_TOKEN: undefined,
-    ALERT_WEBHOOK_URL: undefined,
-    ALERT_WEBHOOK_TOKEN: undefined,
+    ALERT_TRANSPORT: undefined,
+    TELEGRAM_BOT_TOKEN: undefined,
+    TELEGRAM_CHAT_ID: undefined,
   })
   assert.doesNotThrow(() => assertProductionConfiguration())
   rejects({ VELOSTRA_PROCESS_ROLE: 'webhook-worker', AGENT_SECRET_ENCRYPTION_KEY: undefined }, /AGENT_SECRET_ENCRYPTION_KEY/)
@@ -173,8 +213,9 @@ try {
     SETTLEMENT_SIGNER_URL: undefined,
     SETTLEMENT_SIGNER_AUTH_TOKEN: undefined,
     METRICS_AUTH_TOKEN: undefined,
-    ALERT_WEBHOOK_URL: undefined,
-    ALERT_WEBHOOK_TOKEN: undefined,
+    ALERT_TRANSPORT: undefined,
+    TELEGRAM_BOT_TOKEN: undefined,
+    TELEGRAM_CHAT_ID: undefined,
   })
   assert.doesNotThrow(() => assertProductionConfiguration())
 

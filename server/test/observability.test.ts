@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
-import { evaluateAlerts } from '../src/lib/observability/alerts.js'
+import {
+  dispatchAlertNotification,
+  evaluateAlerts,
+  formatTelegramAlert,
+  sanitizeAlertDetails,
+} from '../src/lib/observability/alerts.js'
 import {
   readinessFromSnapshot,
   type OperationalSnapshot,
@@ -46,9 +51,13 @@ function snapshot(overrides: Partial<OperationalSnapshot> = {}): OperationalSnap
   }
 }
 
+const originalFetch = globalThis.fetch
 const originalEnv = {
   READINESS_REQUIRE_WORKER: process.env.READINESS_REQUIRE_WORKER,
   ALERT_REQUIRE_BACKUP_HEARTBEAT: process.env.ALERT_REQUIRE_BACKUP_HEARTBEAT,
+  ALERT_TRANSPORT: process.env.ALERT_TRANSPORT,
+  TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+  TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
 }
 
 try {
@@ -101,6 +110,74 @@ try {
     assert(rules.has(rule), 'missing alert rule ' + rule)
   }
 
+  const sanitized = sanitizeAlertDetails({
+    latency_ms: 12,
+    bot_token: 'must-not-leave-secret-manager',
+    nested: {
+      password: 'private',
+      state: 'degraded',
+    },
+  })
+  assert.deepEqual(sanitized, {
+    latency_ms: 12,
+    bot_token: '[REDACTED]',
+    nested: {
+      password: '[REDACTED]',
+      state: 'degraded',
+    },
+  })
+  const telegramMessage = formatTelegramAlert({
+    rule: 'dependency_rpc',
+    severity: 'critical',
+    summary: 'rpc dependency is unavailable',
+    details: sanitized as Record<string, unknown>,
+  }, 'alert-test')
+  assert.match(telegramMessage, /Velostra operational alert/)
+  assert.match(telegramMessage, /Severity: CRITICAL/)
+  assert.match(telegramMessage, /Rule: dependency_rpc/)
+  assert(!telegramMessage.includes('must-not-leave-secret-manager'))
+  assert(telegramMessage.length <= 3_900)
+
+  const fakeBotToken = '123456789:' + 'a'.repeat(35)
+  let telegramRequest: { url: string; init?: RequestInit } | undefined
+  process.env.ALERT_TRANSPORT = 'telegram'
+  process.env.TELEGRAM_BOT_TOKEN = fakeBotToken
+  process.env.TELEGRAM_CHAT_ID = '-1001234567890'
+  globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
+    telegramRequest = { url: input.toString(), init }
+    return new Response(null, { status: 204 })
+  }) as typeof fetch
+  await dispatchAlertNotification({
+    rule: 'dependency_rpc',
+    severity: 'critical',
+    summary: 'rpc dependency is unavailable',
+    details: { token: 'never-send-this', latency_ms: 8 },
+  }, 'delivery-test')
+  assert.equal(
+    telegramRequest?.url,
+    'https://api.telegram.org/bot' + fakeBotToken + '/sendMessage'
+  )
+  assert.equal(telegramRequest?.init?.method, 'POST')
+  const telegramHeaders = telegramRequest?.init?.headers as Record<string, string> | undefined
+  assert(telegramHeaders)
+  assert(!('authorization' in telegramHeaders))
+  const telegramBody = JSON.parse(String(telegramRequest?.init?.body))
+  assert.equal(telegramBody.chat_id, '-1001234567890')
+  assert.match(telegramBody.text, /Rule: dependency_rpc/)
+  assert(!telegramBody.text.includes('never-send-this'))
+  globalThis.fetch = (async () => {
+    throw new Error('network failure for ' + fakeBotToken)
+  }) as typeof fetch
+  await assert.rejects(
+    () => dispatchAlertNotification({
+      rule: 'dependency_rpc',
+      severity: 'critical',
+      summary: 'rpc dependency is unavailable',
+      details: {},
+    }, 'network-error-test'),
+    (error: Error) => /request failed/.test(error.message) && !error.message.includes(fakeBotToken)
+  )
+
   setOperationalSnapshot(snapshot())
   const metrics = renderPrometheus()
   assert.match(metrics, /velostra_dependency_up\{dependency="postgres"\} 1/)
@@ -112,6 +189,7 @@ try {
 
   console.log('OBSERVABILITY READINESS, METRICS, AND ALERT RULES VERIFIED')
 } finally {
+  globalThis.fetch = originalFetch
   for (const [key, value] of Object.entries(originalEnv)) {
     if (value === undefined) delete process.env[key]
     else process.env[key] = value

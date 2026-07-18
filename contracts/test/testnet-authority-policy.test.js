@@ -1,6 +1,8 @@
 const assert = require('assert')
 const {
   SAFE_VERSION,
+  classifyPredictedSafeCode,
+  getCanonicalProxyFactoryAddress,
   validateInspectedAuthoritySet,
   validateAuthorityPlan,
   validateSafeDescriptor,
@@ -28,6 +30,17 @@ const plan = {
 }
 
 const roles = validateAuthorityPlan(plan)
+assert.match(getCanonicalProxyFactoryAddress(), /^0x[0-9A-Fa-f]{40}$/)
+assert.deepEqual(classifyPredictedSafeCode('0x6000', '0x6000'), {
+  deployed: true,
+  factoryReady: true,
+  deploymentTransactionRequired: false,
+})
+assert.deepEqual(classifyPredictedSafeCode('0x', '0x6000'), {
+  deployed: false,
+  factoryReady: true,
+  deploymentTransactionRequired: true,
+})
 assert.equal(roles.governance.threshold, 2)
 assert.equal(roles.treasury.owners.length, 3)
 assert.equal(

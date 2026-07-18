@@ -1,4 +1,5 @@
 const { ethers } = require('ethers')
+const { getProxyFactoryDeployment } = require('@safe-global/safe-deployments')
 
 const SAFE_VERSION = '1.4.1'
 const SAFE_OWNER_COUNT = 3
@@ -9,6 +10,36 @@ const SAFE_ABI = [
   'function VERSION() view returns (string)',
 ]
 const AUTHORITY_NAMES = ['governance', 'treasury', 'pauseGuardian']
+
+function getCanonicalProxyFactoryAddress(
+  chainId = 46630,
+  safeVersion = SAFE_VERSION
+) {
+  const network = String(chainId)
+  const deployment = getProxyFactoryDeployment({
+    version: safeVersion,
+    network,
+  })
+  const address = deployment?.networkAddresses?.[network]
+  if (!address) {
+    throw new Error(
+      'Canonical Safe proxy factory is unavailable for chain ' + network
+    )
+  }
+  return normalizeAddress(address, 'canonical Safe proxy factory')
+}
+
+function classifyPredictedSafeCode(safeCode, factoryCode) {
+  if (typeof safeCode !== 'string' || typeof factoryCode !== 'string') {
+    throw new Error('Safe and factory bytecode must be hex strings')
+  }
+  const deployed = safeCode !== '0x'
+  return {
+    deployed,
+    factoryReady: factoryCode !== '0x',
+    deploymentTransactionRequired: !deployed,
+  }
+}
 
 function normalizeAddress(value, label) {
   if (!ethers.isAddress(value) || value === ethers.ZeroAddress) {
@@ -161,6 +192,8 @@ module.exports = {
   SAFE_THRESHOLD,
   SAFE_VERSION,
   assertAuthorityPrincipals,
+  classifyPredictedSafeCode,
+  getCanonicalProxyFactoryAddress,
   inspectSafe,
   validateInspectedAuthoritySet,
   validateAuthorityPlan,

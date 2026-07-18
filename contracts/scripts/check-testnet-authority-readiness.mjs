@@ -5,8 +5,14 @@ import Safe from '@safe-global/protocol-kit'
 import { ethers } from 'ethers'
 import authorityPolicy from './lib/testnet-authority-policy.js'
 
-const { AUTHORITY_NAMES, SAFE_VERSION, inspectSafe, validateAuthorityPlan } =
-  authorityPolicy
+const {
+  AUTHORITY_NAMES,
+  SAFE_VERSION,
+  classifyPredictedSafeCode,
+  getCanonicalProxyFactoryAddress,
+  inspectSafe,
+  validateAuthorityPlan,
+} = authorityPolicy
 const SCRIPT_ROOT = path.dirname(fileURLToPath(import.meta.url))
 const REPOSITORY_ROOT = path.join(SCRIPT_ROOT, '..', '..')
 const ARTIFACTS_ROOT = path.join(REPOSITORY_ROOT, 'artifacts')
@@ -52,22 +58,26 @@ async function predictAuthority({ rpcUrl, provider, descriptor, label }) {
     },
   })
   const address = ethers.getAddress(await protocolKit.getAddress())
-  const deploymentTransaction = await protocolKit.createSafeDeploymentTransaction()
-  const factoryAddress = ethers.getAddress(deploymentTransaction.to)
+  const factoryAddress = getCanonicalProxyFactoryAddress(CHAIN_ID, SAFE_VERSION)
   const [safeCode, factoryCode] = await Promise.all([
     provider.getCode(address),
     provider.getCode(factoryAddress),
   ])
-  let deployed = false
-  if (safeCode !== '0x') {
+  const state = classifyPredictedSafeCode(safeCode, factoryCode)
+  if (state.deployed) {
     await inspectSafe(provider, address, label + ' Safe', descriptor.owners)
-    deployed = true
+  } else {
+    const deploymentTransaction =
+      await protocolKit.createSafeDeploymentTransaction()
+    if (ethers.getAddress(deploymentTransaction.to) !== factoryAddress) {
+      throw new Error(label + ' predicted a non-canonical Safe proxy factory')
+    }
   }
   return {
     address,
-    deployed,
+    deployed: state.deployed,
     factoryAddress,
-    factoryReady: factoryCode !== '0x',
+    factoryReady: state.factoryReady,
     threshold: descriptor.threshold,
     safeVersion: SAFE_VERSION,
   }

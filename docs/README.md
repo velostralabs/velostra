@@ -58,13 +58,11 @@ or sequencing changes require a roadmap update.
 The repository has passed automated and internal engineering review for Phase 0-4,
 which clears continued non-mainnet development. The static protocol preview is a
 verified public deployment; this is not an independent audit, managed backend/contract
-deployment, closed-beta approval, or real-value authorization. Managed infrastructure,
-signer custody, operator alerts, real-wallet staging, load/outage/PITR drills, and a
-72-hour soak remain release prerequisites. The repository now includes a locally
-validated US-only staging plan. Its GCP foundation, scoped identities, HSM key,
-managed Neon/Upstash data plane, primary/fallback RPC, and all twelve scoped secret
-values are provisioned. Direct delivery to a private Telegram bot/channel is
-verified; application runtimes, runtime alert-lifecycle evidence, contract deployment,
-and the remaining managed evidence are pending.
+deployment, closed-beta approval, or real-value authorization. The US foundation,
+managed data plane, twelve scoped secrets, HSM settler, and private Telegram
+connection are active. Three disjoint Safe 1.4.1 2-of-3 testnet authority sets have
+encrypted ignored custody and a passing read-only canonical-factory preflight. The
+deployer remains unfunded; no Safe, escrow, application runtime, runtime alert
+lifecycle, real-wallet evidence, load/outage/PITR drill, or 72-hour soak is complete.
 Local completion never
 overrides activation gates.

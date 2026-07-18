@@ -44,14 +44,14 @@ and financial flows are not activated and must not be represented as operational
 A low-cost US-only backend staging deployment path is committed and locally validated:
 Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
 us-east4; bounded Cloud Run services/jobs; immutable image digests; multi-tenant
-Cloud HSM signing; and a USD 35 monthly envelope. The GCP foundation has active
-billing guardrails, an empty registry, six namespaced identities, one HSM signer key,
-and twelve regional secret containers. Managed Neon Postgres is active with all nine
-migrations and 30 public tables, Upstash Redis is active on its free US tier with TLS,
-and an Alchemy Robinhood-testnet-only primary RPC plus the public Robinhood fallback
-both report chain 46630. All twelve scoped secrets have one enabled value. Direct
-delivery to the private Telegram channel is verified without exposing either value.
-All Cloud Run workloads/schedules and the testnet contract are still absent.
+Cloud HSM signing; and a USD 35 monthly envelope. The foundation, nine database
+migrations/30 tables, TLS Redis, primary/fallback chain-46630 RPC, twelve scoped
+secret values, and private Telegram connection are active. Three disjoint canonical
+Safe 1.4.1 authority accounts are prepared as 2-of-3 testnet-only principals with
+DPAPI-encrypted ignored custody. A read-only live-chain preflight verifies their
+unique predictions, canonical factory code, and separation from the KMS settler.
+The isolated deployer is not funded; zero of three Safes, every Cloud Run
+workload/schedule, and VelostraEscrow remain undeployed.
 
 ## Audit decision
 
@@ -69,12 +69,12 @@ All Cloud Run workloads/schedules and the testnet contract are still absent.
 | Area | Repository state | External state |
 |---|---|---|
 | Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values, real MetaMask, and managed-staging performance evidence pending |
-| Contract | role-separated, solvent, pausable, correlated `callId`, guarded build/deploy/verify tooling | independent audit and mainnet deployment pending |
+| Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | encrypted testnet custody and canonical preflight ready; deployer unfunded, Safes/escrow undeployed, independent audit/mainnet pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | timed managed one-hour outage evidence pending |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | GCP foundation plus managed Neon, Upstash, primary/fallback RPC, all twelve secret values, and direct private-Telegram delivery provisioned; application workloads pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | US foundation/data plane/secrets/Telegram plus testnet authority custody/preflight ready; funding, onchain authorities, escrow, and application workloads pending |
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | HSM key, public-address evidence, and all twelve scoped values exist; signer runtime, audit logs, rotations, and drills pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | private Telegram connection delivery verified; runtime failure/acknowledgement/resolution evidence pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
@@ -123,6 +123,11 @@ readiness, wallet/contract evidence, closed-beta activation, or mainnet authorit
   configured 16 KiB boundary.
 - Authority ownership/policy validation and secret/signer/role rotation runbooks are
   committed and tested.
+- Three disjoint Safe 1.4.1 2-of-3 authority sets now have CSPRNG-generated,
+  DPAPI-encrypted testnet-only custody. Tooling proves encryption round trips, owner
+  separation, plan-only defaults, clean-tree broadcast, canonical factory readiness,
+  and post-deployment owner/threshold verification. This synthetic single-operator
+  custody is explicitly ineligible for production or mainnet governance.
 
 ### Observability and browser proof
 
@@ -297,12 +302,12 @@ The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). The next hones
 checkpoint is managed US staging online with a verified Robinhood testnet escrow
 while paid writes remain disabled.
 
-Keep the public preview stable and preserve the applied GCP foundation plus managed
-Neon, Upstash, RPC, and private-Telegram resources. Define and fund an isolated
-Robinhood-testnet deployer with four distinct contract-role addresses, then deploy
-and verify the contract before the immutable API, workers, signer, and canonical
-API/auth origin. Direct Telegram connection delivery is verified; runtime alert
-lifecycle evidence follows the monitor deployment.
-Only then run wallet, alert, one-hour outage, PITR, and 72-hour evidence.
-No external gate may be marked complete from the local plan. Keep paid writes
+Keep the public preview and applied US resources stable. Fund only the isolated
+testnet deployer, deploy and verify the three prepared Safe 2-of-3 principals, then
+deploy and verify the synthetic token plus VelostraEscrow through the guarded
+wrappers. Only after those records pass may immutable API, signer, workers, and the
+canonical staging origin be deployed. Direct Telegram connection delivery is
+verified; runtime alert lifecycle evidence follows the monitor deployment.
+Then run wallet, alert, one-hour outage, PITR, and 72-hour evidence. No external gate
+may be marked complete from a local plan or read-only preflight. Keep paid writes
 disabled and do not use mainnet value.

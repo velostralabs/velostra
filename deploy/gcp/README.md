@@ -5,12 +5,13 @@ staging stack. It is isolated from Robinhood mainnet and rejects every non-US
 region.
 
 Deployment truth as of 2026-07-18: the separate static protocol preview is live on
-Netlify at `velostra.xyz`. It has no managed API or contract build values and is not
-the staging stack described here. Project `velostra-production` contains the applied
-us-east4 foundation, namespaced identities, one multi-tenant HSM key, managed Neon/
-Upstash/Alchemy endpoints, and all twelve enabled scoped secret values. The registry
-remains empty; direct delivery to a private Telegram bot/channel is verified. No
-runtime workload, scheduler trigger, runtime alert lifecycle, or contract is deployed.
+Netlify at `velostra.xyz` with no managed API or contract build values. The applied
+US foundation, managed Neon/Upstash/Alchemy data plane, twelve scoped secrets, HSM
+settler, and direct private-Telegram connection are verified. Three disjoint canonical
+Safe 1.4.1 2-of-3 authority sets have encrypted testnet-only custody, and the live
+read-only preflight verifies their unique predictions plus canonical factory code.
+The isolated deployer is unfunded; zero Safes, runtime workloads, Scheduler triggers,
+runtime alert lifecycle, token, or escrow contract are deployed.
 
 ## Fixed policy
 
@@ -133,36 +134,41 @@ Requirements:
 The command exports only the public key, validates the KMS algorithm and
 location, and records the derived EVM address under artifacts/staging.
 
-## 5. Deploy and verify the testnet contract
+## 5. Deploy and verify testnet authorities and escrow
 
-Build contracts first. Then run the guarded Robinhood testnet deployment with
-four distinct operational wallets. The KMS-derived address is the settler.
-The deployer key remains local and must contain testnet gas only.
+Node.js 22 is required. Prepare the synthetic testnet custody once; the helper creates
+one isolated deployer and three disjoint Safe 1.4.1 owner sets, each 2-of-3. Every
+private key is encrypted with Windows DPAPI CurrentUser below ignored artifacts and
+is never printed or written in plaintext. This single-operator synthetic custody is
+testnet-only and cannot satisfy mainnet governance.
 
     npm --prefix contracts test
-    npm --prefix contracts run test:testnet-policy
+    npm run test:testnet-authorities
+    powershell -NoProfile -File deploy/gcp/prepare-testnet-authorities.ps1
+    powershell -NoProfile -File deploy/gcp/check-testnet-authorities.ps1
 
-    $env:VELOSTRA_TESTNET_BROADCAST = 'isolated-staging-approved'
-    $env:VELOSTRA_ENVIRONMENT = 'staging'
-    $env:VELOSTRA_DEPLOY_REGION = 'us-east4'
-    $env:ROBINHOOD_CHAIN_ID = '46630'
-    $env:VELOSTRA_TESTNET_SETTLEMENT_TOKEN_MODE = 'deploy-mock-usd'
-    $env:ROBINHOOD_TESTNET_RPC_URL = '<testnet-rpc>'
-    $env:TESTNET_DEPLOYER_PRIVATE_KEY = '<ephemeral-testnet-key>'
-    $env:PLATFORM_FEE_BPS = '1000'
-    $env:ADMIN_ADDRESS = '<admin-wallet>'
-    $env:SETTLER_ADDRESS = '<kms-derived-address>'
-    $env:TREASURY_ADDRESS = '<treasury-wallet>'
-    $env:PAUSE_GUARDIAN_ADDRESS = '<pause-guardian-wallet>'
-    npm --prefix contracts run deploy:robinhood-testnet -- --broadcast
+The readiness command is read-only and does not decrypt keys. It verifies chain 46630,
+canonical Safe factory code, three unique predicted accounts, an isolated KMS settler,
+and deployer gas. If gas is absent, copy only the public deployer address and fund it
+with valueless Robinhood testnet ETH from the
+[official faucet](https://faucet.testnet.chain.robinhood.com/):
 
-Verify the resulting artifact before using its address or block:
+    powershell -NoProfile -File deploy/gcp/prepare-testnet-authorities.ps1 -CopyDeployerAddress
 
-    $env:TESTNET_DEPLOYMENT_RECORD = 'artifacts/staging/robinhood-testnet-deployment.json'
-    $env:TESTNET_VERIFICATION_OUTPUT = 'artifacts/staging/robinhood-testnet-verification.json'
-    npm --prefix contracts run verify:robinhood-testnet
+After funding, rerun readiness. Both mutation commands are plan-only without Apply:
 
-Clear TESTNET_DEPLOYER_PRIVATE_KEY from the shell immediately after deployment.
+    powershell -NoProfile -File deploy/gcp/deploy-testnet-authorities.ps1
+    powershell -NoProfile -File deploy/gcp/deploy-testnet-authorities.ps1 -Apply
+    powershell -NoProfile -File deploy/gcp/deploy-testnet-contract.ps1
+    powershell -NoProfile -File deploy/gcp/deploy-testnet-contract.ps1 -Apply
+
+The first Apply is idempotent and verifies every Safe owner, threshold, version, and
+disjoint owner set. The second consumes only that verified authority record, deploys
+a synthetic 6-decimal token plus VelostraEscrow, and immediately runs the bytecode,
+receipt, role, solvency, token, and Safe-authority verifier. Secret Manager supplies
+the RPC only in process memory; DPAPI decrypts the deployer only for each child
+process; cleanup removes every sensitive environment value. All records remain below
+ignored artifacts/staging.
 
 ## 6. Build and deploy the server runtime
 
@@ -227,11 +233,9 @@ substitute for these external runtime evidence gates.
 
 ## Current external blockers
 
-Google Cloud Billing, the account-native alert budget, regional registry, identities,
-and multi-tenant HSM key are active. Neon Free is provisioned in aws-us-east-1 with
-the nine migrations/30 tables applied; Upstash Free is provisioned on GCP us-east4;
-Alchemy Free is restricted to Robinhood Testnet and the official public fallback is
-verified. All twelve scoped secret containers have enabled values, and direct
-private-Telegram connection delivery is verified. The public Netlify preview remains
-separate. No application workload, Scheduler trigger, runtime alert-lifecycle
-evidence, or contract exists.
+The US foundation, managed data plane, twelve scoped secrets, HSM settler, and direct
+private-Telegram connection are active. Encrypted testnet-only Safe custody exists and
+the canonical Safe readiness preflight passes except for deployer funding. The public
+Netlify preview remains separate. Zero of three Safes, every application workload,
+Scheduler trigger, runtime alert-lifecycle artifact, synthetic token, and escrow
+contract remain undeployed.

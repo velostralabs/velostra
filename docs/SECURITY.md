@@ -92,7 +92,10 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
 - persistent event cursor, confirmation delay, adaptive RPC range handling,
   ordered primary/fallback RPC transport, pending retries, drift comparison, and
   safe retroactive cursor policy;
-- role-separated, pausable, collateral-checked contract and safe successor path.
+- role-separated, pausable, collateral-checked contract and safe successor path;
+- testnet escrow broadcast requires three canonical Safe 1.4.1 2-of-3 principals
+  with disjoint owner sets, a separate EOA KMS settler, clean-tree guards, and live
+  owner/threshold/version checks before and after deployment.
 
 ### Versioned platform, webhooks, and privacy
 

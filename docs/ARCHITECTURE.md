@@ -87,10 +87,13 @@ spendable-credit ledger; escrow liquidity collateralizes settlement liabilities.
 - `PAUSER_ROLE`: emergency pause only;
 - `FEE_MANAGER_ROLE`: fee update under a 50% hard cap.
 
-The deploy script requires four distinct role addresses and verifies that admin is
-a deployed contract. Claims remain available while paused. A declared successor
-permanently closes new deposits/settlements; only liquidity above all outstanding
-liabilities can migrate.
+The guarded testnet deploy path requires three distinct canonical Safe 1.4.1
+accounts for governance, treasury, and pause authority. Each must have exactly three
+owners, threshold two, and an owner set disjoint from every other authority. The
+restricted KMS settler must remain a separate EOA. Live owner/threshold/version/code
+checks run before escrow deployment and again during verification. Claims remain
+available while paused. A declared successor permanently closes new deposits and
+settlements; only liquidity above all outstanding liabilities can migrate.
 
 ## Backend trust boundary
 

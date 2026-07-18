@@ -190,13 +190,17 @@ resource in a US Virginia region. Validate the non-mutating deployment plan:
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
 The bootstrap remains plan-only unless Apply and a billing account are supplied.
-For the current project it has been applied through the US-only registry, namespaced
-identities, multi-tenant HSM key, and regional secret containers. Managed Neon,
-Upstash, primary/fallback RPC, all twelve scoped secret values, and direct private-
-Telegram delivery are active. Follow [the US staging runbook](../deploy/gcp/README.md)
-to add the testnet contract and immutable application workloads, then prove the
-runtime alert lifecycle.
-Use only the approved US regions and Robinhood testnet chain 46630. Never use
+The US foundation, managed data plane, twelve scoped secrets, and private Telegram
+connection are active. Testnet tooling now prepares three disjoint Safe 1.4.1 2-of-3
+authority sets with DPAPI-encrypted ignored custody and checks canonical readiness
+without decrypting keys:
+
+    npm run test:testnet-authorities
+    powershell -NoProfile -File deploy/gcp/check-testnet-authorities.ps1
+
+The isolated deployer remains unfunded and no Safe, escrow, or workload is deployed.
+Follow [the US staging runbook](../deploy/gcp/README.md) for funding and guarded Apply
+steps. Use only approved US regions and Robinhood testnet chain 46630. Never use
 mainnet or real value for this staging path.
 
 ## Phase 3 release preparation

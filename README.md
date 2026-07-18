@@ -249,17 +249,16 @@ signer, bounded web/API services, and staggered one-task jobs:
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
-The GCP bootstrap is applied in project `velostra-production`: billing and its
-account-native budget alert are active; an empty us-east4 registry, six namespaced
-service accounts, one multi-tenant HSM key, and twelve regional secret containers
-exist. Managed Neon Postgres, Upstash Redis, primary/fallback Robinhood-testnet RPC,
-and all twelve scoped secret values are active in approved US regions. A private
-Telegram bot/channel is connected for operator alerts; its two values are stored
-separately and direct test delivery is verified. Cloud Run workloads/schedules and
-the testnet contract remain pending, so runtime alert lifecycle evidence does too.
-The public Netlify preview remains separate. See the
-[US staging runbook](./deploy/gcp/README.md).
-Paid writes remain disabled and this path cannot target mainnet.
+The applied foundation, managed data plane, twelve scoped secrets, and private
+Telegram connection are active in approved US regions. Three disjoint canonical
+Safe 1.4.1 authority accounts are prepared as 2-of-3 testnet-only principals; owner
+and deployer keys are DPAPI-encrypted below ignored artifacts and never written in
+plaintext. The read-only chain preflight proves canonical factory availability,
+unique predicted addresses, and isolated KMS settlement authority. The isolated
+deployer remains unfunded, no Safe or escrow is deployed, and every Cloud Run
+workload/schedule remains absent. The public Netlify preview remains separate. See
+the [US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled and
+this path cannot target mainnet.
 
 ## Controlled release tooling
 
@@ -314,9 +313,10 @@ guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
 governance. The public Netlify protocol preview is live at `velostra.xyz`; the
 US-only Robinhood testnet backend/contract deployment policy and dry-run plan also
-pass locally. The GCP foundation, managed Neon/Upstash data plane, primary/fallback
-RPC, all twelve scoped secret values, and direct private-Telegram delivery are
-active, but no managed API/worker runtime or testnet contract exists.
+pass locally. The managed US foundation/data plane, twelve secrets, Telegram
+connection, encrypted testnet authority custody, and canonical Safe preflight are
+complete. The isolated deployer is not funded; no Safe, escrow, managed API, or
+worker runtime is deployed.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
 recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,

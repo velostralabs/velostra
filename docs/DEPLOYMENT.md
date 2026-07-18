@@ -32,16 +32,15 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 - paid writes disabled and a USD 35 cross-provider monthly envelope.
 
 All mutation scripts are plan-only without Apply. They require a clean full release
-SHA and immutable image digests. The `velostra-production` project now has active
-billing and an account-native alert budget plus an empty Artifact Registry, six
-namespaced service accounts, one us-east4 multi-tenant HSM secp256k1 key, and twelve
-us-east4 secret containers. Neon Free in aws-us-east-1, Upstash Free on GCP us-east4,
-Alchemy Free restricted to Robinhood Testnet, and the official public fallback have
-been endpoint-verified. All twelve secret containers have one enabled operational
-value, and direct delivery to the private Telegram channel is verified. No Cloud Run
-service/job, Scheduler job, or contract is deployed. This is not a completed staging
-deployment; the
-separate static Netlify preview does not satisfy any managed-staging evidence gate.
+SHA and immutable image digests. The applied US foundation, managed data plane,
+twelve scoped secret values, and direct private-Telegram delivery are verified.
+Three disjoint canonical Safe 1.4.1 2-of-3 authority sets now have CSPRNG-generated,
+DPAPI-encrypted testnet-only custody under ignored artifacts. A read-only chain
+preflight verifies unique predictions, canonical factory code, and separation from
+the HSM settler. The isolated deployer remains unfunded; no Safe, Cloud Run
+service/job, Scheduler job, or escrow contract is deployed. This is not a completed
+staging deployment, and the separate static Netlify preview satisfies no managed
+staging evidence gate.
 
 ## Target topology
 
@@ -254,12 +253,13 @@ origins, and no server secret in `VITE_*`.
 
 ## Release sequence
 
-For the future Robinhood testnet staging sequence, follow the guarded two-pass
-runtime/web origin procedure in [deploy/gcp/README.md](../deploy/gcp/README.md).
-It deploys and verifies the testnet contract before building immutable images, runs
-migration only with explicit opt-in, keeps paid writes disabled, and finally rebinds
-the API to the generated staging web origin. That isolated Cloud Run web surface is
-distinct from the currently public Netlify protocol preview until an explicit,
+For the Robinhood testnet staging sequence, follow the guarded procedure in
+[deploy/gcp/README.md](../deploy/gcp/README.md). It prepares encrypted testnet-only
+custody, checks canonical Safe readiness without decrypting keys, deploys and verifies
+three 2-of-3 authorities, then deploys and verifies the escrow before building
+immutable images. Migration remains explicit, paid writes remain disabled, and the
+API is finally rebound to the generated staging web origin. That isolated Cloud Run
+surface remains distinct from the public Netlify preview until an explicit,
 evidence-backed cutover binds `velostra.xyz` to the managed API.
 
 The mainnet sequence remains gated:

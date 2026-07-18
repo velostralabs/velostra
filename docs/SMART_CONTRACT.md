@@ -163,16 +163,23 @@ Ten Phase 1 groups cover:
 
 ## Guarded US staging deployment
 
-deploy:robinhood-testnet is isolated to Robinhood testnet chain 46630 and GCP
-deployment region us-east4. It is inert without broadcast plus the exact
-isolated-staging approval phrase, rejects duplicate operational role addresses, and
-can deploy a 6-decimal MockUSD for synthetic value. The SETTLER role uses the
-address derived from the managed secp256k1 KMS public key.
+The testnet path is isolated to Robinhood testnet chain 46630 and GCP us-east4.
+Governance, treasury, and pause guardian must each be a canonical Safe 1.4.1 account
+with exactly three disjoint owners and threshold two. The SETTLER role uses the
+separate address derived from the managed secp256k1 KMS public key and must remain an
+EOA. Arbitrary role EOAs, shared owner sets, wrong Safe versions/thresholds, contract
+settlers, non-US configuration, dirty-tree broadcast, and mainnet chains fail closed.
 
-The verifier checks receipt success, runtime bytecode with immutable references,
-token decimals, fee, unpaused/solvent state, unset successor, deployment block, and
-all constructor roles. Both deployment and verification outputs stay under ignored
-artifacts/staging. This testnet path does not weaken or authorize the mainnet flow.
+Testnet owner/deployer keys are CSPRNG-generated and DPAPI-encrypted below ignored
+artifacts; they are synthetic testnet custody and never qualify as mainnet governance.
+The read-only preflight predicts the three Safes and verifies canonical factory code
+without decrypting keys. Guarded wrappers then deploy/verify the Safes before a
+6-decimal MockUSD and VelostraEscrow can be broadcast.
+
+The verifier checks Safe owners/threshold/version and isolation plus receipt success,
+runtime bytecode with immutable references, token decimals, fee, unpaused/solvent
+state, unset successor, deployment block, and all constructor roles. Outputs stay
+under ignored artifacts/staging. This path does not weaken or authorize mainnet.
 
 ## Guarded Phase 3 deployment
 

@@ -1,9 +1,10 @@
 # Staging secrets and authority runbook
 
 This runbook is for isolated managed staging and Phase 3 release preparation. It
-does not authorize a production or mainnet rollout. No managed secret, identity,
-signer, or authority resource is currently provisioned; the public Netlify preview
-contains none of these values.
+does not authorize a production or mainnet rollout. The managed US identities,
+secrets, HSM settlement signer, provider data plane, and encrypted testnet authority
+custody exist; no Safe authority, escrow, or application runtime is deployed. The
+public Netlify preview contains none of these managed values.
 
 ## Secret delivery
 
@@ -44,6 +45,15 @@ multisig. PAUSER and TREASURY must be independently owned multisig principals, e
 with a threshold of at least two. SETTLER must be the restricted signer and must have
 no treasury, fee, pause, or admin authority. Any later FEE_MANAGER delegation requires
 approved onchain role-transition evidence and a new readiness/release record.
+
+For zero-value Robinhood testnet only, the guarded GCP tooling prepares three
+canonical Safe 1.4.1 principals with exactly three disjoint owners and threshold two.
+Nine owner keys and the isolated deployer are CSPRNG-generated, DPAPI CurrentUser
+encrypted, and retained only under ignored artifacts. Readiness predicts the accounts
+and verifies canonical factory code without decrypting keys; broadcasts require a
+clean tree and verify live owners/threshold/version before escrow deployment. Because
+one local operator controls this synthetic custody, it is explicitly ineligible for
+mainnet, real value, or accountable production governance.
 
 ## Required staging drills
 

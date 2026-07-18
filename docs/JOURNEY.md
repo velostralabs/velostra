@@ -159,6 +159,22 @@ Checkpoint: all twelve scoped secret containers now have one enabled value and d
 private-Telegram delivery is verified. Runtime alert failure, acknowledgement, and
 resolution evidence remains pending until the monitor workload is deployed.
 
+### 2026-07-18 - Safe testnet authority preflight
+
+- replaced arbitrary testnet role wallets with three canonical Safe 1.4.1 accounts:
+  governance, treasury, and pause guardian, each 2-of-3;
+- generated nine disjoint owner keys plus one isolated deployer using a CSPRNG and
+  encrypted every key with Windows DPAPI CurrentUser below ignored artifacts;
+- made both authority and escrow broadcasts plan-only, clean-tree guarded, chain-46630
+  only, and dependent on live Safe owner/threshold/version verification;
+- verified the canonical Safe factory, three unique predicted addresses, isolated HSM
+  settler, and empty deployer balance through a read-only managed-RPC preflight.
+
+Checkpoint: encrypted testnet-only custody and broadcast tooling are ready. Zero of
+three Safes is deployed and the isolated deployer is intentionally unfunded, so no
+authority, escrow, or token transaction has been sent. This synthetic custody is not
+eligible for mainnet governance.
+
 ## What is complete
 
 ### Product and identity
@@ -199,7 +215,9 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 1. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
    Redis, primary/fallback RPC, registry, HSM, identities, and all twelve secrets exist.
-2. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
+2. The three prepared Safe authorities and VelostraEscrow are not deployed on
+   Robinhood testnet; the isolated deployer is unfunded. Nothing is deployed on
+   mainnet.
 3. The public frontend has no production API, escrow, or settlement-token build values.
 4. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
    logs, and signed ownership evidence are pending.
@@ -217,10 +235,12 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 ### Lane A - Managed US staging (active external next)
 
-1. Define and fund an isolated Robinhood-testnet deployer plus four distinct contract
-   role addresses. Use the retained HSM-derived public address exactly as the settler.
-2. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
-   block, roles, token, fee, and verification evidence under ignored artifacts.
+1. Fund only the prepared isolated Robinhood-testnet deployer, then deploy and verify
+   the three canonical Safe 1.4.1 2-of-3 principals. Use the retained HSM-derived
+   public address exactly as the settler.
+2. Deploy and verify the synthetic token plus VelostraEscrow through the guarded
+   wrapper; record address, deployment block, roles, token, fee, Safe policy, and
+   verification evidence under ignored artifacts.
 3. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
    staging-web workloads with paid writes disabled.
 4. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert

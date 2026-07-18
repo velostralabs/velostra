@@ -35,6 +35,7 @@
 | Managed KMS signer | `npm --prefix server run test:kms-signer` | none | DER/PEM handling, low-S signature, sender recovery, durable concurrent idempotency, and conflicting-payload rejection |
 | US staging policy | `powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1` | PowerShell | chain 46630, Virginia-only residency, provider caps, schedules, and USD 35 envelope |
 | US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, private signer entrypoint, bounded services, staggered jobs, and no migration without opt-in |
+| Testnet Safe authority | `npm run test:testnet-authorities` | Windows PowerShell + Node.js 22 | CSPRNG/DPAPI custody round trip, three disjoint 2-of-3 plans, plan-only clean-tree broadcast, private-key cleanup, and live policy validation |
 | Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |

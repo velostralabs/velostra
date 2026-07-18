@@ -108,7 +108,7 @@ to its call.
 | Threat | Control | Residual risk / next gate |
 |---|---|---|
 | Settler key compromise | no raw production key; restricted remote signer; least privilege; revoke/rotate runbook | managed KMS rotation/compromise drill evidence pending |
-| Governance compromise | multisig contract; 2-day default-admin transfer delay | multisig policy and signer roster require external review |
+| Governance compromise | canonical Safe contract, disjoint 2-of-3 testnet owners, live owner/threshold/version checks, 2-day default-admin transfer delay | synthetic testnet custody is single-operator; accountable mainnet owners and external review remain mandatory |
 | Insolvent credit creation | contract liquidity guard and explicit liabilities | chosen token behavior must be audited |
 | Duplicate paid settlement | onchain callId replay guard + DB uniqueness + conditional finalize + local reorg/race drill | deep-reorg behavior beyond confirmation window requires incident handling |
 | Crash after onchain success | outbox, raw event ledger, worker, authoritative callId | catch-up time depends on RPC availability |
@@ -151,7 +151,9 @@ to its call.
 - Initial production runs one supervised worker and one logical restricted remote-signer writer.
 - RPC and database credentials come from a managed secret store, not repository or
   image layers.
-- The contract remains undeployed until independent audit findings are closed.
+- No mainnet or real-value contract may deploy until independent audit findings and
+  accountable governance ownership are closed. Zero-value testnet deployment uses
+  synthetic 2-of-3 Safe custody and does not satisfy that release gate.
 - The public Netlify preview contains no managed API or contract build values and is not
   treated as an activated product runtime.
 

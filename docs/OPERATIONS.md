@@ -4,9 +4,10 @@
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> The static protocol preview is live at https://velostra.xyz/. The isolated GCP US
-> bootstrap foundation exists, but no managed application runtime, testnet escrow,
-> closed-beta, mainnet, or real-value deployment is recorded.
+> The static protocol preview is live at https://velostra.xyz/. The isolated US
+> foundation/data plane and encrypted testnet Safe custody exist, but the deployer is
+> unfunded and no Safe, managed application runtime, testnet escrow, closed beta,
+> mainnet, or real-value deployment is recorded.
 
 ## Current public frontend operations
 
@@ -78,14 +79,13 @@ any Apply action:
 6. use the hidden-prompt helper for Secret Manager values;
 7. retain generated records only under ignored artifacts/staging.
 
-Google Cloud Billing, the account-native alert budget, regional registry, namespaced
-identities, HSM key, managed Neon Postgres, Upstash Redis, primary/fallback RPC, and
-all twelve scoped secret values are active in approved US regions. Direct delivery to
-the private Telegram bot/channel is verified. Every Cloud Run service/job and
-Scheduler trigger, the testnet contract, and runtime alert lifecycle evidence are
-absent. Do not record readiness,
-rotation, alert, outage, PITR, or soak
-evidence until the actual managed service produced it.
+The US foundation, managed data plane, twelve scoped secrets, HSM settler, and direct
+private-Telegram connection are active. Three disjoint canonical Safe 1.4.1 2-of-3
+sets have encrypted testnet-only custody, and their read-only factory/prediction/
+isolation preflight passes. The deployer is unfunded; zero Safes, every Cloud Run
+service/job and Scheduler trigger, the escrow, and runtime alert lifecycle evidence
+are absent. Do not record authority deployment, readiness, rotation, alert, outage,
+PITR, or soak evidence until the actual managed resource produced it.
 
 ## Reconciliation commands
 

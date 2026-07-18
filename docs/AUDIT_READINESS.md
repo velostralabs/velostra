@@ -81,8 +81,11 @@ constructor(
 )
 ```
 
-Deployment policy requires a deployed multisig contract for `admin`; all four role
-addresses must be explicit and distinct; token decimals must be 6.
+Deployment policy requires canonical Safe 1.4.1 contracts for governance, treasury,
+and pause authority, each exactly 2-of-3 with disjoint owner sets. The restricted
+settler must be a separate EOA, every role address must be explicit/distinct, and token
+decimals must be 6. Testnet synthetic DPAPI custody is not acceptable mainnet
+ownership evidence.
 
 ## In-scope backend security boundary
 

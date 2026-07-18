@@ -161,7 +161,11 @@ and must never be inferred from local tests.
 - [x] Select a private Telegram bot/channel transport with bounded, redacted payloads.
 - [x] Load its bot-token/channel-ID secrets through a hidden prompt and prove direct
   delivery without exposing either value.
-- [ ] Deploy Cloud Run workloads, prove the runtime alert lifecycle, and attach
+- [x] Prepare three disjoint canonical Safe 1.4.1 2-of-3 authority sets with
+  CSPRNG/DPAPI testnet-only custody; verify unique predictions, canonical factory
+  availability, isolated settler, and plan-only clean-tree broadcast tooling.
+- [ ] Fund the isolated deployer, deploy/verify the three Safes and VelostraEscrow,
+  deploy Cloud Run workloads, prove the runtime alert lifecycle, and attach
   provider-native backup/recovery evidence.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
@@ -382,8 +386,9 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 ### Staging/evidence lane (active external next)
 
 1. retain the verified public preview, GCP foundation, managed data plane, and RPCs;
-2. define and fund an isolated testnet deployer plus distinct contract-role addresses;
-3. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
+2. fund the already prepared isolated testnet deployer and deploy/verify the three
+   canonical Safe 1.4.1 2-of-3 authorities;
+3. deploy and verify the synthetic token plus VelostraEscrow, then deploy immutable
    server/staging-web images with paid writes disabled;
 4. bind the generated staging web/API origin and prove readiness plus wallet/alert
    flows before any explicit public-domain integration;

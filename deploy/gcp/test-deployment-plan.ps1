@@ -59,6 +59,8 @@ $all = $runtimeText + [Environment]::NewLine + $webText +
   [Environment]::NewLine + $bootstrapText + [Environment]::NewLine + $buildText
 $telegramHelperText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'configure-telegram-alerts.ps1')
+$buildScriptText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'build-image.ps1')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -99,6 +101,9 @@ Reject-Match $existingBudgetBootstrapText 'billing budgets create' 'Existing-bud
 Require-Match $bootstrapText 'roles/logging.logWriter' 'Builder must receive Cloud Logging write access'
 Require-Match $bootstrapText 'roles/storage.objectViewer' 'Builder must receive source object read access'
 Require-Match $buildText 'velostra-builder@.*--default-buckets-behavior=regional-user-owned-bucket --region=us-east4' 'Builds must use the dedicated identity and regional user-owned bucket behavior'
+Require-Match $buildScriptText 'function Invoke-GcloudChecked' 'Cloud Build must use checked native command handling'
+Require-Match $buildScriptText 'function Get-GcloudTextChecked' 'Artifact lookup must use checked native command handling'
+Require-Match $buildScriptText "ErrorActionPreference = 'Continue'" 'Native gcloud progress must not bypass exit-code handling'
 Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--command=node --args=dist/signer/index[.]js --no-allow-unauthenticated' 'Signer must be private, bounded, and use its dedicated entrypoint'
 Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'

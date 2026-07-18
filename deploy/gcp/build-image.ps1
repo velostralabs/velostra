@@ -51,6 +51,48 @@ $gcloud = @(
 ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (-not $gcloud) { throw 'Google Cloud CLI is required' }
 
+function Invoke-GcloudChecked {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$CommandArgs,
+    [Parameter(Mandatory)]
+    [string]$FailureMessage
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  $output = $null
+  $exitCode = $null
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & $script:gcloud @CommandArgs 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
+  foreach ($line in @($output)) {
+    Write-Output ([string]$line)
+  }
+}
+
+function Get-GcloudTextChecked {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$CommandArgs,
+    [Parameter(Mandatory)]
+    [string]$FailureMessage
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & $script:gcloud @CommandArgs 2>$null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
+  return ($output | Out-String).Trim()
+}
+
 $repositoryRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 $head = (& git -C $repositoryRoot rev-parse HEAD | Out-String).Trim()
 if ($LASTEXITCODE -ne 0) { throw 'Unable to read the repository commit' }
@@ -104,16 +146,15 @@ $buildArgs += @(
   ('--region=' + $region),
   ('--project=' + $ProjectId)
 )
-& $gcloud @buildArgs
-if ($LASTEXITCODE -ne 0) { throw 'Cloud Build failed' }
+Invoke-GcloudChecked -CommandArgs $buildArgs -FailureMessage 'Cloud Build failed'
 
 $describeArgs = @(
   'artifacts', 'docker', 'images', 'describe', $imageTag,
   ('--project=' + $ProjectId),
   '--format=value(image_summary.digest)'
 )
-$digest = (& $gcloud @describeArgs | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $digest -notmatch '^sha256:[0-9a-f]{64}$') {
+$digest = Get-GcloudTextChecked -CommandArgs $describeArgs -FailureMessage 'Artifact Registry image lookup failed'
+if ($digest -notmatch '^sha256:[0-9a-f]{64}$') {
   throw 'Artifact Registry did not return an immutable image digest'
 }
 $immutableImage = $region + '-docker.pkg.dev/' + $ProjectId + '/' +

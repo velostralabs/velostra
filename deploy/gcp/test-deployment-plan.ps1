@@ -110,6 +110,8 @@ Require-Match $runtimeScriptText 'function Invoke-Gcloud' 'Runtime mutations mus
 Require-Match $runtimeScriptText 'function Get-GcloudValue' 'Runtime queries must use checked native command handling'
 Require-Match $runtimeScriptText "ErrorActionPreference = 'Continue'" 'Runtime gcloud progress must not bypass exit-code handling'
 Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--command=node --args=dist/signer/index[.]js --no-allow-unauthenticated' 'Signer must be private, bounded, and use its dedicated entrypoint'
+Require-Match $runtimeText 'serviceAccount:velostra-api@.*roles/run[.]invoker' 'API identity must invoke the private signer'
+Require-Match $runtimeText 'serviceAccount:velostra-jobs@.*roles/run[.]invoker' 'Jobs identity must invoke the private signer'
 Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'

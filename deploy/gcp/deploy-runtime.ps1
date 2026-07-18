@@ -251,7 +251,7 @@ $signerUrl = if ($Apply) {
     ('--region=' + $region), ('--project=' + $ProjectId), '--format=value(status.url)'
   )
 } else { 'https://velostra-signer.example.invalid' }
-foreach ($caller in @('api', 'jobs')) {
+foreach ($caller in @('velostra-api', 'velostra-jobs')) {
   Invoke-Gcloud @(
     'run', 'services', 'add-iam-policy-binding', 'velostra-signer',
     ('--region=' + $region), ('--project=' + $ProjectId),

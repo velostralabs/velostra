@@ -79,10 +79,11 @@ any Apply action:
 7. retain generated records only under ignored artifacts/staging.
 
 Google Cloud Billing, the account-native alert budget, regional registry, namespaced
-identities, HSM key, and empty secret containers are active. No secret version,
-Cloud Run service/job, Scheduler trigger, database, Redis, RPC, or alert destination
-is deployed. Do not record readiness, rotation, alert, outage, PITR, or soak evidence
-until the actual managed service produced it.
+identities, HSM key, managed Neon Postgres, Upstash Redis, primary/fallback RPC, and
+ten scoped secret values are active in approved US regions. The alert receiver, its
+two values, every Cloud Run service/job and Scheduler trigger, and the testnet
+contract are absent. Do not record readiness, rotation, alert, outage, PITR, or soak
+evidence until the actual managed service produced it.
 
 ## Reconciliation commands
 

@@ -191,9 +191,10 @@ resource in a US Virginia region. Validate the non-mutating deployment plan:
 
 The bootstrap remains plan-only unless Apply and a billing account are supplied.
 For the current project it has been applied through the US-only registry, namespaced
-identities, multi-tenant HSM key, and empty secret containers. No secret value or
-runtime workload is deployed. Follow [the US staging runbook](../deploy/gcp/README.md)
-after the remaining Neon, Upstash, Alchemy, and alert receiver accounts exist.
+identities, multi-tenant HSM key, and regional secret containers. Managed Neon,
+Upstash, primary/fallback RPC, and ten scoped secret values are active. Follow
+[the US staging runbook](../deploy/gcp/README.md) to add the alert receiver, its two
+values, the testnet contract, and immutable application workloads.
 Use only the approved US regions and Robinhood testnet chain 46630. Never use
 mainnet or real value for this staging path.
 

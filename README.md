@@ -251,10 +251,12 @@ signer, bounded web/API services, and staggered one-task jobs:
 
 The GCP bootstrap is applied in project `velostra-production`: billing and its
 account-native budget alert are active; an empty us-east4 registry, six namespaced
-service accounts, one multi-tenant HSM key, and twelve empty regional secret
-containers exist. No secret version, Cloud Run service/job, scheduler, database,
-Redis, RPC, contract, or managed staging traffic exists yet. The public Netlify
-preview remains separate. See the [US staging runbook](./deploy/gcp/README.md).
+service accounts, one multi-tenant HSM key, and twelve regional secret containers
+exist. Managed Neon Postgres, Upstash Redis, primary/fallback Robinhood-testnet RPC,
+and ten scoped secret values are active in approved US regions. Alert delivery, its
+two scoped values, Cloud Run workloads/schedules, and the testnet contract remain
+pending. The public Netlify preview remains separate. See the
+[US staging runbook](./deploy/gcp/README.md).
 Paid writes remain disabled and this path cannot target mainnet.
 
 ## Controlled release tooling
@@ -310,8 +312,9 @@ guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
 governance. The public Netlify protocol preview is live at `velostra.xyz`; the
 US-only Robinhood testnet backend/contract deployment policy and dry-run plan also
-pass locally. The GCP US bootstrap foundation is provisioned, but no secret value,
-managed API/worker runtime, provider database/Redis/RPC, or testnet contract exists.
+pass locally. The GCP foundation, managed Neon/Upstash data plane, primary/fallback
+RPC, and ten scoped secret values are active, but no managed API/worker runtime,
+alert receiver, or testnet contract exists.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
 recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,

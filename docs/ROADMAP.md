@@ -24,12 +24,12 @@ Netlify team. GitHub `main` builds with Node.js 22 using tracked `netlify.toml` 
 publishes `dist/`; TLS, apex/www routing, hashed assets, and browser rendering were
 verified on 2026-07-18.
 
-No managed API, Postgres, Redis, signer runtime, reconciliation/webhook/monitor
-runtime, Robinhood testnet escrow, closed beta, mainnet contract, or real-value flow
-is live. The GCP US bootstrap foundation is provisioned with billing guardrails, an
-empty registry, scoped identities, one HSM key, and empty secret containers. The
-public preview has no API/escrow/token build values and closes no Phase 2/3/4
-activation or evidence gate.
+No managed API, signer runtime, reconciliation/webhook/monitor runtime, Robinhood
+testnet escrow, closed beta, mainnet contract, or real-value flow is live. The GCP US
+foundation, managed Neon Postgres, Upstash Redis, primary/fallback RPC, and ten of
+twelve scoped secret values are provisioned in approved US regions. The public preview
+has no API/escrow/token build values and closes no Phase 2/3/4 activation or evidence
+gate.
 
 ## Phase 0 - Recoverable product foundation (DONE)
 
@@ -154,9 +154,11 @@ and must never be inferred from local tests.
   explicit migration, and a fail-closed deployment-plan test.
 - [x] Publish the separate static protocol preview on Netlify with a tracked `dist/`
   build contract; keep all managed API/contract values absent until staging exists.
-- [ ] Instantiate Neon Postgres with PITR, Upstash Redis, Alchemy primary plus
-  Robinhood public fallback RPC, GCP registry/KMS/Secret Manager/Cloud Run, and
-  alert delivery in the selected US regions.
+- [x] Instantiate Neon Postgres, Upstash Redis, Alchemy primary plus Robinhood public
+  fallback RPC, and the GCP registry/KMS/Secret Manager foundation in approved US
+  regions; verify connectivity and chain identity without publishing credentials.
+- [ ] Provision alert delivery, complete its two scoped secrets, deploy Cloud Run
+  workloads, and attach provider-native backup/recovery evidence.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
 
@@ -375,9 +377,9 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 
 ### Staging/evidence lane (active external next)
 
-1. retain the verified public Netlify preview and applied GCP US bootstrap;
-2. create Neon, Upstash, Alchemy, and alert-receiver resources in approved US regions;
-3. load scoped secret versions and validate the retained HSM signer evidence;
+1. retain the verified public preview, GCP foundation, managed data plane, and RPCs;
+2. create a brand-owned alert receiver and load its two remaining scoped secrets;
+3. define and fund an isolated testnet deployer plus distinct contract-role addresses;
 4. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
    server/staging-web images with paid writes disabled;
 5. bind the generated staging web/API origin and prove readiness plus wallet/alert

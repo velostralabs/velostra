@@ -121,6 +121,25 @@ Checkpoint: GCP bootstrap and its account-native budget alert are active. All tw
 secret containers still have zero versions. No Cloud Run service/job, Scheduler job,
 provider data service, testnet contract, mainnet resource, or real-value flow exists.
 
+### 2026-07-18 - Managed US data plane and scoped secrets
+
+- provisioned Neon Postgres on AWS us-east-1, applied all nine migrations, verified
+  30 public tables, and confirmed encrypted client connectivity;
+- provisioned Upstash Redis on GCP us-east4 Free Tier with TLS, no paid read region,
+  eviction disabled, and a successful authenticated health check;
+- provisioned a Robinhood-testnet-only Alchemy primary RPC and verified both primary
+  and public fallback endpoints report chain 46630;
+- enabled ten scoped Secret Manager values: database, Redis, primary/fallback RPC,
+  authentication, signing, encryption, and internal service-token material;
+- caught an incompatible first internal-secret generation before any runtime use,
+  destroyed those invalid versions, and retained only CSPRNG-generated versions;
+- kept credentials, private endpoints, account identifiers, and evidence artifacts
+  outside tracked product files.
+
+Checkpoint: the managed US data plane is active and ten of twelve scoped secrets are
+enabled. The alert receiver, its two secret values, the testnet contract, and every
+Cloud Run application workload remain pending; paid writes remain disabled.
+
 ## What is complete
 
 ### Product and identity
@@ -159,10 +178,9 @@ provider data service, testnet contract, mainnet resource, or real-value flow ex
 
 These are real external/runtime gates, not hidden repository TODOs:
 
-1. Provider activation for Neon, Upstash, Alchemy, and the alert receiver is not
-   recorded as applied evidence.
-2. Managed Postgres, Redis, RPC, Cloud Run services/jobs, and real alert destinations
-   are not provisioned; the GCP registry/HSM/identities/empty secrets are bootstrap only.
+1. A brand-owned alert receiver and its two scoped secret values are not provisioned.
+2. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
+   Redis, primary/fallback RPC, registry, HSM, identities, and ten other secrets exist.
 3. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
 4. The public frontend has no production API, escrow, or settlement-token build values.
 5. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
@@ -181,20 +199,19 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 ### Lane A - Managed US staging (active external next)
 
-1. Create the user-owned Neon, Upstash, Alchemy, and alert-receiver accounts in the
-   approved US regions.
-2. Load scoped secret versions through the hidden-prompt flow and verify every endpoint.
-3. Treat the retained HSM-derived public address as the exact settlement signer
-   identity for every contract and runtime check.
-4. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
+1. Create a brand-owned alert receiver and load its two scoped values through the
+   hidden-prompt flow; prove delivery and acknowledgement without exposing the URL.
+2. Define and fund an isolated Robinhood-testnet deployer plus four distinct contract
+   role addresses. Use the retained HSM-derived public address exactly as the settler.
+3. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment
    block, roles, token, fee, and verification evidence under ignored artifacts.
-5. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
+4. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
    staging-web workloads with paid writes disabled.
-6. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert
+5. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert
    delivery/acknowledgement.
-7. Execute managed secret/authority rotation, pause/unpause, compromise response,
+6. Execute managed secret/authority rotation, pause/unpause, compromise response,
    audit-log ownership, error-tracking, and redaction drills.
-8. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
+7. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
    the minimum 72-hour soak; calibrate SLOs, then hash and sign the evidence packet.
 
 ### Lane B - Independent review and controlled release

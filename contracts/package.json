@@ -25,7 +25,8 @@
     "deploy:robinhood-testnet": "npm run build && node scripts/deploy-testnet.js",
     "verify:robinhood-testnet": "npm run build && node scripts/verify-testnet-deployment.js",
     "test:testnet-policy": "node test/testnet-deployment-policy.test.js && node test/testnet-authority-policy.test.js",
-    "deploy:robinhood-testnet-authorities": "node scripts/deploy-testnet-authorities.mjs"
+    "deploy:robinhood-testnet-authorities": "node scripts/deploy-testnet-authorities.mjs",
+    "check:robinhood-testnet-authorities": "node scripts/check-testnet-authority-readiness.mjs"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^5.1.0",

@@ -19,12 +19,15 @@ if (-not $testDirectory.StartsWith(
 $preparePath = Join-Path $PSScriptRoot 'prepare-testnet-authorities.ps1'
 $deployPath = Join-Path $PSScriptRoot 'deploy-testnet-authorities.ps1'
 $checkPath = Join-Path $PSScriptRoot 'check-testnet-authorities.ps1'
+$contractPath = Join-Path $PSScriptRoot 'deploy-testnet-contract.ps1'
 $prepareText = Get-Content -Raw -LiteralPath $preparePath
 $deployText = Get-Content -Raw -LiteralPath $deployPath
 $checkText = Get-Content -Raw -LiteralPath $checkPath
+$contractText = Get-Content -Raw -LiteralPath $contractPath
 [void][scriptblock]::Create($prepareText)
 [void][scriptblock]::Create($deployText)
 [void][scriptblock]::Create($checkText)
+[void][scriptblock]::Create($contractText)
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -49,6 +52,12 @@ Reject-Match ($prepareText + $deployText) '(?i)mainnet.*broadcast' 'Authority to
 Require-Match $checkText 'secrets.*versions.*access' 'Readiness RPC must come from managed Secret Manager'
 Require-Match $checkText 'TESTNET_DEPLOYER_ADDRESS' 'Readiness must check the isolated deployer'
 Reject-Match $checkText 'ProtectedData[]]::Unprotect' 'Readiness must not decrypt private keys'
+Require-Match $contractText 'ProtectedData[]]::Unprotect' 'Contract deploy must decrypt only at runtime'
+Require-Match $contractText 'robinhood-testnet-authorities[.]json' 'Contract deploy must consume verified Safe authorities'
+Require-Match $contractText 'run deploy:robinhood-testnet -- --broadcast' 'Guarded escrow broadcast is missing'
+Require-Match $contractText 'run verify:robinhood-testnet' 'Escrow verification must follow deployment'
+Require-Match $contractText 'status --porcelain --untracked-files=no' 'Contract broadcast must require a clean worktree'
+Reject-Match $contractText 'Write-Output.*[$]privateKey' 'Contract deploy must not print a private key'
 
 if (Test-Path -LiteralPath $testDirectory) {
   throw 'Authority tooling test directory already exists; inspect it manually'

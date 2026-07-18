@@ -80,9 +80,10 @@ any Apply action:
 
 Google Cloud Billing, the account-native alert budget, regional registry, namespaced
 identities, HSM key, managed Neon Postgres, Upstash Redis, primary/fallback RPC, and
-ten scoped secret values are active in approved US regions. The alert receiver, its
-two values, every Cloud Run service/job and Scheduler trigger, and the testnet
-contract are absent. Do not record readiness, rotation, alert, outage, PITR, or soak
+ten scoped secret values are active in approved US regions. The private Telegram
+bot/channel exists, but its two Secret Manager values, every Cloud Run service/job
+and Scheduler trigger, and the testnet contract are absent. Do not record readiness,
+rotation, alert, outage, PITR, or soak
 evidence until the actual managed service produced it.
 
 ## Reconciliation commands

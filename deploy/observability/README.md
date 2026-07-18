@@ -10,7 +10,9 @@ token. Readiness remains closed until PostgreSQL, Redis, the configured RPC, esc
 bytecode/solvency, operational tables, reconciliation heartbeat, and configured webhook-worker heartbeat are healthy.
 
 The operational-monitor role persists deduplicated alerts in PostgreSQL and sends
-actionable webhook notifications. Continuous production may evaluate every 30
+actionable notifications. The selected US staging transport sends bounded, redacted
+plain-text messages directly to a private Telegram channel using separately injected
+bot-token and channel-ID secrets. Generic HTTPS webhooks remain supported. Continuous production may evaluate every 30
 seconds. The low-cost US staging target invokes a one-shot monitor job every 15
 minutes and therefore uses a 20-minute heartbeat/staleness threshold. Alert state
 survives restarts and supports OPEN, ACKNOWLEDGED, and RESOLVED lifecycle.
@@ -23,7 +25,9 @@ survives restarts and supports OPEN, ACKNOWLEDGED, and RESOLVED lifecycle.
    METRICS_AUTH_TOKEN without placing the token in its URL.
 3. Import grafana-dashboard.json and prometheus-rules.yml, then replace datasource
    and runbook destinations through reviewed configuration.
-4. Configure ALERT_WEBHOOK_URL, ALERT_WEBHOOK_TOKEN, and ALERT_RUNBOOK_BASE_URL.
+4. For selected staging, set ALERT_TRANSPORT=telegram and inject TELEGRAM_BOT_TOKEN,
+   TELEGRAM_CHAT_ID, and ALERT_RUNBOOK_BASE_URL. For a generic receiver, set
+   ALERT_TRANSPORT=webhook and inject ALERT_WEBHOOK_URL plus ALERT_WEBHOOK_TOKEN.
 5. Start supervised reconciliation/webhook/monitor roles in production. In the
    selected US staging target, deploy their separate staggered one-task Cloud Run
    Jobs from deploy/gcp/deploy-runtime.ps1. Prove every required rule reaches a real

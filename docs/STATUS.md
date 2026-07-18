@@ -49,8 +49,8 @@ and twelve regional secret containers. Managed Neon Postgres is active with all 
 migrations and 30 public tables, Upstash Redis is active on its free US tier with TLS,
 and an Alchemy Robinhood-testnet-only primary RPC plus the public Robinhood fallback
 both report chain 46630. Ten of twelve scoped secrets have one enabled value. The two
-alert-delivery secrets, all Cloud Run workloads/schedules, and the testnet contract are
-still absent.
+private Telegram transport secrets, all Cloud Run workloads/schedules, and the
+testnet contract are still absent; the bot and private channel exist externally.
 
 ## Audit decision
 
@@ -73,8 +73,8 @@ still absent.
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | GCP foundation plus managed Neon, Upstash, primary/fallback RPC, and ten secret values provisioned; alert receiver and application workloads pending |
-| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | HSM key, public-address evidence, and ten scoped values exist; two alert values, signer runtime, audit logs, rotations, and drills pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, and bounded cost policy | GCP foundation plus managed Neon, Upstash, primary/fallback RPC, and ten secret values provisioned; Telegram delivery and application workloads pending |
+| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | HSM key, public-address evidence, and ten scoped values exist; Telegram bot/channel values, signer runtime, audit logs, rotations, and drills pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | real delivery/acknowledgement pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
@@ -297,8 +297,9 @@ checkpoint is managed US staging online with a verified Robinhood testnet escrow
 while paid writes remain disabled.
 
 Keep the public preview stable and preserve the applied GCP foundation plus managed
-Neon, Upstash, and RPC resources. Create a brand-owned alert receiver and load only
-its two remaining scoped secrets. Define and fund an isolated Robinhood-testnet
+Neon, Upstash, and RPC resources. Load the private Telegram bot token/channel ID
+without exposing either value and prove redacted delivery. Define and fund an isolated
+Robinhood-testnet
 deployer with four distinct contract-role addresses, then deploy and verify the
 contract before the immutable API, workers, signer, and canonical API/auth origin.
 Only then run wallet, alert, one-hour outage, PITR, and 72-hour evidence.

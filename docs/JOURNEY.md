@@ -135,10 +135,14 @@ provider data service, testnet contract, mainnet resource, or real-value flow ex
   destroyed those invalid versions, and retained only CSPRNG-generated versions;
 - kept credentials, private endpoints, account identifiers, and evidence artifacts
   outside tracked product files.
+- selected a private Telegram bot/channel for operator alerts and implemented direct
+  delivery with strict credential validation, bounded messages, sensitive-field
+  redaction, and credential-safe network errors.
 
 Checkpoint: the managed US data plane is active and ten of twelve scoped secrets are
-enabled. The alert receiver, its two secret values, the testnet contract, and every
-Cloud Run application workload remain pending; paid writes remain disabled.
+enabled. The private bot/channel exists, but its bot token/channel ID have not been
+loaded or delivery-tested. The testnet contract and every Cloud Run application
+workload remain pending; paid writes remain disabled.
 
 ## What is complete
 
@@ -178,7 +182,7 @@ Cloud Run application workload remain pending; paid writes remain disabled.
 
 These are real external/runtime gates, not hidden repository TODOs:
 
-1. A brand-owned alert receiver and its two scoped secret values are not provisioned.
+1. Private Telegram credentials and real delivery/acknowledgement are not provisioned.
 2. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
    Redis, primary/fallback RPC, registry, HSM, identities, and ten other secrets exist.
 3. VelostraEscrow is not deployed or verified on Robinhood testnet or mainnet.
@@ -199,8 +203,8 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 ### Lane A - Managed US staging (active external next)
 
-1. Create a brand-owned alert receiver and load its two scoped values through the
-   hidden-prompt flow; prove delivery and acknowledgement without exposing the URL.
+1. Load the private Telegram bot token/channel ID through the hidden-prompt flow;
+   prove redacted delivery and acknowledgement without exposing either value.
 2. Define and fund an isolated Robinhood-testnet deployer plus four distinct contract
    role addresses. Use the retained HSM-derived public address exactly as the settler.
 3. Deploy and verify VelostraEscrow on Robinhood testnet; record address, deployment

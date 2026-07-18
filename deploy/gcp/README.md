@@ -9,8 +9,8 @@ Netlify at `velostra.xyz`. It has no managed API or contract build values and is
 the staging stack described here. Project `velostra-production` contains the applied
 us-east4 foundation, namespaced identities, one multi-tenant HSM key, managed Neon/
 Upstash/Alchemy endpoints, and ten enabled scoped secret values. The registry remains
-empty; no runtime workload, scheduler trigger, alert receiver, or contract is
-deployed.
+empty; a private Telegram bot/channel is selected but its secrets are not loaded.
+No runtime workload, scheduler trigger, verified alert delivery, or contract is deployed.
 
 ## Fixed policy
 
@@ -20,6 +20,7 @@ deployed.
 - Neon: AWS us-east-1 (N. Virginia).
 - Upstash: Free on GCP us-east4 (Virginia), one primary and no paid read replicas.
 - Alchemy Free primary RPC with the Robinhood public testnet RPC as fallback.
+- Operator alerts: private Telegram bot/channel with direct redacted delivery.
 - No mainnet value, no paid RPC, and paid API writes disabled.
 - USD 35 total monthly envelope.
 
@@ -63,7 +64,7 @@ Create the following provider resources before applying the GCP runtime:
    rediss TLS URL and upgrade only after a separately approved capacity decision.
 3. Alchemy Robinhood Testnet Free endpoint. Retain the HTTPS endpoint and use
    the official Robinhood public testnet endpoint as the fallback.
-4. An alert receiver that accepts the monitor webhook.
+4. A dedicated Telegram bot added as an administrator to a private operator channel.
 5. An active Google Cloud Billing account.
 
 Do not place provider URLs, tokens, wallet private keys, or deployment
@@ -102,18 +103,28 @@ Run the helper once for every secret container printed by the bootstrap:
 
 Repeat for redis-url, jwt-secret, gateway-hmac-secret,
 platform-cursor-secret, agent-secret-encryption-key, metrics-auth-token,
-signer-auth-token, primary-rpc-url, fallback-rpc-urls, alert-webhook-url, and
-alert-webhook-token.
+signer-auth-token, primary-rpc-url, and fallback-rpc-urls.
+
+For Telegram, make the dedicated bot a channel administrator, publish one fresh
+channel post, then run the combined helper. It discovers only a numeric private
+channel with no public username, sends a harmless connection message, and stores
+both values without printing them:
+
+    powershell -NoProfile -File deploy/gcp/configure-telegram-alerts.ps1 -ProjectId velostra-production
 
 Requirements:
 
 - database-url must be a TLS Neon Postgres URL with sslmode=require or stronger;
 - redis-url must use rediss;
-- JWT, HMAC, cursor, metrics, signer, and alert tokens must be at least 32
+- JWT, HMAC, cursor, metrics, and signer service tokens must be at least 32
   random characters;
+- telegram-bot-token must match the token issued by BotFather;
+- telegram-chat-id must be the numeric ID of the private channel, normally beginning
+  with -100; never use a personal username or public channel handle;
 - agent-secret-encryption-key must encode exactly 32 random bytes in hex or
   base64;
-- both RPC values and the alert webhook must use HTTPS.
+- both RPC values must use HTTPS; the Telegram API origin is fixed in the monitor
+  implementation and cannot be supplied through configuration.
 
 ## 4. Derive the restricted signer address
 
@@ -221,5 +232,6 @@ and multi-tenant HSM key are active. Neon Free is provisioned in aws-us-east-1 w
 the nine migrations/30 tables applied; Upstash Free is provisioned on GCP us-east4;
 Alchemy Free is restricted to Robinhood Testnet and the official public fallback is
 verified. Ten scoped secret containers have enabled values. The public Netlify
-preview remains separate. The alert receiver and its two secrets are still pending,
-and no application workload, Scheduler trigger, or contract exists.
+preview remains separate. The private Telegram bot/channel exists, but its token,
+channel ID, and real delivery evidence are still pending. No application workload,
+Scheduler trigger, or contract exists.

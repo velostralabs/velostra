@@ -301,6 +301,12 @@ sign exact body bytes, record every attempt, and either deliver, reschedule with
 bounded backoff, or dead-letter. RBAC/audited replay resets only a dead-letter row.
 Readiness and alerts track worker heartbeat and oldest pending delivery.
 
+The staging operational monitor sends alerts directly from its us-east4 job to a
+private Telegram channel. Bot token and channel ID are injected from separate
+Secret Manager values. Telegram messages omit parsing modes, bound their size,
+redact sensitive detail keys, and replace transport failures with credential-free
+errors before Cloud Logging receives them.
+
 Privacy deletion anonymizes personal product fields while preserving the minimum
 financial, settlement, security, and audit evidence required for integrity.
 Telemetry collection fails closed unless a field is classified, owned, retained for

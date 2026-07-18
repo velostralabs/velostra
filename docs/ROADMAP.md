@@ -157,8 +157,9 @@ and must never be inferred from local tests.
 - [x] Instantiate Neon Postgres, Upstash Redis, Alchemy primary plus Robinhood public
   fallback RPC, and the GCP registry/KMS/Secret Manager foundation in approved US
   regions; verify connectivity and chain identity without publishing credentials.
-- [ ] Provision alert delivery, complete its two scoped secrets, deploy Cloud Run
-  workloads, and attach provider-native backup/recovery evidence.
+- [x] Select a private Telegram bot/channel transport with bounded, redacted payloads.
+- [ ] Load its bot-token/channel-ID secrets, prove delivery, deploy Cloud Run workloads,
+  and attach provider-native backup/recovery evidence.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
 
@@ -378,7 +379,7 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 ### Staging/evidence lane (active external next)
 
 1. retain the verified public preview, GCP foundation, managed data plane, and RPCs;
-2. create a brand-owned alert receiver and load its two remaining scoped secrets;
+2. securely load the private Telegram bot token/channel ID and prove redacted delivery;
 3. define and fund an isolated testnet deployer plus distinct contract-role addresses;
 4. deploy and verify VelostraEscrow on Robinhood testnet, then deploy immutable
    server/staging-web images with paid writes disabled;

@@ -7,8 +7,8 @@
 > The static public frontend is deployed at https://velostra.xyz/. No managed API,
 > worker, signer runtime, escrow, closed-beta, or mainnet deployment is recorded.
 > Managed Neon Postgres, Upstash Redis, Alchemy primary RPC, the public fallback RPC,
-> and ten scoped secret values are active in approved US regions; application
-> workloads and the alert receiver are not.
+> and ten scoped secret values are active in approved US regions. A private Telegram
+> bot/channel exists; its two Secret Manager values and application workloads do not.
 
 ## Release gates
 
@@ -38,7 +38,7 @@ namespaced service accounts, one us-east4 multi-tenant HSM secp256k1 key, and tw
 us-east4 secret containers. Neon Free in aws-us-east-1, Upstash Free on GCP us-east4,
 Alchemy Free restricted to Robinhood Testnet, and the official public fallback have
 been endpoint-verified. Ten secret containers have one enabled operational value;
-only the alert webhook URL/token remain empty. No Cloud Run service/job, Scheduler
+only the Telegram bot token/channel ID remain empty. No Cloud Run service/job, Scheduler
 job, or contract is deployed. This is not a completed staging deployment, and the
 separate static Netlify preview does not satisfy any managed-staging evidence gate.
 

@@ -150,7 +150,7 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |
 | Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
 | Sustained all-provider RPC outage/429 | ordered failover, cursor safety, retry/backoff | managed provider outage evidence + alert routing |
-| Alert delivery not yet proven to a real operator | durable metrics/alerts and lifecycle implemented | inject every required failure and capture delivery/acknowledgement |
+| Alert delivery not yet proven to a real operator | private Telegram transport validates separate secrets, bounds messages, redacts sensitive details, and sanitizes network errors | load secrets, inject every required failure, and capture delivery/acknowledgement |
 | Webhook receiver outage or replay | exact-body HMAC, stable event ID, durable attempts, bounded retry/dead-letter, audited replay | receiver must persist event-ID idempotency and prove rotation/incident drills |
 | Real MetaMask staging evidence absent | automated picker/a11y/layout suite; guarded external test | execute real extension + injected-provider scenarios |
 | Sensitive prompt/output exposure | prohibited telemetry fields, evidence classification, export/delete policy, anonymization | managed retention/legal review and storage controls |

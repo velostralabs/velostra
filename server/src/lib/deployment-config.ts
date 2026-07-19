@@ -112,12 +112,11 @@ function assertCommon(role: DeploymentProcessRole): string {
   if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(environment)) {
     throw new Error('Production VELOSTRA_ENVIRONMENT must be a lowercase identifier')
   }
-  const mainnetLike = isMainnetLike(environment)
   const release = required('VELOSTRA_RELEASE')
   if (!/^[0-9a-f]{40}$/i.test(release)) {
     throw new Error('Production VELOSTRA_RELEASE must be a full 40-character commit SHA')
   }
-  if (mainnetLike) assertPhase3RuntimeConfiguration(role, environment, release)
+  assertPhase3RuntimeConfiguration(role, environment, release)
   return environment
 }
 

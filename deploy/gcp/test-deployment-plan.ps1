@@ -75,6 +75,10 @@ $syntheticProvisionScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'provision-synthetic-agent.ps1')
 $syntheticSeedText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\scripts\provision-staging-agent.ts')
+$stagingCanaryScriptText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'set-staging-paid-canary.ps1')
+$stagingCanaryBindingText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\src\scripts\create-staging-canary-binding.ts')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -142,6 +146,17 @@ Require-Match $syntheticProvisionScriptText 'paidWritesMode.*-ne ''disabled''' '
 Require-Match $syntheticProvisionScriptText 'Invoke-RestMethod .*[/]health' 'Synthetic seed must health-check the deployed endpoint before database mutation'
 Require-Match $syntheticSeedText "status: 'APPROVED'" 'Synthetic agent must be explicitly approved for staging discovery'
 Require-Match $syntheticSeedText 'free-tier exhausted' 'Synthetic seed must force the next call through the paid path'
+Require-Match $stagingCanaryScriptText 'ValidateSet\(''Plan'', ''Open'', ''Close'', ''Status''\)' 'Staging canary control must expose explicit open/close/status actions'
+Require-Match $stagingCanaryScriptText 'PHASE2_STAGING_CANARY_APPROVAL=isolated-staging-paid-canary' 'Staging canary must require a distinct approval sentinel'
+Require-Match $stagingCanaryScriptText 'PHASE3_PAID_WRITES_MODE=disabled' 'Staging canary close must fail closed'
+Require-Match $stagingCanaryScriptText 'PHASE3_CANARY_POLICY_B64' 'Staging canary must bind the policy without a repository file'
+Require-Match $stagingCanaryScriptText 'maxGrossMinor -ne ''1200000''' 'Staging canary must cap the exact synthetic USDG 1.20 gross'
+Require-Match $stagingCanaryScriptText 'Wait-ApiHealth' 'Staging canary must verify the expected immutable API after mutation'
+Reject-Match $stagingCanaryScriptText 'Write-Output.*(?:databaseUrl|policyB64|manifestB64)' 'Staging canary control must not print database or policy credentials'
+Require-Match $stagingCanaryBindingText 'sha256:' 'Staging canary subject policy must use hashed identities'
+Require-Match $stagingCanaryBindingText 'chainId: 46630' 'Staging canary binding must remain on Robinhood testnet'
+Require-Match $stagingCanaryBindingText 'maxCalls: 1' 'Staging canary binding must permit one call only'
+Require-Match $stagingCanaryBindingText 'PRICE_MINOR = ''1200000''' 'Staging canary binding must cap gross at USDG 1.20'
 Reject-Match $syntheticProvisionScriptText 'Write-Output.*(?:BuilderWallet|SyntheticAgentUrl)' 'Synthetic provisioning must not print wallet or endpoint identity'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'

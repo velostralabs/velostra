@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 const SHA256 = /^[a-f0-9]{64}$/
 const FULL_COMMIT = /^[a-f0-9]{40}$/i
 const ADDRESS = /^0x[a-f0-9]{40}$/i
+const HASHED_SUBJECT = /^sha256:[a-f0-9]{64}$/
 const MONEY = /^(0|[1-9]\d*)(?:\.(\d{1,6}))?$/
 
 export type Phase3PaidWriteMode = 'disabled' | 'canary' | 'public'
@@ -134,6 +135,36 @@ function parseJsonFile(path: string, label: string): { raw: Buffer; value: unkno
   }
 }
 
+function parseJsonSource(input: {
+  pathName: string
+  base64Name: string
+  label: string
+  environment: string
+}): { raw: Buffer; value: unknown } {
+  const encoded = process.env[input.base64Name]?.trim()
+  const path = process.env[input.pathName]?.trim()
+  if (!encoded) return parseJsonFile(required(input.pathName), input.label)
+  if (input.environment !== 'staging') {
+    throw new Error('Production ' + input.base64Name + ' is staging-only')
+  }
+  if (path) throw new Error('Production ' + input.label + ' must have exactly one source')
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length > 65_536) {
+    throw new Error('Production ' + input.base64Name + ' is invalid')
+  }
+  try {
+    const raw = Buffer.from(encoded, 'base64')
+    if (raw.length === 0 || raw.toString('base64') !== encoded) {
+      throw new Error('non-canonical base64')
+    }
+    return { raw, value: JSON.parse(raw.toString('utf8')) }
+  } catch (error) {
+    throw new Error(
+      'Production ' + input.label + ' cannot be decoded: ' +
+        (error instanceof Error ? error.message : String(error))
+    )
+  }
+}
+
 function mainnetLike(environment: string): boolean {
   return environment === 'production' || /(^|-)mainnet($|-)/.test(environment)
 }
@@ -165,7 +196,8 @@ export function moneyToMinor(value: string): bigint {
 
 export function phase3PaidWriteMode(environment = process.env.VELOSTRA_ENVIRONMENT ?? 'local'): Phase3PaidWriteMode {
   const configured = process.env.PHASE3_PAID_WRITES_MODE?.trim()
-  const mode = configured || (mainnetLike(environment) ? 'disabled' : 'public')
+  const unmanaged = environment === 'local' || environment === 'test' || environment === 'development'
+  const mode = configured || (unmanaged ? 'public' : 'disabled')
   if (mode !== 'disabled' && mode !== 'canary' && mode !== 'public') {
     throw new Error('Production PHASE3_PAID_WRITES_MODE must be disabled, canary, or public')
   }
@@ -177,14 +209,22 @@ export function loadPhase3ReleaseBinding(
   environment: string,
   release: string
 ): Phase3ReleaseManifest | null {
-  if (!mainnetLike(environment) && !process.env.PHASE3_RELEASE_MANIFEST?.trim()) return null
+  if (
+    !mainnetLike(environment) &&
+    !process.env.PHASE3_RELEASE_MANIFEST?.trim() &&
+    !process.env.PHASE3_RELEASE_MANIFEST_B64?.trim()
+  ) return null
 
-  const path = required('PHASE3_RELEASE_MANIFEST')
   const expectedHash = assertSha(
     'PHASE3_RELEASE_MANIFEST_SHA256',
     required('PHASE3_RELEASE_MANIFEST_SHA256')
   )
-  const { value } = parseJsonFile(path, 'PHASE3_RELEASE_MANIFEST')
+  const { value } = parseJsonSource({
+    pathName: 'PHASE3_RELEASE_MANIFEST',
+    base64Name: 'PHASE3_RELEASE_MANIFEST_B64',
+    label: 'PHASE3_RELEASE_MANIFEST',
+    environment,
+  })
   const manifest = value as Phase3ReleaseManifest
   const { integrity: _integrity, ...body } = manifest
   const actualHash = sha256(canonicalJson(body))
@@ -203,8 +243,9 @@ export function loadPhase3ReleaseBinding(
   if (manifest.environment !== environment) {
     throw new Error('Production Phase 3 release manifest environment differs')
   }
-  if (manifest.chain?.id !== 4663) {
-    throw new Error('Production Phase 3 release manifest chain must be 4663')
+  const expectedChainId = environment === 'staging' ? 46630 : 4663
+  if (manifest.chain?.id !== expectedChainId) {
+    throw new Error('Production Phase 3 release manifest chain must be ' + expectedChainId)
   }
   const validStages = role === 'migration'
     ? new Set(['broadcast-approved', 'deployed'])
@@ -241,8 +282,15 @@ function validateCanaryPolicy(
       throw new Error('Production Phase 3 canary ' + name + ' allowlist is empty or invalid')
     }
   }
-  if (policy.allowlists.wallets.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry)) ||
-      policy.allowlists.builders.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry))) {
+  const stagingHashed = manifest.environment === 'staging'
+  if (stagingHashed &&
+      [...policy.allowlists.wallets, ...policy.allowlists.agents, ...policy.allowlists.builders]
+        .some((entry) => !HASHED_SUBJECT.test(entry))) {
+    throw new Error('Production Phase 3 staging canary subjects must be SHA-256 identifiers')
+  }
+  if (!stagingHashed &&
+      (policy.allowlists.wallets.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry)) ||
+       policy.allowlists.builders.some((entry) => !ADDRESS.test(entry) || /^0x0{40}$/i.test(entry)))) {
     throw new Error('Production Phase 3 canary address allowlist is invalid')
   }
   asPositiveInteger(policy.limits?.durationSeconds, 'durationSeconds')
@@ -325,10 +373,12 @@ function loadCanaryPolicy(manifest: Phase3ReleaseManifest): {
     'PHASE3_CANARY_POLICY_SHA256',
     required('PHASE3_CANARY_POLICY_SHA256')
   )
-  const { raw, value } = parseJsonFile(
-    required('PHASE3_CANARY_POLICY_PATH'),
-    'PHASE3_CANARY_POLICY_PATH'
-  )
+  const { raw, value } = parseJsonSource({
+    pathName: 'PHASE3_CANARY_POLICY_PATH',
+    base64Name: 'PHASE3_CANARY_POLICY_B64',
+    label: 'PHASE3_CANARY_POLICY',
+    environment: manifest.environment,
+  })
   return {
     policy: validateCanaryPolicy(value, manifest, policySha256, raw),
     policySha256,
@@ -367,15 +417,20 @@ export function assertPhase3RuntimeConfiguration(
   environment: string,
   release: string
 ): void {
-  if (!mainnetLike(environment)) return
-  if (process.env.PHASE3_MAINNET_STARTUP_APPROVAL !== 'explicitly-approved') {
-    throw new Error('Phase 3 blocks production/mainnet startup without explicit release approval')
+  const mode = phase3PaidWriteMode(environment)
+  const stagingCanary = environment === 'staging' && mode === 'canary'
+  if (!mainnetLike(environment) && !stagingCanary) return
+  if (mainnetLike(environment)) {
+    if (process.env.PHASE3_MAINNET_STARTUP_APPROVAL !== 'explicitly-approved') {
+      throw new Error('Phase 3 blocks production/mainnet startup without explicit release approval')
+    }
+  } else if (process.env.PHASE2_STAGING_CANARY_APPROVAL !== 'isolated-staging-paid-canary') {
+    throw new Error('Staging paid canary requires its isolated approval sentinel')
   }
   const manifest = loadPhase3ReleaseBinding(role, environment, release)
   if (!manifest) throw new Error('Production Phase 3 release manifest is required')
   if (role !== 'api') return
 
-  const mode = phase3PaidWriteMode(environment)
   if (mode === 'canary') {
     const { policy } = loadCanaryPolicy(manifest)
     assertCanaryWindow(policy)
@@ -408,9 +463,16 @@ export function resolvePhase3PaidCallAdmission(input: {
     assertCanaryWindow(policy)
     const wallet = input.walletAddress.toLowerCase()
     const builder = input.builderAddress.toLowerCase()
-    const walletAllowed = policy.allowlists.wallets.some((value) => value.toLowerCase() === wallet)
-    const builderAllowed = policy.allowlists.builders.some((value) => value.toLowerCase() === builder)
-    if (!walletAllowed || !policy.allowlists.agents.includes(input.agentId) || !builderAllowed) {
+    const subjectAllowed = (entries: string[], value: string): boolean => {
+      if (environment === 'staging') {
+        const digest = 'sha256:' + sha256(value)
+        return entries.includes(digest)
+      }
+      return entries.some((entry) => entry.toLowerCase() === value.toLowerCase())
+    }
+    if (!subjectAllowed(policy.allowlists.wallets, wallet) ||
+        !subjectAllowed(policy.allowlists.agents, input.agentId) ||
+        !subjectAllowed(policy.allowlists.builders, builder)) {
       throw new Phase3AdmissionError(
         'PHASE3_CANARY_SUBJECT_NOT_ALLOWED',
         'This paid call is outside the active Phase 3 canary allowlist',

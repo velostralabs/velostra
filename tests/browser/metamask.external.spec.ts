@@ -41,7 +41,7 @@ test('real MetaMask isolated-staging money journey', async () => {
   }
   const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '1.00')
   const claim = Number(process.env.PHASE2_WALLET_CLAIM_AMOUNT ?? '0.01')
-  if (!(topup >= 1 && topup <= 1 && claim > 0 && claim <= 1)) {
+  if (topup !== 1 || !(claim > 0 && claim <= 1)) {
     throw new Error('Real-wallet test values must use the 1-token contract top-up minimum and stay within the low-value cap')
   }
 

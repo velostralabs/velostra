@@ -275,11 +275,13 @@ test('real MetaMask isolated-staging money journey', async () => {
         authWallet: String(body.auth?.wallet_address ?? '').toLowerCase(),
       }
     }, api.toString())
-    if (
-      runtimeState.chainId !== '0xb626' ||
-      runtimeState.account !== expectedAddress ||
-      runtimeState.authWallet !== expectedAddress
-    ) {
+    const bindingChecks = {
+      chain: runtimeState.chainId === '0xb626',
+      account: runtimeState.account === expectedAddress,
+      auth: runtimeState.authWallet === expectedAddress,
+    }
+    if (!Object.values(bindingChecks).every(Boolean)) {
+      console.info('Wallet binding checks:', JSON.stringify(bindingChecks))
       throw new Error('Wallet account, chain, and authenticated session are not consistently bound')
     }
 

@@ -2,7 +2,7 @@ param(
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
   [string]$ProjectId = 'velostra-production',
   [ValidatePattern('^(?:metamask-canary-profile|metamask-dedicated-profile-v[2-9][0-9]*)$')]
-  [string]$ProfileName = 'metamask-canary-profile',
+  [string]$ProfileName = 'metamask-dedicated-profile-v6',
   [switch]$PreflightOnly,
   [switch]$Apply
 )

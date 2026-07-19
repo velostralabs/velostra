@@ -9,7 +9,7 @@ $PrivateRoot = Join-Path $RepositoryRoot 'artifacts\staging\evidence\private'
 $WalletPath = Join-Path $PrivateRoot 'reconciliation-wallet.dpapi.json'
 $VaultPath = Join-Path $PrivateRoot 'metamask-vault.dpapi.json'
 $ExtensionPath = Join-Path $PrivateRoot 'metamask-extension'
-$ProfilePath = Join-Path $PrivateRoot 'metamask-dedicated-profile-v5'
+$ProfilePath = Join-Path $PrivateRoot 'metamask-dedicated-profile-v6'
 
 function Unprotect-Record([string]$Path, [string]$Purpose, [string]$EntropyText) {
   if (-not (Test-Path -LiteralPath $Path)) { throw "Missing encrypted $Purpose record" }

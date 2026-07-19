@@ -51,6 +51,37 @@ function Invoke-GcloudQuiet {
   if ($code -ne 0) { throw $Failure }
 }
 
+function Invoke-ServiceEnvironmentUpdate {
+  param(
+    [Parameter(Mandatory)][hashtable]$Update,
+    [Parameter(Mandatory)][string[]]$Remove,
+    [Parameter(Mandatory)][string]$Failure
+  )
+  $flagsDirectory = Join-Path $repositoryRoot 'artifacts\staging\evidence\private'
+  [System.IO.Directory]::CreateDirectory($flagsDirectory) | Out-Null
+  $flagsPath = Join-Path $flagsDirectory ('canary-gcloud-flags-' + [Guid]::NewGuid().ToString('N') + '.json')
+  $flags = [ordered]@{
+    '--update-env-vars' = $Update
+    '--remove-env-vars' = $Remove
+  }
+  try {
+    [System.IO.File]::WriteAllText(
+      $flagsPath,
+      ($flags | ConvertTo-Json -Depth 5),
+      [System.Text.UTF8Encoding]::new($false)
+    )
+    Invoke-GcloudQuiet @(
+      'run', 'services', 'update', 'velostra-api',
+      ('--region=' + $region), ('--project=' + $ProjectId),
+      ('--flags-file=' + $flagsPath), '--quiet'
+    ) $Failure
+  } finally {
+    if (Test-Path -LiteralPath $flagsPath) {
+      Remove-Item -LiteralPath $flagsPath -Force
+    }
+  }
+}
+
 function Get-ServiceEnvironment {
   $raw = Get-GcloudText @(
     'run', 'services', 'describe', 'velostra-api',
@@ -122,13 +153,18 @@ if ($Action -eq 'Status') {
 if (-not $Apply) { throw 'Open/Close requires -Apply' }
 
 if ($Action -eq 'Close') {
-  Invoke-GcloudQuiet @(
-    'run', 'services', 'update', 'velostra-api',
-    ('--region=' + $region), ('--project=' + $ProjectId),
-    '--update-env-vars=PHASE3_PAID_WRITES_MODE=disabled,PHASE3_CANARY_EXIT_APPROVAL=not-approved',
-    '--remove-env-vars=@PHASE3_PAID_WRITES_MODE,PHASE2_STAGING_CANARY_APPROVAL,PHASE3_RELEASE_MANIFEST_B64,PHASE3_RELEASE_MANIFEST_SHA256,PHASE3_CANARY_POLICY_B64,PHASE3_CANARY_POLICY_SHA256,PHASE3_CANARY_STARTED_AT',
-    '--quiet'
-  ) 'Failed to close the staging paid canary'
+  Invoke-ServiceEnvironmentUpdate -Update @{
+    PHASE3_PAID_WRITES_MODE = 'disabled'
+    PHASE3_CANARY_EXIT_APPROVAL = 'not-approved'
+  } -Remove @(
+    '@PHASE3_PAID_WRITES_MODE',
+    'PHASE2_STAGING_CANARY_APPROVAL',
+    'PHASE3_RELEASE_MANIFEST_B64',
+    'PHASE3_RELEASE_MANIFEST_SHA256',
+    'PHASE3_CANARY_POLICY_B64',
+    'PHASE3_CANARY_POLICY_SHA256',
+    'PHASE3_CANARY_STARTED_AT'
+  ) -Failure 'Failed to close the staging paid canary'
   Wait-ApiHealth $apiUrl ([string]$runtime.release)
   $runtime.paidWritesMode = 'disabled'
   foreach ($name in @('canaryStartedAt', 'canaryPolicySha256')) {
@@ -207,23 +243,22 @@ if (
 ) { throw 'Generated staging canary binding failed validation' }
 
 $startedAt = [DateTime]::UtcNow.ToString('o')
-$updated = '^@^' + (@(
-  'PHASE3_PAID_WRITES_MODE=canary',
-  'PHASE2_STAGING_CANARY_APPROVAL=isolated-staging-paid-canary',
-  'PHASE3_RELEASE_MANIFEST_B64=' + [string]$binding.manifestB64,
-  'PHASE3_RELEASE_MANIFEST_SHA256=' + [string]$binding.manifestSha256,
-  'PHASE3_CANARY_POLICY_B64=' + [string]$binding.policyB64,
-  'PHASE3_CANARY_POLICY_SHA256=' + [string]$binding.policySha256,
-  'PHASE3_CANARY_STARTED_AT=' + $startedAt,
-  'PHASE3_CANARY_EXIT_APPROVAL=not-approved'
-) -join '@')
-Invoke-GcloudQuiet @(
-  'run', 'services', 'update', 'velostra-api',
-  ('--region=' + $region), ('--project=' + $ProjectId),
-  ('--update-env-vars=' + $updated),
-  '--remove-env-vars=@PHASE3_PAID_WRITES_MODE,PHASE3_RELEASE_MANIFEST,PHASE3_CANARY_POLICY_PATH,PHASE3_CANARY_EXIT_EVIDENCE,PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
-  '--quiet'
-) 'Failed to open the bounded staging paid canary'
+Invoke-ServiceEnvironmentUpdate -Update @{
+  PHASE3_PAID_WRITES_MODE = 'canary'
+  PHASE2_STAGING_CANARY_APPROVAL = 'isolated-staging-paid-canary'
+  PHASE3_RELEASE_MANIFEST_B64 = [string]$binding.manifestB64
+  PHASE3_RELEASE_MANIFEST_SHA256 = [string]$binding.manifestSha256
+  PHASE3_CANARY_POLICY_B64 = [string]$binding.policyB64
+  PHASE3_CANARY_POLICY_SHA256 = [string]$binding.policySha256
+  PHASE3_CANARY_STARTED_AT = $startedAt
+  PHASE3_CANARY_EXIT_APPROVAL = 'not-approved'
+} -Remove @(
+  '@PHASE3_PAID_WRITES_MODE',
+  'PHASE3_RELEASE_MANIFEST',
+  'PHASE3_CANARY_POLICY_PATH',
+  'PHASE3_CANARY_EXIT_EVIDENCE',
+  'PHASE3_CANARY_EXIT_EVIDENCE_SHA256'
+) -Failure 'Failed to open the bounded staging paid canary'
 Wait-ApiHealth $apiUrl $deployedRelease
 
 $verified = Get-ServiceEnvironment

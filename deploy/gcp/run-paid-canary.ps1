@@ -1,6 +1,9 @@
 param(
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
   [string]$ProjectId = 'velostra-production',
+  [ValidatePattern('^metamask-dedicated-profile-v[2-9][0-9]*$')]
+  [string]$ProfileName = 'metamask-dedicated-profile-v5',
+  [switch]$PreflightOnly,
   [switch]$Apply
 )
 
@@ -16,7 +19,7 @@ $PrivateRoot = Join-Path $ArtifactsRoot 'evidence\private'
 $WalletPath = Join-Path $PrivateRoot 'reconciliation-wallet.dpapi.json'
 $VaultPath = Join-Path $PrivateRoot 'metamask-vault.dpapi.json'
 $ExtensionPath = Join-Path $PrivateRoot 'metamask-extension'
-$ProfilePath = Join-Path $PrivateRoot 'metamask-dedicated-profile-v5'
+$ProfilePath = Join-Path $PrivateRoot $ProfileName
 $CanaryControl = Join-Path $PSScriptRoot 'set-staging-paid-canary.ps1'
 
 function Unprotect-Record([string]$Path, [string]$Purpose, [string]$EntropyText) {
@@ -90,7 +93,7 @@ if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Tracked worktree must be clean befo
 $WalletBytes = $null
 $VaultBytes = $null
 $Opened = $false
-$Closed = $false
+$Closed = $true
 $Passed = $false
 $Failure = $null
 try {
@@ -125,6 +128,8 @@ try {
   } finally { Pop-Location }
   Remove-Item Env:PHASE2_WALLET_PREFLIGHT -ErrorAction SilentlyContinue
 
+  if (-not $PreflightOnly) {
+    $Closed = $false
   & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
   if ($LASTEXITCODE -ne 0) { throw 'Unable to open the bounded staging canary' }
   $Opened = $true
@@ -136,6 +141,7 @@ try {
       & npm run test:wallet:metamask
     }
   } finally { Pop-Location }
+  }
   $Passed = $true
 } catch {
   $Failure = $_.Exception.Message
@@ -171,6 +177,7 @@ try {
     topupGross = '2.00'
     paidCallGross = '1.20'
     claimGross = '1.00'
+    preflightOnly = [bool]$PreflightOnly
     paidWritesClosed = [bool]$Closed
     passed = [bool]$Passed
     completedAt = [DateTime]::UtcNow.ToString('o')
@@ -183,4 +190,8 @@ try {
 }
 
 if (-not $Passed) { throw $Failure }
-Write-Output 'PASS one bounded MetaMask paid canary completed and paid writes are disabled'
+if ($PreflightOnly) {
+  Write-Output 'PASS isolated MetaMask staging preflight completed with paid writes disabled'
+} else {
+  Write-Output 'PASS one bounded MetaMask paid canary completed and paid writes are disabled'
+}

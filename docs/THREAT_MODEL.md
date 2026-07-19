@@ -1,6 +1,6 @@
 # Velostra threat model
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -152,8 +152,8 @@ to its call.
 - RPC and database credentials come from a managed secret store, not repository or
   image layers.
 - No mainnet or real-value contract may deploy until independent audit findings and
-  accountable governance ownership are closed. Zero-value testnet deployment uses
-  synthetic 2-of-3 Safe custody and does not satisfy that release gate.
+  accountable governance ownership are closed. The live zero-value chain-46630
+  deployment uses synthetic 2-of-3 Safe custody and does not satisfy that release gate.
 - The public Netlify preview contains no managed API or contract build values and is not
   treated as an activated product runtime.
 

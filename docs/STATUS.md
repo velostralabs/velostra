@@ -1,13 +1,13 @@
 # Velostra status
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
 > verified. Controlled mainnet execution remains explicitly gated.
 > No mainnet deployment or real-value authorization is recorded.
-> Public deployment: the static protocol preview is live at https://velostra.xyz/;
-> no managed API, signer runtime, worker, or escrow is deployed. Managed US staging
-> data services, all twelve scoped secret values, and direct private-Telegram
-> delivery exist without application workloads.
+> Public deployment: the static protocol preview remains live at https://velostra.xyz/
+> and separate from staging. The US-only chain-46630 Safe authorities, token, escrow,
+> private signer, API, isolated web, migration, workers, and Scheduler triggers are
+> deployed; deep readiness passes and paid writes remain disabled.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
 ## Executive status
@@ -26,10 +26,9 @@ settlement transitions use database ownership/conditional updates.
 
 Repository implementation and local verification for Phase 0-4 are **CLEAR / PASS**.
 This is not activation or mainnet authorization. No mainnet deployment or real-value
-authorization is recorded. Independent review, managed-staging evidence, a real
-one-hour outage/PITR/72-hour soak, real operator alert delivery, deployment
-verification, low-value canary, and accountable closed-beta approval remain external
-gates.
+authorization is recorded. Independent review, the remaining real-wallet/alert/drill
+evidence, a real one-hour outage/PITR/72-hour soak, low-value canary, and accountable
+closed-beta approval remain external gates.
 
 The static protocol preview is publicly deployed through the Velostra Netlify team
 and Git-linked `velostralabs/velostra` `main` branch. The canonical TLS origin is
@@ -41,17 +40,16 @@ This frontend is deliberately a protocol preview. Its production environment has
 `VITE_API_URL`, `VITE_ESCROW_ADDRESS`, or `VITE_SETTLEMENT_TOKEN`, so API-backed
 and financial flows are not activated and must not be represented as operational.
 
-A low-cost US-only backend staging deployment path is committed and locally validated:
-Robinhood testnet chain 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP
-us-east4; bounded Cloud Run services/jobs; immutable image digests; multi-tenant
-Cloud HSM signing; and a USD 35 monthly envelope. The foundation, nine database
-migrations/30 tables, TLS Redis, primary/fallback chain-46630 RPC, twelve scoped
-secret values, and private Telegram connection are active. Three disjoint canonical
-Safe 1.4.1 authority accounts are prepared as 2-of-3 testnet-only principals with
-DPAPI-encrypted ignored custody. A read-only live-chain preflight verifies their
-unique predictions, canonical factory code, and separation from the KMS settler.
-The isolated deployer is not funded; zero of three Safes, every Cloud Run
-workload/schedule, and VelostraEscrow remain undeployed.
+The low-cost US-only backend staging path is now deployed: Robinhood testnet chain
+46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP us-east4; bounded Cloud Run
+services/jobs; immutable image digests; multi-tenant Cloud HSM signing; and a USD 35
+monthly envelope. Nine database migrations/30 tables, TLS Redis, primary/fallback
+RPC, twelve scoped secrets, and private Telegram delivery are active. Three disjoint
+canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token, and
+VelostraEscrow are deployed and live-verified. The private signer, public API,
+isolated web, reconciliation/webhook/monitor jobs, migration, and Scheduler triggers
+are live; origin binding, deep readiness, solvency, worker heartbeats, and anonymous
+signer rejection pass. Paid writes remain disabled.
 
 ## Audit decision
 
@@ -60,23 +58,23 @@ workload/schedule, and VelostraEscrow remain undeployed.
   migration, and CI gates:** PASS locally.
 - **Database:** nine reviewed migrations and 30 application tables.
 - **Independent third-party audit:** not claimed or fabricated.
-- **Deployment state:** public static frontend plus the managed US staging data plane
-  are active; no managed application runtime, testnet contract, mainnet contract,
-  mainnet transaction, or real-value activation.
+- **Deployment state:** public static preview plus a separate managed US testnet
+  contract/runtime are active; no mainnet contract, mainnet transaction, public paid
+  writes, closed beta, or real-value activation.
 - **Expansion state:** impossible from repository automation alone; a passing canary
   still returns `PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`.
 
 | Area | Repository state | External state |
 |---|---|---|
 | Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values, real MetaMask, and managed-staging performance evidence pending |
-| Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | encrypted testnet custody and canonical preflight ready; deployer unfunded, Safes/escrow undeployed, independent audit/mainnet pending |
+| Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | timed managed one-hour outage evidence pending |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | US foundation/data plane/secrets/Telegram plus testnet authority custody/preflight ready; funding, onchain authorities, escrow, and application workloads pending |
-| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | HSM key, public-address evidence, and all twelve scoped values exist; signer runtime, audit logs, rotations, and drills pending |
-| Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | private Telegram connection delivery verified; runtime failure/acknowledgement/resolution evidence pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | verified testnet authorities/escrow plus immutable signer/API/web/jobs/schedules live; readiness green and paid writes disabled |
+| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime and all twelve scoped values live; audit logs, rotations, and drills pending |
+| Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness and manual worker/monitor runs pass; full failure/acknowledgement/resolution evidence pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
 
@@ -298,16 +296,13 @@ pending staging outage artifact.
 
 ## Next action
 
-The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). The next honest
-checkpoint is managed US staging online with a verified Robinhood testnet escrow
-while paid writes remain disabled.
+The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). Managed US staging
+with a verified Robinhood testnet escrow is online and deep-readiness green while
+paid writes remain disabled.
 
-Keep the public preview and applied US resources stable. Fund only the isolated
-testnet deployer, deploy and verify the three prepared Safe 2-of-3 principals, then
-deploy and verify the synthetic token plus VelostraEscrow through the guarded
-wrappers. Only after those records pass may immutable API, signer, workers, and the
-canonical staging origin be deployed. Direct Telegram connection delivery is
-verified; runtime alert lifecycle evidence follows the monitor deployment.
-Then run wallet, alert, one-hour outage, PITR, and 72-hour evidence. No external gate
-may be marked complete from a local plan or read-only preflight. Keep paid writes
-disabled and do not use mainnet value.
+Keep the public preview separate and the deployed staging stack write-disabled. The
+next checkpoint is retained real MetaMask auth/top-up/paid-call/claim evidence plus an
+intentionally skipped-report reconciliation repair, followed by the alert lifecycle,
+secret/authority/pause/compromise drills, one-hour outage, provider-native PITR, and
+minimum 72-hour soak. No external gate may be marked complete from a local plan or
+read-only preflight. Do not use mainnet value.

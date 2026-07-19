@@ -1,6 +1,6 @@
 # Velostra documentation
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 
 Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
 [ROADMAP.md](./ROADMAP.md), and
@@ -8,8 +8,10 @@ Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
 is complete and locally cleared. Phase 3 execution and closed-beta activation remain
 gated on independent review, managed evidence, immutable release approval, and
 explicit operator authorization; no mainnet deployment is recorded.
-The static protocol preview is live at [velostra.xyz](https://velostra.xyz/), but no
-managed API, stateful backend, escrow deployment, closed beta, or real-value flow is live.
+The static protocol preview remains live at [velostra.xyz](https://velostra.xyz/) and
+separate from a deployed US-only Robinhood-testnet backend/escrow. The staging stack
+is deep-readiness green with paid writes disabled; no closed beta, mainnet, or
+real-value flow is live.
 
 | Document | Purpose |
 |---|---|
@@ -57,12 +59,11 @@ or sequencing changes require a roadmap update.
 
 The repository has passed automated and internal engineering review for Phase 0-4,
 which clears continued non-mainnet development. The static protocol preview is a
-verified public deployment; this is not an independent audit, managed backend/contract
-deployment, closed-beta approval, or real-value authorization. The US foundation,
-managed data plane, twelve scoped secrets, HSM settler, and private Telegram
-connection are active. Three disjoint Safe 1.4.1 2-of-3 testnet authority sets have
-encrypted ignored custody and a passing read-only canonical-factory preflight. The
-deployer remains unfunded; no Safe, escrow, application runtime, runtime alert
-lifecycle, real-wallet evidence, load/outage/PITR drill, or 72-hour soak is complete.
-Local completion never
-overrides activation gates.
+verified public deployment, and a separate managed US testnet contract/runtime is
+also live. Three verified Safe authorities, a synthetic token and escrow, immutable
+signer/API/web services, migration, scheduled jobs, scoped secrets, and private
+Telegram delivery are active; deep readiness passes and paid writes remain disabled.
+This is not an independent audit, closed-beta approval, mainnet deployment, or
+real-value authorization. Real-wallet/repair evidence, full alert lifecycle,
+rotation/pause/compromise drills, load/outage/PITR, and 72-hour soak remain pending.
+Local completion never overrides activation gates.

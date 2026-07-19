@@ -1,6 +1,6 @@
 # Phase 4 platform contract
 
-> Last verified against repository and deployment status: 2026-07-18.
+> Last verified against repository and managed staging status: 2026-07-19.
 > Repository status: implemented and locally audited; activation remains gated.
 > This contract is now the compatibility baseline for Phase 5 changes.
 This document freezes the repository contract for Velostra Phase 4. The implementation

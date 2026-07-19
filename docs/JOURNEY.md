@@ -1,7 +1,6 @@
 # Velostra journey
 
-> Reconstructed from Git history through `6e83a04` and verified deployment evidence:
-> 2026-07-18.
+> Reconstructed from Git history and verified deployment evidence through 2026-07-19.
 > This is the chronological handoff. [STATUS.md](./STATUS.md) remains the authority
 > for current truth; [ROADMAP.md](./ROADMAP.md) remains the authority for phase gates.
 
@@ -10,12 +9,12 @@
 | Surface | State now |
 |---|---|
 | Repository | Phase 0-4 implementation complete and internally cleared |
-| Public frontend | Static protocol preview live at `https://velostra.xyz/` |
-| Managed backend | Not provisioned |
-| Escrow | Locally tested; not deployed to Robinhood testnet or mainnet |
-| Financial activation | Disabled; no real-value authorization |
+| Public frontend | Static protocol preview live at `https://velostra.xyz/`; separate from staging |
+| Managed backend | Signer/API/web/jobs/schedules live in US-only testnet staging |
+| Escrow | Safe authorities, synthetic token, and escrow verified on chain 46630; no mainnet deployment |
+| Financial activation | Paid writes disabled; no real-value authorization |
 | Independent review | Not yet performed |
-| Active external next | US-only managed staging and evidence |
+| Active external next | Real-wallet, repair, alert/drill, outage, PITR, and soak evidence |
 | Active repository next | Freeze Phase 5 scope before implementation |
 
 ## Journey timeline
@@ -175,6 +174,26 @@ three Safes is deployed and the isolated deployer is intentionally unfunded, so 
 authority, escrow, or token transaction has been sent. This synthetic custody is not
 eligible for mainnet governance.
 
+### 2026-07-19 - US testnet contract and managed runtime online
+
+- funded only the isolated deployer with valueless testnet ETH, then deployed and
+  live-verified the three canonical Safe 1.4.1 2-of-3 authorities;
+- deployed a synthetic 6-decimal token and VelostraEscrow on chain 46630 and passed
+  23 bytecode, receipt, role, token, solvency, event, and authority checks;
+- built immutable server and web images, deployed the private signer, public API,
+  isolated staging web, migration, reconciliation/webhook/monitor jobs, and staggered
+  Scheduler triggers in us-east4;
+- bound the generated web origin to the API, reran the idempotent migration, and
+  verified Postgres, Redis, RPC, contract, solvency, and both worker heartbeats;
+- proved the signer rejects anonymous access, every scheduled entrypoint completes,
+  the isolated web is live, and paid writes remain disabled;
+- caught and fixed a webhook interval validation mismatch plus stale health-chain
+  metadata before the final immutable rebuild.
+
+Checkpoint: the managed US testnet stack is online and deep-readiness green. The
+public Netlify preview remains separate. Mainnet, real value, closed beta, public paid
+writes, independent review, and the remaining managed evidence are not authorized.
+
 ## What is complete
 
 ### Product and identity
@@ -213,41 +232,33 @@ eligible for mainnet governance.
 
 These are real external/runtime gates, not hidden repository TODOs:
 
-1. Cloud Run services/jobs and schedules are not provisioned; the managed Postgres,
-   Redis, primary/fallback RPC, registry, HSM, identities, and all twelve secrets exist.
-2. The three prepared Safe authorities and VelostraEscrow are not deployed on
-   Robinhood testnet; the isolated deployer is unfunded. Nothing is deployed on
-   mainnet.
-3. The public frontend has no production API, escrow, or settlement-token build values.
-4. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
+1. The public frontend remains intentionally separate and has no staging API, escrow,
+   or settlement-token build values.
+2. The real MetaMask staging money loop and intentionally skipped-report
+   reconciliation repair have not yet been retained as managed evidence.
+3. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
    logs, and signed ownership evidence are pending.
-5. Runtime alert failure/acknowledgement/resolution plus production error-tracking
-   redaction evidence are pending; direct Telegram connection delivery is verified.
-6. Real MetaMask staging, managed performance baselines, one-hour outage, provider
-   fault injection, provider-native PITR, calibrated SLOs, and minimum 72-hour soak
-   evidence are pending.
-7. Independent smart-contract and focused backend security review are pending.
-8. No broadcast-approved mainnet manifest, low-value canary, closed beta, public paid
-   writes, or real-value authorization exists.
-9. Phase 5 remains a planning lane; its scope is not frozen for implementation.
+4. Runtime alert failure/acknowledgement/resolution plus production error-tracking
+   redaction evidence are pending; direct Telegram and monitor delivery are verified.
+5. Managed performance baselines, one-hour outage, provider fault injection,
+   provider-native PITR, calibrated SLOs, and minimum 72-hour soak evidence are pending.
+6. Independent smart-contract and focused backend security review are pending.
+7. Nothing is deployed on mainnet; no broadcast-approved mainnet manifest, low-value
+   canary, closed beta, public paid writes, or real-value authorization exists.
+8. Phase 5 remains a planning lane; its scope is not frozen for implementation.
 
 ## Next ordered work
 
 ### Lane A - Managed US staging (active external next)
 
-1. Fund only the prepared isolated Robinhood-testnet deployer, then deploy and verify
-   the three canonical Safe 1.4.1 2-of-3 principals. Use the retained HSM-derived
-   public address exactly as the settler.
-2. Deploy and verify the synthetic token plus VelostraEscrow through the guarded
-   wrapper; record address, deployment block, roles, token, fee, Safe policy, and
-   verification evidence under ignored artifacts.
-3. Deploy immutable API, signer, reconciliation, webhook, monitor, migration, and
-   staging-web workloads with paid writes disabled.
-4. Bind the exact staging web/API/auth origins and prove readiness, wallet, and alert
-   delivery/acknowledgement.
-5. Execute managed secret/authority rotation, pause/unpause, compromise response,
-   audit-log ownership, error-tracking, and redaction drills.
-6. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
+1. Keep the deployed US testnet runtime and the public preview separate; retain paid
+   writes disabled.
+2. Run the real MetaMask auth/top-up/paid-call/earnings/claim journey and an
+   intentionally skipped-report reconciliation repair against managed staging.
+3. Prove alert failure/acknowledgement/resolution, then execute managed secret and
+   authority rotation, pause/unpause, compromise response, audit-log ownership,
+   error-tracking, and redaction drills.
+4. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
    the minimum 72-hour soak; calibrate SLOs, then hash and sign the evidence packet.
 
 ### Lane B - Independent review and controlled release
@@ -273,15 +284,15 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 ## Next checkpoint definition
 
-The next honest milestone is **managed US staging online with a verified Robinhood
-testnet escrow while paid writes remain disabled**. It is complete only when:
+The managed-US-staging-online checkpoint is complete: identities/secrets, verified
+chain authorities and escrow, immutable runtimes, migration, exact origin binding,
+and deep readiness are live with paid writes disabled.
 
-- managed service identities and scoped secrets exist in the approved US regions;
-- database, Redis, RPC, signer, API, and every worker pass deep readiness;
-- the verified escrow address/deployment block match runtime configuration;
-- the exact staging origin completes the real wallet and alert journey;
-- generated evidence remains outside public Git and contains no personal data or raw
-  credential.
+The next honest milestone is **managed real-wallet and recovery evidence complete**.
+It requires the exact staging origin to complete auth, top-up, paid call, correlated
+builder credit, claim, and an intentionally skipped-report reconciliation repair;
+the alert failure/acknowledgement/resolution lifecycle must also be retained without
+publishing personal data, provider identifiers, or raw credentials.
 
 That checkpoint does not authorize mainnet, public paid writes, or closed beta.
 

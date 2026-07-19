@@ -1,6 +1,6 @@
 # External audit readiness packet
 
-> Prepared: 2026-07-18.
+> Prepared: 2026-07-19.
 > Status: internal engineering/CI audit passed and the repository is clear for
 > continued development; independent third-party review has not yet been performed
 > and remains a mainnet release prerequisite.
@@ -22,12 +22,13 @@
 > privacy/anonymization, telemetry governance, dedicated worker readiness, and
 > migration 0008. No closed-beta activation is claimed.
 
-> Public deployment note: `https://velostra.xyz/` is a live Netlify-hosted static
-> protocol preview sourced from `velostralabs/velostra` `main`. It currently has no
-> production API URL, escrow/token address, Netlify Function, managed database,
-> worker, signer, testnet escrow, or real-value flow. Reviewers should treat the
-> published browser bundle and Netlify configuration as a deployed web/supply-chain
-> surface, not as evidence that the backend or protocol is activated.
+> Deployment note: `https://velostra.xyz/` remains a Netlify-hosted static protocol
+> preview sourced from `velostralabs/velostra` `main`, with no staging API/contract
+> build values. A separate US-only Robinhood-testnet environment now contains the
+> managed data plane, private signer, API, isolated web, workers/schedules, three Safe
+> authorities, synthetic token, and escrow. It is deep-ready with paid writes disabled.
+> Reviewers should treat both the public browser supply chain and the isolated managed
+> runtime as in-scope surfaces, not as mainnet or real-value activation.
 
 ## Review objective
 

@@ -1,6 +1,6 @@
 # Testing and release evidence
 
-> Last verified against tests, CI, and the public frontend: 2026-07-18.
+> Last verified against tests, CI, and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -34,8 +34,9 @@
 | Restricted signer | `npm --prefix server run test:signer` | local HTTP double | allowlist, idempotency, auth, timeout, and response validation |
 | Managed KMS signer | `npm --prefix server run test:kms-signer` | none | DER/PEM handling, low-S signature, sender recovery, durable concurrent idempotency, and conflicting-payload rejection |
 | US staging policy | `powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1` | PowerShell | chain 46630, Virginia-only residency, provider caps, schedules, and USD 35 envelope |
-| US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, private signer entrypoint, bounded services, staggered jobs, and no migration without opt-in |
+| US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, checked native-command failures, private signer entrypoint, bounded services, valid worker intervals, staggered jobs, and no migration without opt-in |
 | Testnet Safe authority | `npm run test:testnet-authorities` | Windows PowerShell + Node.js 22 | CSPRNG/DPAPI custody round trip, three disjoint 2-of-3 plans, plan-only clean-tree broadcast, private-key cleanup, and live policy validation |
+| Managed staging live probe | guarded runbook steps with ignored artifacts | Robinhood testnet + US providers | 23 contract checks, migration, API deep readiness, worker heartbeats, isolated web response, private signer boundary, and paid-write-disabled state |
 | Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |

@@ -1,11 +1,12 @@
 # Builder guide
 
-> Last verified against builder routes, SDKs, egress, HMAC, webhooks, and deployment
-> status: 2026-07-18.
+> Last verified against builder routes, SDKs, egress, HMAC, webhooks, and managed
+> staging status: 2026-07-19.
 > Phase state: Phase 0-4 repository implementation is complete; no mainnet deployment
 > or closed-beta activation is claimed.
-> The public `velostra.xyz` preview has no deployed API/escrow values; onboarding steps below
-> require local development or the future isolated US staging runtime.
+> The public `velostra.xyz` preview has no staging API/escrow values. A separate
+> isolated US testnet runtime is live, but onboarding mutations remain gated while
+> paid writes are disabled.
 
 Velostra owns discovery, access, metering, reservation, settlement, recovery, and
 delivery evidence. Builders own endpoint quality, availability, schema, and

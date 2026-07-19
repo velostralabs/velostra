@@ -1,6 +1,6 @@
 # Local quickstart
 
-> Last verified against package scripts, env templates, and public frontend: 2026-07-18.
+> Last verified against package scripts, env templates, and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -190,18 +190,19 @@ resource in a US Virginia region. Validate the non-mutating deployment plan:
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
 The bootstrap remains plan-only unless Apply and a billing account are supplied.
-The US foundation, managed data plane, twelve scoped secrets, and private Telegram
-connection are active. Testnet tooling now prepares three disjoint Safe 1.4.1 2-of-3
-authority sets with DPAPI-encrypted ignored custody and checks canonical readiness
-without decrypting keys:
+The US foundation, managed data plane, twelve scoped secrets, private Telegram,
+three disjoint Safe 1.4.1 2-of-3 authorities, synthetic token, VelostraEscrow, and
+immutable signer/API/web/jobs runtime are now deployed. Validate the retained,
+ignored authority/deployment records without decrypting keys:
 
     npm run test:testnet-authorities
     powershell -NoProfile -File deploy/gcp/check-testnet-authorities.ps1
 
-The isolated deployer remains unfunded and no Safe, escrow, or workload is deployed.
-Follow [the US staging runbook](../deploy/gcp/README.md) for funding and guarded Apply
-steps. Use only approved US regions and Robinhood testnet chain 46630. Never use
-mainnet or real value for this staging path.
+Deep readiness, origin binding, signer privacy, and scheduled-worker entrypoints have
+passed while paid writes remain disabled. Follow
+[the US staging runbook](../deploy/gcp/README.md) for idempotent redeploy and the
+remaining real-wallet/alert/outage/PITR/soak evidence. Use only approved US regions
+and Robinhood testnet chain 46630. Never use mainnet or real value for this path.
 
 ## Phase 3 release preparation
 

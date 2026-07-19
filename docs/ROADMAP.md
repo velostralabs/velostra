@@ -1,6 +1,6 @@
 # Velostra roadmap
 
-> Updated after public frontend deployment verification: 2026-07-18.
+> Updated after managed US staging verification: 2026-07-19.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
@@ -24,13 +24,13 @@ Netlify team. GitHub `main` builds with Node.js 22 using tracked `netlify.toml` 
 publishes `dist/`; TLS, apex/www routing, hashed assets, and browser rendering were
 verified on 2026-07-18.
 
-No managed API, signer runtime, reconciliation/webhook/monitor runtime, Robinhood
-testnet escrow, closed beta, mainnet contract, or real-value flow is live. The GCP US
-foundation, managed Neon Postgres, Upstash Redis, primary/fallback RPC, all twelve
-scoped secret values, and direct private-Telegram delivery are provisioned in approved
-US regions. The public preview has no API/escrow/token build values and closes no
-Phase 2/3/4 activation or evidence
-gate.
+A separate US-only Robinhood testnet stack is live: three verified Safe authorities,
+a verified synthetic token and escrow, immutable private signer/public API/isolated
+web services, migration, reconciliation/webhook/monitor jobs, and staggered Scheduler
+triggers. Deep readiness passes, the web origin is bound, the signer is private, and
+paid writes remain disabled. The public preview still has no staging API/escrow/token
+build values and closes no Phase 2/3/4 activation or evidence gate. No closed beta,
+mainnet contract, or real-value flow is live.
 
 ## Phase 0 - Recoverable product foundation (DONE)
 
@@ -164,8 +164,11 @@ and must never be inferred from local tests.
 - [x] Prepare three disjoint canonical Safe 1.4.1 2-of-3 authority sets with
   CSPRNG/DPAPI testnet-only custody; verify unique predictions, canonical factory
   availability, isolated settler, and plan-only clean-tree broadcast tooling.
-- [ ] Fund the isolated deployer, deploy/verify the three Safes and VelostraEscrow,
-  deploy Cloud Run workloads, prove the runtime alert lifecycle, and attach
+- [x] Fund the isolated deployer with valueless testnet ETH, deploy/verify the three
+  Safes plus synthetic token and VelostraEscrow, deploy immutable Cloud Run
+  signer/API/web workloads and scheduled jobs, bind the web origin, execute migration,
+  and pass deep readiness while paid writes remain disabled.
+- [ ] Prove the complete runtime alert acknowledgement/resolution lifecycle and attach
   provider-native backup/recovery evidence.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
@@ -385,16 +388,15 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 
 ### Staging/evidence lane (active external next)
 
-1. retain the verified public preview, GCP foundation, managed data plane, and RPCs;
-2. fund the already prepared isolated testnet deployer and deploy/verify the three
-   canonical Safe 1.4.1 2-of-3 authorities;
-3. deploy and verify the synthetic token plus VelostraEscrow, then deploy immutable
-   server/staging-web images with paid writes disabled;
-4. bind the generated staging web/API origin and prove readiness plus wallet/alert
-   flows before any explicit public-domain integration;
-5. run one-hour outage, provider fault, PITR, and minimum 72-hour evidence without
-   claiming completion early;
-6. retain all outputs under ignored artifacts until the final signed evidence packet.
+1. retain the verified public preview and the deployed write-disabled US testnet stack;
+2. run the real MetaMask journey for auth, top-up, paid call, builder credit, claim,
+   and an intentionally skipped-report reconciliation repair;
+3. exercise alert failure, acknowledgement, and resolution plus secret/authority,
+   pause/unpause, signer-rotation, and compromise-response drills;
+4. run one-hour outage/provider faults, provider-native PITR, and minimum 72-hour soak
+   without claiming completion early;
+5. calibrate SLOs, close independent review, and retain all outputs under ignored
+   artifacts until the final signed evidence packet.
 
 ### Repository/product lane
 

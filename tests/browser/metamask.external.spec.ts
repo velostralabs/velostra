@@ -238,6 +238,12 @@ test('real MetaMask isolated-staging money journey', async () => {
     if (hadWalletPermission) await page.reload()
 
     const connectButton = page.locator('.auth-gate').getByRole('button', { name: 'Connect Wallet' })
+    await Promise.race([
+      connectButton.waitFor({ state: 'visible', timeout: 15_000 }),
+      page.getByRole('button', { name: 'Sign in securely' }).waitFor({ state: 'visible', timeout: 15_000 }),
+      page.getByText('CREDIT BALANCE').waitFor({ state: 'visible', timeout: 15_000 }),
+    ]).catch(() => undefined)
+
     if (await connectButton.isVisible().catch(() => false)) {
       await connectButton.click()
       await triggerWalletRequest(page.getByRole('button', { name: /MetaMask/i }))

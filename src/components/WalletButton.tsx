@@ -31,8 +31,8 @@ export default function WalletButton() {
 
   const walletOptions = useMemo(() => {
     const ordered = [...connectors].sort((left, right) => {
-      const leftRank = left.id === 'metaMaskSDK' ? 0 : isMetaMask(left.name) ? 1 : 2
-      const rightRank = right.id === 'metaMaskSDK' ? 0 : isMetaMask(right.name) ? 1 : 2
+      const leftRank = isMetaMask(left.name) ? (left.id === 'metaMaskSDK' ? 1 : 0) : 2
+      const rightRank = isMetaMask(right.name) ? (right.id === 'metaMaskSDK' ? 1 : 0) : 2
       return leftRank - rightRank
     })
 

@@ -46,6 +46,7 @@ export const robinhoodChain = defineChain({
 export const wagmiConfig = createConfig({
   chains: [robinhoodChain],
   connectors: [
+    injected({ target: 'metaMask', shimDisconnect: true }),
     metaMask({
       dapp: {
         name: 'Velostra',

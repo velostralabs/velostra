@@ -274,7 +274,7 @@ $apiEnv.REDIS_CONNECT_TIMEOUT_MS = 2000
 $apiEnv.REDIS_FAILURE_MODE = 'closed'
 $apiEnv.SETTLEMENT_SIGNER_URL = $signerUrl + '/v1/transactions'
 $apiEnv.SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE = $signerUrl
-$apiEnv.SETTLEMENT_SIGNER_TIMEOUT_MS = 10000
+$apiEnv.SETTLEMENT_SIGNER_TIMEOUT_MS = 30000
 $apiEnv.SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES = 16384
 $apiEnv.AGENT_SECRET_ENCRYPTION_KEY_ID = 'staging-primary'
 $apiEnv.AGENT_TIMEOUT_MS = 30000
@@ -326,7 +326,7 @@ $reconcileEnv = New-Environment 'reconciliation-worker'
 Add-ChainEnvironment $reconcileEnv
 $reconcileEnv.SETTLEMENT_SIGNER_URL = $signerUrl + '/v1/transactions'
 $reconcileEnv.SETTLEMENT_SIGNER_ID_TOKEN_AUDIENCE = $signerUrl
-$reconcileEnv.SETTLEMENT_SIGNER_TIMEOUT_MS = 10000
+$reconcileEnv.SETTLEMENT_SIGNER_TIMEOUT_MS = 30000
 $reconcileEnv.SETTLEMENT_SIGNER_MAX_RESPONSE_BYTES = 16384
 $reconcileEnv.RECONCILE_INTERVAL_MS = 900000
 $reconcileEnv.RECONCILE_OUTBOX_GRACE_MS = 120000

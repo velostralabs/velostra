@@ -97,6 +97,10 @@ $frontendChainText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'src\lib\chain.ts')
 
 
+Require-Match $runtimeScriptText '\$apiEnv\.SETTLEMENT_SIGNER_TIMEOUT_MS = 30000' `
+  'API signer timeout must tolerate managed cold starts'
+Require-Match $runtimeScriptText '\$reconcileEnv\.SETTLEMENT_SIGNER_TIMEOUT_MS = 30000' `
+  'Reconciliation signer timeout must tolerate managed cold starts'
 Require-Match $all '(?i)us-east4' 'Deployment plan must use us-east4'
 $regionMentions = [regex]::Matches(
   $all,

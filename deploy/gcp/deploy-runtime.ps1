@@ -174,9 +174,11 @@ function Deploy-Service {
     ('--max-instances=' + $MaxInstances), ('--concurrency=' + $Concurrency),
     '--port=8080', '--timeout=60s', '--ingress=all',
     ('--set-env-vars=' + (Join-Environment $Environment)),
-    ('--set-secrets=' + $Secrets),
     '--labels=application=velostra,environment=staging,residency=us-only'
   )
+  if ($Secrets) {
+    $commandArgs += ('--set-secrets=' + $Secrets)
+  }
   if ($EntryPoint) {
     $commandArgs += @('--command=node', ('--args=' + $EntryPoint))
   }
@@ -298,6 +300,19 @@ $apiUrl = if ($Apply) {
   )
 } else { 'https://velostra-api.example.invalid' }
 
+# Public, stateless staging-only endpoint used by the synthetic agent seed.
+# It has no database or secret access and is bounded to a single instance.
+$syntheticEnv = New-Environment 'synthetic-agent'
+$syntheticEnv.SYNTHETIC_AGENT_ENABLED = 'true'
+$syntheticEnv.ROBINHOOD_CHAIN_ID = $chainId
+Deploy-Service 'velostra-synthetic-agent' 'velostra-web' $syntheticEnv '' 1 20 '256Mi' $true 'dist/synthetic-agent/index.js'
+$syntheticAgentUrl = if ($Apply) {
+  Get-GcloudValue @(
+    'run', 'services', 'describe', 'velostra-synthetic-agent',
+    ('--region=' + $region), ('--project=' + $ProjectId), '--format=value(status.url)'
+  )
+} else { 'https://velostra-synthetic-agent.example.invalid' }
+
 $migrationEnv = New-Environment 'migration'
 Deploy-Job 'velostra-migration' $migrationEnv 'DATABASE_URL=database-url:latest' 'dist/scripts/migrate.js' 600 0
 if ($RunMigration) {
@@ -401,6 +416,7 @@ if ($Apply) {
     serverImage = $ServerImage
     signerUrl = $signerUrl
     apiUrl = $apiUrl
+    syntheticAgentUrl = $syntheticAgentUrl
     webOrigin = $origin.GetLeftPart([UriPartial]::Authority)
     escrowAddress = $EscrowAddress
     deploymentBlock = $DeploymentBlock

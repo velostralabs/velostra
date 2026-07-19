@@ -56,7 +56,7 @@ function Get-ServiceEnvironment {
   $service = $raw | ConvertFrom-Json
   $result = @{}
   foreach ($entry in @($service.spec.template.spec.containers[0].env)) {
-    if ($entry.name -and $null -ne $entry.value) { $result[[string]$entry.name] = [string]$entry.value }
+    if ($entry.name -and $entry.PSObject.Properties.Name -contains 'value' -and $null -ne $entry.value) { $result[[string]$entry.name] = [string]$entry.value }
   }
   return $result
 }

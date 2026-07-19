@@ -77,6 +77,8 @@ $syntheticSeedText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\scripts\provision-staging-agent.ts')
 $stagingCanaryScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'set-staging-paid-canary.ps1')
+$paidCanaryRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'run-paid-canary.ps1')
 $stagingCanaryBindingText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\scripts\create-staging-canary-binding.ts')
 
@@ -167,6 +169,13 @@ Require-Match $stagingCanaryScriptText 'PHASE3_CANARY_POLICY_B64' 'Staging canar
 Require-Match $stagingCanaryScriptText 'maxGrossMinor -ne ''1200000''' 'Staging canary must cap the exact synthetic USDG 1.20 gross'
 Require-Match $stagingCanaryScriptText 'Wait-ApiHealth' 'Staging canary must verify the expected immutable API after mutation'
 Reject-Match $stagingCanaryScriptText 'Write-Output.*(?:databaseUrl|policyB64|manifestB64)' 'Staging canary control must not print database or policy credentials'
+Require-Match $paidCanaryRunnerText 'finally' 'Paid canary runner must protect cleanup with finally'
+Require-Match $paidCanaryRunnerText 'CanaryControl -Action Close' 'Paid canary runner must close the paid-write window'
+Require-Match $paidCanaryRunnerText "PHASE2_WALLET_TOPUP_AMOUNT = '2[.]00'" 'Paid canary runner must cap the top-up'
+Require-Match $paidCanaryRunnerText "PHASE2_WALLET_CLAIM_AMOUNT = '1[.]00'" 'Paid canary runner must cap the claim'
+Require-Match $paidCanaryRunnerText "PHASE2_WALLET_AGENT_SLUG = 'phase2-synthetic-agent'" 'Paid canary runner must use the managed synthetic agent'
+Require-Match $paidCanaryRunnerText 'paidWritesClosed = [[]bool[]][$]Closed' 'Paid canary evidence must report the observed close result'
+Reject-Match $paidCanaryRunnerText 'Write-Output.*(?:PRIVATE_KEY|PASSWORD|ExpectedAddress)' 'Paid canary runner must not print credentials or wallet identity'
 Require-Match $stagingCanaryBindingText 'sha256:' 'Staging canary subject policy must use hashed identities'
 Require-Match $stagingCanaryBindingText 'chainId: 46630' 'Staging canary binding must remain on Robinhood testnet'
 Require-Match $stagingCanaryBindingText 'maxCalls: 1' 'Staging canary binding must permit one call only'

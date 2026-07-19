@@ -37,6 +37,7 @@
     "test:wallet:metamask": "playwright test tests/browser/metamask.external.spec.ts --workers=1",
     "staging:faucet": "powershell -NoProfile -File deploy/gcp/fund-staging-wallet.ps1",
     "staging:canary-wallet": "powershell -NoProfile -File deploy/gcp/prepare-paid-canary-wallet.ps1",
+    "staging:paid-canary": "powershell -NoProfile -File deploy/gcp/run-paid-canary.ps1",
     "staging:outage": "powershell -NoProfile -File deploy/gcp/run-one-hour-outage.ps1",
     "test:performance": "npm run build:browser-fixture && npm run performance:build && playwright test tests/browser/performance.spec.ts",
     "performance:build": "node scripts/check-performance-budget.mjs",

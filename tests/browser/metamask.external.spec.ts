@@ -39,7 +39,7 @@ test('real MetaMask isolated-staging money journey', async () => {
   if (staging.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(staging.hostname)) {
     throw new Error('Real-wallet automation requires HTTPS or localhost')
   }
-  const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '0.10')
+  const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '1.00')
   const claim = Number(process.env.PHASE2_WALLET_CLAIM_AMOUNT ?? '0.01')
   if (!(topup > 0 && topup <= 1 && claim > 0 && claim <= 1)) {
     throw new Error('Real-wallet test values must be positive and no greater than 1 settlement token')

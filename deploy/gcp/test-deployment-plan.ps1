@@ -145,6 +145,7 @@ Require-Match $webText ([regex]::Escape('--image=' + $webImage)) 'Web must use t
 Require-Match $reconciliationEvidenceRunnerText 'const CHAIN_ID = 46630' 'Evidence runner must remain testnet-only'
 Require-Match $reconciliationEvidenceRunnerText "PHASE3_PAID_WRITES_MODE.*disabled" 'Evidence runner must require disabled paid writes'
 Reject-Match $reconciliationEvidenceRunnerText '/api/dashboard/topup' 'Skipped-report evidence must not call the top-up report endpoint'
+Require-Match $reconciliationEvidenceRunnerText "functionName: 'MIN_TOPUP'" 'Evidence runner must read the deployed minimum top-up'
 Require-Match $reconciliationEvidenceScriptText 'DPAPI-CurrentUser' 'Evidence wallet must remain encrypted for the current operator'
 Require-Match $reconciliationEvidenceScriptText "scheduler.*jobs.*pause.*velostra-reconciliation-every-15m" 'Evidence fault injection must pause reconciliation scheduling'
 Require-Match $reconciliationEvidenceScriptText "scheduler.*jobs.*resume.*velostra-reconciliation-every-15m" 'Evidence cleanup must resume reconciliation scheduling'

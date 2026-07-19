@@ -27,6 +27,8 @@ const tokenAbi = [
   ], outputs: [{ name: '', type: 'bool' }] },
 ]
 const escrowAbi = [
+  { type: 'function', name: 'MIN_TOPUP', stateMutability: 'view',
+    inputs: [], outputs: [{ name: '', type: 'uint256' }] },
   { type: 'function', name: 'depositCredits', stateMutability: 'nonpayable',
     inputs: [{ name: 'amount', type: 'uint256' }], outputs: [] },
 ]
@@ -123,12 +125,18 @@ async function capture() {
   const account = privateKeyToAccount(privateKey('EVIDENCE_WALLET_PRIVATE_KEY'))
   const deployer = privateKeyToAccount(privateKey('TESTNET_DEPLOYER_PRIVATE_KEY'))
   const targetAmount = required('EVIDENCE_DEPOSIT_AMOUNT')
-  if (!/^0\.0[1-9]$/.test(targetAmount)) throw new Error('Deposit must be 0.01 through 0.09')
+  if (targetAmount !== '1.00') throw new Error('Evidence deposit must equal the synthetic 1.00 minimum')
   const amount = parseUnits(targetAmount, 6)
   const network = evidenceChain(rpcUrl)
   activeStage = 'rpc-check'
   const publicClient = createPublicClient({ chain: network, transport: http(rpcUrl) })
   if (await publicClient.getChainId() !== CHAIN_ID) throw new Error('RPC chain mismatch')
+  activeStage = 'contract-preflight'
+  const minimumTopup = await publicClient.readContract({
+    address: address('VELOSTRA_ESCROW_ADDRESS'), abi: escrowAbi, functionName: 'MIN_TOPUP',
+  })
+  if (amount < minimumTopup) throw new Error('Evidence deposit is below the deployed contract minimum')
+
   const wallet = createWalletClient({ account, chain: network, transport: http(rpcUrl) })
   const funder = createWalletClient({ account: deployer, chain: network, transport: http(rpcUrl) })
   const pool = new Pool({ connectionString: required('DATABASE_URL'), max: 2 })

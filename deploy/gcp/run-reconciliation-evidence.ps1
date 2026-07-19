@@ -173,7 +173,7 @@ try {
   $env:SETTLEMENT_TOKEN_ADDRESS = [string]$Deployment.settlementToken.address
   $env:EVIDENCE_WALLET_PRIVATE_KEY = '0x' + (($WalletBytes | ForEach-Object { $_.ToString('x2') }) -join '')
   $env:TESTNET_DEPLOYER_PRIVATE_KEY = '0x' + (($DeployerBytes | ForEach-Object { $_.ToString('x2') }) -join '')
-  $env:EVIDENCE_DEPOSIT_AMOUNT = '0.02'
+  $env:EVIDENCE_DEPOSIT_AMOUNT = '1.00'
   $env:EVIDENCE_OUTPUT = $EvidenceOutput.Replace('\', '/')
 
   $stateOutput = Invoke-NativeChecked -FailureMessage 'Unable to inspect reconciliation scheduler' -Command {

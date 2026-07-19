@@ -19,6 +19,9 @@ if ($region -ne 'us-east4' -or [int]$config.network.chainId -ne 46630) {
 
 $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
 $gcloud = @(
+  (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
+  (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
+  (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
   (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
   (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
   (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd')
@@ -204,7 +207,7 @@ if (
 ) { throw 'Generated staging canary binding failed validation' }
 
 $startedAt = [DateTime]::UtcNow.ToString('o')
-$updated = '^^@^^' + (@(
+$updated = '^@^' + (@(
   'PHASE3_PAID_WRITES_MODE=canary',
   'PHASE2_STAGING_CANARY_APPROVAL=isolated-staging-paid-canary',
   'PHASE3_RELEASE_MANIFEST_B64=' + [string]$binding.manifestB64,

@@ -1,5 +1,5 @@
 import { Pool } from 'pg'
-import { createPublicClient, http } from 'viem'
+import { createPublicClient, getAddress, http, isAddress, keccak256, toBytes } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
 const required = (name) => {
@@ -36,6 +36,7 @@ try {
             ac.output is not null as output_present,
             ac.price_charged::text,
             sa.status as settlement_status,
+            sa.builder_address,
             sa.tx_hash is not null as settlement_tx_present,
             rca.status as admission_status,
             (select count(*)::int from transactions t
@@ -74,12 +75,63 @@ try {
         args: [row.onchain_call_id],
       })
     : false
+  const builderAddress = row?.builder_address
+  const signerAddress = required('SETTLEMENT_SIGNER_ADDRESS')
+  if (!isAddress(builderAddress ?? '') || !isAddress(signerAddress)) {
+    throw new Error('Canary settlement addresses are malformed')
+  }
+  const [builderState, paused, successor, solvent, signerAuthorized] = await Promise.all([
+    publicClient.readContract({
+      address: escrowAddress,
+      abi: [{
+        type: 'function',
+        name: 'builders',
+        stateMutability: 'view',
+        inputs: [{ name: '', type: 'address' }],
+        outputs: [
+          { name: 'totalEarned', type: 'uint256' },
+          { name: 'availableToClaim', type: 'uint256' },
+          { name: 'totalClaimed', type: 'uint256' },
+          { name: 'initialized', type: 'bool' },
+        ],
+      }],
+      functionName: 'builders',
+      args: [getAddress(builderAddress)],
+    }),
+    publicClient.readContract({
+      address: escrowAddress,
+      abi: [{ type: 'function', name: 'paused', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'bool' }] }],
+      functionName: 'paused',
+    }),
+    publicClient.readContract({
+      address: escrowAddress,
+      abi: [{ type: 'function', name: 'successorEscrow', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'address' }] }],
+      functionName: 'successorEscrow',
+    }),
+    publicClient.readContract({
+      address: escrowAddress,
+      abi: [{ type: 'function', name: 'isSolvent', stateMutability: 'view', inputs: [], outputs: [{ name: '', type: 'bool' }] }],
+      functionName: 'isSolvent',
+    }),
+    publicClient.readContract({
+      address: escrowAddress,
+      abi: [{ type: 'function', name: 'hasRole', stateMutability: 'view', inputs: [{ name: 'role', type: 'bytes32' }, { name: 'account', type: 'address' }], outputs: [{ name: '', type: 'bool' }] }],
+      functionName: 'hasRole',
+      args: [keccak256(toBytes('SETTLER_ROLE')), getAddress(signerAddress)],
+    }),
+  ])
   console.info(JSON.stringify({
     callFound: Boolean(row),
     callSettled: row?.status === 'SUCCESS',
     stillProcessing: row?.status === 'PROCESSING',
     outputPresent: row?.output_present === true,
     financialAmountCorrect: Number(row?.price_charged) === 1.2,
+    builderMatchesEvidenceWallet: getAddress(builderAddress) === account.address,
+    builderInitialized: builderState[3] === true,
+    contractUnpaused: paused === false,
+    contractActive: /^0x0{40}$/i.test(successor),
+    contractSolvent: solvent === true,
+    signerAuthorized: signerAuthorized === true,
     onchainSettled,
     outboxPrepared: row?.settlement_status === 'PREPARED',
     outboxReady: row?.settlement_status === 'READY',

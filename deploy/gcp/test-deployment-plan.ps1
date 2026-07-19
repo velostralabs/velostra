@@ -82,6 +82,10 @@ $paidCanaryRunnerText = Get-Content -Raw -LiteralPath (
 $stagingCanaryBindingText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\scripts\create-staging-canary-binding.ts')
 
+$builderInitializerText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\initialize-staging-builder.mjs')
+$builderInitializerRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'initialize-staging-builder.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -192,6 +196,14 @@ Require-Match $runtimeText 'run jobs deploy velostra-monitor ' 'Monitor job is m
 Require-Match $runtimeText 'ALERT_TRANSPORT=telegram' 'Monitor must use the private Telegram transport'
 Require-Match $runtimeText 'TELEGRAM_BOT_TOKEN=telegram-bot-token:latest' 'Monitor must inject the Telegram bot token from Secret Manager'
 Require-Match $runtimeText 'TELEGRAM_CHAT_ID=telegram-chat-id:latest' 'Monitor must inject the private Telegram channel ID from Secret Manager'
+Require-Match $builderInitializerText "ROBINHOOD_CHAIN_ID.*String[(]CHAIN_ID[)]" 'Builder initialization must remain testnet-only'
+Require-Match $builderInitializerText "PHASE3_PAID_WRITES_MODE.*disabled" 'Builder initialization must require disabled paid writes'
+Require-Match $builderInitializerText "slug = 'phase2-synthetic-agent'" 'Builder initialization must bind to the approved synthetic agent'
+Require-Match $builderInitializerText "functionName: 'initializeBuilder'" 'Builder initialization must call only the contract initialization method'
+Reject-Match $builderInitializerText 'console[.](?:info|error).*hash' 'Builder initialization must not print transaction hashes'
+Require-Match $builderInitializerRunnerText 'DPAPI-CurrentUser' 'Builder initializer must use the encrypted evidence wallet'
+Require-Match $builderInitializerRunnerText "paidWritesMode -ne 'disabled'" 'Builder initializer must fail closed unless paid writes are disabled'
+Reject-Match $builderInitializerRunnerText 'Write-Output.*(?:PRIVATE_KEY|WalletBytes|RpcUrl|DatabaseUrl)' 'Builder initializer must not print credentials'
 Require-Match $telegramHelperText 'Add-Type -AssemblyName System[.]Net[.]Http' 'Telegram helper must load HttpClient in Windows PowerShell'
 Require-Match $telegramHelperText 'Read-Host .* -AsSecureString' 'Telegram helper must use a secure token prompt'
 Require-Match $telegramHelperText 'secure[.]Dispose[(][)]' 'Telegram helper must dispose the secure token prompt'

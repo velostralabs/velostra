@@ -123,11 +123,15 @@ try {
       .then(() => true)
       .catch(() => false)
     if (optionReady) await metaMaskOption.click()
-    await page.waitForTimeout(1_000)
-    const approvalPage = context
-      .pages()
-      .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
-      .at(-1)
+    const approvalDeadline = Date.now() + 10_000
+    let approvalPage
+    while (!approvalPage && Date.now() < approvalDeadline) {
+      approvalPage = context
+        .pages()
+        .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
+        .at(-1)
+      if (!approvalPage) await page.waitForTimeout(200)
+    }
     if (approvalPage) {
       const approvalState = await approvalPage
         .locator('body')

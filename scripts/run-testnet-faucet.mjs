@@ -90,12 +90,25 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 })
 
   const connectButton = page.getByRole('button', { name: /connect wallet/i })
-  if (await connectButton.isVisible().catch(() => false)) {
+  let connectReady = await connectButton
+    .waitFor({ state: 'visible', timeout: 20_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!connectReady && !(await page.locator('input').first().isVisible().catch(() => false))) {
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 })
+    connectReady = await connectButton
+      .waitFor({ state: 'visible', timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false)
+  }
+  if (connectReady) {
     await connectButton.click()
     const metaMaskOption = page.getByRole('button', { name: /metamask/i }).first()
-    if (await metaMaskOption.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await metaMaskOption.click()
-    }
+    const optionReady = await metaMaskOption
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false)
+    if (optionReady) await metaMaskOption.click()
     if (!(await clickMetaMaskAction(['Next', 'Connect'], 30_000))) {
       throw new Error('The faucet did not produce a MetaMask connection request')
     }
@@ -103,13 +116,34 @@ try {
   }
 
   await page.waitForFunction(() => Boolean(window.ethereum), undefined, { timeout: 15_000 })
+  const accountReady = await page
+    .waitForFunction(
+      async () => {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+        return Array.isArray(accounts) && accounts.length > 0
+      },
+      undefined,
+      { timeout: 20_000 }
+    )
+    .then(() => true)
+    .catch(() => false)
+  if (!accountReady) {
+    const controls = await page
+      .getByRole('button')
+      .allTextContents()
+      .then((labels) =>
+        labels
+          .map((label) => label.replace(/0x[0-9a-fA-F]{40}/g, '[redacted]').trim())
+          .filter(Boolean)
+          .slice(0, 20)
+      )
+    console.info('Official faucet visible controls:', controls.join(' | ') || 'none')
+    throw new Error('The official faucet did not establish a wallet connection')
+  }
   const connectedAccount = await page.evaluate(async () => {
     const accounts = await window.ethereum.request({ method: 'eth_accounts' })
     return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
   })
-  if (!connectedAccount) {
-    throw new Error('The official faucet did not establish a wallet connection')
-  }
   if (connectedAccount !== expectedAddress) {
     throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
   }

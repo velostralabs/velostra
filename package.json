@@ -35,6 +35,7 @@
     "test:browser": "npm run build:browser-fixture && npm run performance:build && playwright test",
     "test:browser:update": "npm run build:browser-fixture && playwright test tests/browser/accessibility-visual.spec.ts --update-snapshots",
     "test:wallet:metamask": "playwright test tests/browser/metamask.external.spec.ts --workers=1",
+    "staging:faucet": "powershell -NoProfile -File deploy/gcp/fund-staging-wallet.ps1",
     "test:performance": "npm run build:browser-fixture && npm run performance:build && playwright test tests/browser/performance.spec.ts",
     "performance:build": "node scripts/check-performance-budget.mjs",
     "test:privacy": "node scripts/check-public-privacy.mjs",

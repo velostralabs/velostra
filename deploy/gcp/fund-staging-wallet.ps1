@@ -3,6 +3,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Security
 $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $PrivateRoot = Join-Path $RepositoryRoot 'artifacts\staging\evidence\private'
 $WalletPath = Join-Path $PrivateRoot 'reconciliation-wallet.dpapi.json'

@@ -204,7 +204,7 @@ if (
 ) { throw 'Generated staging canary binding failed validation' }
 
 $startedAt = [DateTime]::UtcNow.ToString('o')
-$updated = @(
+$updated = '^|^' + (@(
   'PHASE3_PAID_WRITES_MODE=canary',
   'PHASE2_STAGING_CANARY_APPROVAL=isolated-staging-paid-canary',
   'PHASE3_RELEASE_MANIFEST_B64=' + [string]$binding.manifestB64,
@@ -213,7 +213,7 @@ $updated = @(
   'PHASE3_CANARY_POLICY_SHA256=' + [string]$binding.policySha256,
   'PHASE3_CANARY_STARTED_AT=' + $startedAt,
   'PHASE3_CANARY_EXIT_APPROVAL=not-approved'
-) -join ','
+) -join '|')
 Invoke-GcloudQuiet @(
   'run', 'services', 'update', 'velostra-api',
   ('--region=' + $region), ('--project=' + $ProjectId),

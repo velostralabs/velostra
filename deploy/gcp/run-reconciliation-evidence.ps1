@@ -114,7 +114,9 @@ if (-not $script:Gcloud) { throw 'Google Cloud CLI is required' }
 
 if (-not (Test-Path -LiteralPath $WalletPath)) {
   $walletBytes = New-Object byte[] 32
-  [Security.Cryptography.RandomNumberGenerator]::Fill($walletBytes)
+  $rng = [Security.Cryptography.RandomNumberGenerator]::Create()
+  try { $rng.GetBytes($walletBytes) }
+  finally { $rng.Dispose() }
   $entropy = [Text.Encoding]::UTF8.GetBytes('Velostra:staging-evidence:v1:reconciliation-wallet')
   $ciphertext = $null
   try {

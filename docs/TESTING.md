@@ -216,7 +216,10 @@ the effective assertion limit so the allowance cannot hide silently.
 
 Real MetaMask is therefore automated but not yet evidenced. Execute
 `npm run test:wallet:metamask` only against isolated staging and attach its report to
-the Phase 2 evidence manifest.
+the Phase 2 evidence manifest. The guarded run also requires
+`PHASE2_WALLET_PAID_WRITES_APPROVED=isolated-staging-canary`; this is a separate,
+explicit low-value staging approval and is never inferred from the ordinary test
+approval.
 
 The managed skipped-report repair is separately evidenced and passed on 2026-07-19.
 The guarded runner deliberately sends a direct synthetic-token escrow deposit without

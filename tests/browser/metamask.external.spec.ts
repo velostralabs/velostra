@@ -2,13 +2,14 @@ import { chromium, expect, test, type BrowserContext, type Page } from '@playwri
 import path from 'node:path'
 
 const approved = process.env.PHASE2_WALLET_E2E_APPROVED === 'isolated-staging-only'
+const paidCanaryApproved = process.env.PHASE2_WALLET_PAID_WRITES_APPROVED === 'isolated-staging-canary'
 const extensionPath = process.env.METAMASK_EXTENSION_PATH
 const profilePath = process.env.METAMASK_USER_DATA_DIR
 const baseURL = process.env.PLAYWRIGHT_BASE_URL
 
 test.skip(
-  !approved || !extensionPath || !profilePath || !baseURL,
-  'Real MetaMask evidence requires an explicitly approved isolated staging URL, unpacked extension, and dedicated test profile.'
+  !approved || !paidCanaryApproved || !extensionPath || !profilePath || !baseURL,
+  'Real MetaMask evidence requires isolated staging approval, an explicit paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
 )
 
 async function extensionPopup(context: BrowserContext): Promise<Page> {

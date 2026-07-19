@@ -40,10 +40,10 @@ test('real MetaMask isolated-staging money journey', async () => {
   if (staging.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(staging.hostname)) {
     throw new Error('Real-wallet automation requires HTTPS or localhost')
   }
-  const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '1.00')
-  const claim = Number(process.env.PHASE2_WALLET_CLAIM_AMOUNT ?? '0.01')
-  if (topup !== 1 || !(claim > 0 && claim <= 1)) {
-    throw new Error('Real-wallet test values must use the 1-token contract top-up minimum and stay within the low-value cap')
+  const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '2.00')
+  const claim = Number(process.env.PHASE2_WALLET_CLAIM_AMOUNT ?? '1.00')
+  if (!(topup > 1.2 && topup <= 2) || claim !== 1) {
+    throw new Error('Real-wallet values must cover the 1.20 synthetic call, use the 1-token claim minimum, and stay within the low-value cap')
   }
 
   const context = await chromium.launchPersistentContext(path.resolve(profilePath!), {
@@ -73,6 +73,14 @@ test('real MetaMask isolated-staging money journey', async () => {
     await page.getByRole('button', { name: 'Sign in securely' }).click()
     await approveMetaMask(context, ['Sign', 'Confirm'])
     await expect(page.getByText('CREDIT BALANCE')).toBeVisible()
+
+    const freeTierRemaining = await page.evaluate(async () => {
+      const response = await fetch('/api/dashboard')
+      if (!response.ok) throw new Error('Dashboard preflight failed')
+      const body = (await response.json()) as { free_tier?: { remaining?: number } }
+      return body.free_tier?.remaining
+    })
+    expect(freeTierRemaining).toBe(0)
 
     await page.getByLabel('Amount (USDG)').fill(String(topup))
     await page.getByRole('button', { name: 'Deposit onchain' }).click()

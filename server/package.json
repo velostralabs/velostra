@@ -60,6 +60,7 @@
     "alert:ack": "tsx src/scripts/acknowledge-alert.ts",
     "test:observability": "tsx test/observability.test.ts",
     "test:resilience": "tsx test/rpc-resilience.test.ts && tsx test/chain-policy.test.ts",
+    "test:synthetic-agent": "tsx test/synthetic-agent.test.ts",
     "test:observability-db": "tsx test/observability-db.e2e.test.ts",
     "heartbeat:record": "tsx src/scripts/record-heartbeat.ts",
     "phase3:snapshot": "tsx src/scripts/capture-phase3-readiness.ts",

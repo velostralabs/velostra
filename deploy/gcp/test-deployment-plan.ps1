@@ -69,6 +69,12 @@ $reconciliationEvidenceRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\capture-staging-reconciliation.mjs')
 $reconciliationEvidenceScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'run-reconciliation-evidence.ps1')
+$syntheticServiceText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\src\synthetic-agent\index.ts')
+$syntheticProvisionScriptText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'provision-synthetic-agent.ps1')
+$syntheticSeedText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\src\scripts\provision-staging-agent.ts')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -122,6 +128,20 @@ Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--c
 Require-Match $runtimeText 'serviceAccount:velostra-api@.*roles/run[.]invoker' 'API identity must invoke the private signer'
 Require-Match $runtimeText 'serviceAccount:velostra-jobs@.*roles/run[.]invoker' 'Jobs identity must invoke the private signer'
 Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
+Require-Match $runtimeText 'run deploy velostra-synthetic-agent .*--max-instances=1 .*SYNTHETIC_AGENT_ENABLED=true.*--command=node --args=dist/synthetic-agent/index[.]js --allow-unauthenticated' 'Synthetic agent must be public, bounded, staging-only, and use its dedicated entrypoint'
+Require-Match $runtimeScriptText "syntheticEnv[.]SYNTHETIC_AGENT_ENABLED = 'true'" 'Synthetic agent must be explicitly enabled only in the staging runtime'
+Require-Match $runtimeScriptText "syntheticAgentUrl" 'Runtime artifact must record the synthetic agent endpoint'
+Require-Match $syntheticServiceText "VELOSTRA_ENVIRONMENT !== 'staging'" 'Synthetic endpoint must fail outside staging'
+Require-Match $syntheticServiceText "ROBINHOOD_CHAIN_ID !== '46630'" 'Synthetic endpoint must fail outside Robinhood testnet'
+Require-Match $syntheticServiceText 'input[.]length > 10_000' 'Synthetic endpoint must enforce a bounded input'
+Reject-Match $syntheticServiceText '(?:db/client|REDIS_URL|DATABASE_URL)' 'Synthetic endpoint must remain stateless and unprivileged'
+Require-Match $syntheticProvisionScriptText 'isolated-staging-agent-approved' 'Synthetic seed job must require its explicit approval sentinel'
+Require-Match $syntheticProvisionScriptText 'staging[.]config[.]json' 'Synthetic seed job must validate the US staging policy'
+Require-Match $syntheticProvisionScriptText 'paidWritesMode.*-ne ''disabled''' 'Synthetic seed must bind to a disabled-write runtime artifact'
+Require-Match $syntheticProvisionScriptText 'Invoke-RestMethod .*[/]health' 'Synthetic seed must health-check the deployed endpoint before database mutation'
+Require-Match $syntheticSeedText "status: 'APPROVED'" 'Synthetic agent must be explicitly approved for staging discovery'
+Require-Match $syntheticSeedText 'free-tier exhausted' 'Synthetic seed must force the next call through the paid path'
+Reject-Match $syntheticProvisionScriptText 'Write-Output.*(?:BuilderWallet|SyntheticAgentUrl)' 'Synthetic provisioning must not print wallet or endpoint identity'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'
 Require-Match $runtimeScriptText '[.]WEBHOOK_INTERVAL_MS = 300000' 'Webhook interval must stay within the worker validation bound'

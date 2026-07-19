@@ -22,6 +22,7 @@ async function clickMetaMaskAction(
 ): Promise<boolean> {
   const deadline = Date.now() + timeoutMs
   const fallbackTestIds = ['confirm-btn', 'confirm-footer-button', 'page-container-footer-next']
+  const password = process.env.METAMASK_VAULT_PASSWORD
 
   while (Date.now() < deadline) {
     const pages = context.pages().filter((page) => page.url().startsWith('chrome-extension://')).reverse()
@@ -30,6 +31,27 @@ async function clickMetaMaskAction(
         candidate.bringToFront().catch(() => undefined),
         new Promise((resolve) => setTimeout(resolve, 750)),
       ])
+
+      if (!names.includes('Unlock')) {
+        const unlockInput = candidate.getByTestId('unlock-password')
+        const fallbackUnlockInput = candidate.locator('#password')
+        const visibleInput = (await unlockInput.isVisible().catch(() => false))
+          ? unlockInput
+          : (await fallbackUnlockInput.isVisible().catch(() => false))
+            ? fallbackUnlockInput
+            : null
+        if (visibleInput) {
+          if (!password) throw new Error('METAMASK_VAULT_PASSWORD is required for the locked test profile')
+          await visibleInput.fill(password)
+          const unlockButton = candidate.getByRole('button', { name: 'Unlock', exact: true })
+          if (!(await unlockButton.isVisible().catch(() => false))) {
+            throw new Error('MetaMask unlock action was not available')
+          }
+          await unlockButton.click()
+          await visibleInput.waitFor({ state: 'hidden', timeout: 10_000 })
+          continue
+        }
+      }
 
       for (const name of names) {
         const button = candidate.getByRole('button', { name, exact: true })
@@ -104,7 +126,10 @@ async function unlockMetaMask(context: BrowserContext, host: Page): Promise<void
         await input.fill(password)
         const unlocked = await clickMetaMaskAction(context, ['Unlock'])
         if (!unlocked) throw new Error('MetaMask unlock action was not available')
-        await candidate.waitForTimeout(750)
+        await input.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => undefined)
+        if (await input.isVisible().catch(() => false)) {
+          throw new Error('MetaMask remained locked after the unlock action')
+        }
         await candidate.close().catch(() => undefined)
         await host.bringToFront()
         return

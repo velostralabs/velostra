@@ -105,12 +105,7 @@ try {
   }
   Remove-Item Env:EVIDENCE_WALLET_PRIVATE_KEY -ErrorAction SilentlyContinue
 
-  & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
-  if ($LASTEXITCODE -ne 0) { throw 'Unable to open the bounded staging canary' }
-  $Opened = $true
-
   $env:PHASE2_WALLET_E2E_APPROVED = 'isolated-staging-only'
-  $env:PHASE2_WALLET_PAID_WRITES_APPROVED = 'isolated-staging-canary'
   $env:PHASE2_WALLET_EXPECTED_ADDRESS = $ExpectedAddress
   $env:PHASE2_WALLET_TOPUP_AMOUNT = '2.00'
   $env:PHASE2_WALLET_CLAIM_AMOUNT = '1.00'
@@ -120,6 +115,20 @@ try {
   $env:METAMASK_USER_DATA_DIR = $ProfilePath
   $env:PLAYWRIGHT_BASE_URL = [string]$Runtime.webOrigin
   $env:PHASE2_WALLET_API_URL = [string]$Runtime.apiUrl
+  $env:PHASE2_WALLET_PREFLIGHT = 'isolated-staging-preflight'
+
+  Push-Location $RepositoryRoot
+  try {
+    Invoke-NativeChecked -FailureMessage 'MetaMask preflight failed before opening paid writes' -Command {
+      & npm run test:wallet:metamask
+    }
+  } finally { Pop-Location }
+  Remove-Item Env:PHASE2_WALLET_PREFLIGHT -ErrorAction SilentlyContinue
+
+  & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
+  if ($LASTEXITCODE -ne 0) { throw 'Unable to open the bounded staging canary' }
+  $Opened = $true
+  $env:PHASE2_WALLET_PAID_WRITES_APPROVED = 'isolated-staging-canary'
 
   Push-Location $RepositoryRoot
   try {
@@ -133,6 +142,7 @@ try {
 } finally {
   foreach ($name in @(
     'EVIDENCE_WALLET_PRIVATE_KEY','PHASE2_WALLET_E2E_APPROVED',
+    'PHASE2_WALLET_PREFLIGHT',
     'PHASE2_WALLET_PAID_WRITES_APPROVED','PHASE2_WALLET_EXPECTED_ADDRESS',
     'PHASE2_WALLET_TOPUP_AMOUNT','PHASE2_WALLET_CLAIM_AMOUNT',
     'PHASE2_WALLET_AGENT_SLUG','METAMASK_VAULT_PASSWORD',

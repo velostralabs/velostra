@@ -105,7 +105,10 @@ settlements; only liquidity above all outstanding liabilities can migrate.
 
 - Auth challenges are domain/URI/chain/time bound and stored in Redis.
 - Atomic Redis compare-and-delete gives exactly one login winner across instances.
-- Production cookies are httpOnly, secure, same-site; CORS uses exact HTTPS origins.
+- Production cookies are httpOnly and secure with `SameSite=None` so the isolated
+  HTTPS web origin can authenticate to the separately hosted API; exact-origin CORS
+  rejects every non-allowlisted browser origin. Local/test cookies remain
+  `SameSite=Lax` without the production-only secure flag.
 - Builder endpoints pass scheme/port policy, DNS resolution, blocked-address checks,
   pinned connection, redirect revalidation, timeout, and response-size limits.
 - Per-agent HMAC secrets are AES-256-GCM envelopes with a key ID; plaintext rows

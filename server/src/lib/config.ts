@@ -42,7 +42,10 @@ export function trustProxy(): boolean | number | string {
 export function authCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
-    sameSite: 'lax',
+    // The managed web and API are separate HTTPS origins. Production cookies
+    // therefore need the explicit cross-site attribute or browsers will omit
+    // the session on API requests made by the web application.
+    sameSite: isProduction() ? 'none' : 'lax',
     secure: isProduction(),
     path: '/',
     maxAge: 24 * 60 * 60 * 1000,

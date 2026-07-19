@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { assertProductionConfiguration } from '../src/lib/config.js'
+import { assertProductionConfiguration, authCookieOptions } from '../src/lib/config.js'
 
 const validProductionEnv: Record<string, string> = {
   NODE_ENV: 'production',
@@ -90,7 +90,28 @@ function rejects(overrides: Record<string, string | undefined>, expected: RegExp
 try {
   configure()
   assert.doesNotThrow(() => assertProductionConfiguration())
+  assert.deepEqual(
+    {
+      httpOnly: authCookieOptions().httpOnly,
+      sameSite: authCookieOptions().sameSite,
+      secure: authCookieOptions().secure,
+    },
+    { httpOnly: true, sameSite: 'none', secure: true },
+    'production session cookies support the separate HTTPS web and API origins'
+  )
   console.log('PASS: complete staging configuration')
+
+  configure({ NODE_ENV: 'test' })
+  assert.deepEqual(
+    {
+      httpOnly: authCookieOptions().httpOnly,
+      sameSite: authCookieOptions().sameSite,
+      secure: authCookieOptions().secure,
+    },
+    { httpOnly: true, sameSite: 'lax', secure: false },
+    'local and test session cookies retain the non-TLS development policy'
+  )
+  configure()
 
   rejects({ DATABASE_URL: undefined }, /DATABASE_URL is required/)
   rejects(

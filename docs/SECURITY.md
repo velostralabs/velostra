@@ -32,7 +32,9 @@ writes remain disabled and the public preview is not connected to it.
 - Redis stores challenges and atomically compare-deletes on success;
 - concurrent multi-instance verification produces exactly one winner;
 - production rejects memory nonce mode and Redis fail-open;
-- JWT cookie is httpOnly, secure in production, same-site lax, 24-hour expiry;
+- JWT cookie is httpOnly with a 24-hour expiry; managed production uses
+  `SameSite=None; Secure` for the separate HTTPS web/API origins, while local/test
+  uses `SameSite=Lax`; exact-origin CORS rejects non-allowlisted browser origins;
 - exact-origin CORS, proxy config, 64 KiB default JSON cap, security headers,
   request correlation ID, structured machine error codes;
 - malformed JSON, oversized body, unknown origin, and unknown route have stable

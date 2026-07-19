@@ -334,7 +334,7 @@ $webhookEnv.WEBHOOK_MAX_ATTEMPTS = 8
 $webhookEnv.WEBHOOK_RETRY_BASE_MS = 1000
 $webhookEnv.WEBHOOK_RETRY_MAX_MS = 3600000
 $webhookEnv.WEBHOOK_LOCK_MS = 60000
-$webhookEnv.WEBHOOK_INTERVAL_MS = 900000
+$webhookEnv.WEBHOOK_INTERVAL_MS = 300000
 Deploy-Job 'velostra-webhooks' $webhookEnv 'DATABASE_URL=database-url:latest,AGENT_SECRET_ENCRYPTION_KEY=agent-secret-encryption-key:latest' 'dist/jobs/webhooks.js' ([int]$config.gcp.cloudRun.jobs.webhooks.timeoutSeconds) ([int]$config.gcp.cloudRun.jobs.webhooks.maxRetries)
 
 $monitorEnv = New-Environment 'operational-monitor'

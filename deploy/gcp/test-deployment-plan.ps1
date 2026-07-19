@@ -63,6 +63,8 @@ $buildScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'build-image.ps1')
 $runtimeScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'deploy-runtime.ps1')
+$webScriptText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'deploy-web.ps1')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -109,12 +111,16 @@ Require-Match $buildScriptText "ErrorActionPreference = 'Continue'" 'Native gclo
 Require-Match $runtimeScriptText 'function Invoke-Gcloud' 'Runtime mutations must use checked native command handling'
 Require-Match $runtimeScriptText 'function Get-GcloudValue' 'Runtime queries must use checked native command handling'
 Require-Match $runtimeScriptText "ErrorActionPreference = 'Continue'" 'Runtime gcloud progress must not bypass exit-code handling'
+Require-Match $webScriptText 'function Invoke-GcloudChecked' 'Web deployment must use checked native command handling'
+Require-Match $webScriptText 'function Get-GcloudTextChecked' 'Web URL lookup must use checked native command handling'
+Require-Match $webScriptText "ErrorActionPreference = 'Continue'" 'Web gcloud progress must not bypass exit-code handling'
 Require-Match $runtimeText 'run deploy velostra-signer .*--max-instances=1 .*--command=node --args=dist/signer/index[.]js --no-allow-unauthenticated' 'Signer must be private, bounded, and use its dedicated entrypoint'
 Require-Match $runtimeText 'serviceAccount:velostra-api@.*roles/run[.]invoker' 'API identity must invoke the private signer'
 Require-Match $runtimeText 'serviceAccount:velostra-jobs@.*roles/run[.]invoker' 'Jobs identity must invoke the private signer'
 Require-Match $runtimeText 'run deploy velostra-api .*--max-instances=2 .*PHASE3_PAID_WRITES_MODE=disabled.*--allow-unauthenticated' 'API must be public, bounded, and keep paid writes disabled'
 Require-Match $runtimeText 'run jobs deploy velostra-reconciliation ' 'Reconciliation job is missing'
 Require-Match $runtimeText 'run jobs deploy velostra-webhooks ' 'Webhook job is missing'
+Require-Match $runtimeScriptText '[.]WEBHOOK_INTERVAL_MS = 300000' 'Webhook interval must stay within the worker validation bound'
 Require-Match $runtimeText 'run jobs deploy velostra-monitor ' 'Monitor job is missing'
 Require-Match $runtimeText 'ALERT_TRANSPORT=telegram' 'Monitor must use the private Telegram transport'
 Require-Match $runtimeText 'TELEGRAM_BOT_TOKEN=telegram-bot-token:latest' 'Monitor must inject the Telegram bot token from Secret Manager'

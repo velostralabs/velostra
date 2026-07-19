@@ -46,6 +46,50 @@ $gcloud = @(
 ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (-not $gcloud) { throw 'Google Cloud CLI is required' }
 
+function Invoke-GcloudChecked {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$CommandArgs,
+    [Parameter(Mandatory)]
+    [string]$FailureMessage
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  $output = $null
+  $exitCode = $null
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & $script:gcloud @CommandArgs 2>&1
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
+  foreach ($line in @($output)) {
+    Write-Output ([string]$line)
+  }
+}
+
+function Get-GcloudTextChecked {
+  param(
+    [Parameter(Mandatory)]
+    [string[]]$CommandArgs,
+    [Parameter(Mandatory)]
+    [string]$FailureMessage
+  )
+  $previousErrorActionPreference = $ErrorActionPreference
+  $output = $null
+  $exitCode = $null
+  try {
+    $ErrorActionPreference = 'Continue'
+    $output = & $script:gcloud @CommandArgs 2>$null
+    $exitCode = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
+  if ($exitCode -ne 0) { throw $FailureMessage }
+  return ($output | Out-String).Trim()
+}
+
 $commandArgs = @(
   'run', 'deploy', 'velostra-web',
   ('--image=' + $WebImage),
@@ -73,16 +117,15 @@ if (-not $Apply) {
   exit 0
 }
 
-& $gcloud @commandArgs
-if ($LASTEXITCODE -ne 0) { throw 'Cloud Run web deployment failed' }
+Invoke-GcloudChecked -CommandArgs $commandArgs -FailureMessage 'Cloud Run web deployment failed'
 $urlArgs = @(
   'run', 'services', 'describe', 'velostra-web',
   ('--region=' + $region),
   ('--project=' + $ProjectId),
   '--format=value(status.url)'
 )
-$webUrl = (& $gcloud @urlArgs | Out-String).Trim()
-if ($LASTEXITCODE -ne 0 -or $webUrl -notmatch '^https://') {
+$webUrl = Get-GcloudTextChecked -CommandArgs $urlArgs -FailureMessage 'Cloud Run web URL lookup failed'
+if ($webUrl -notmatch '^https://') {
   throw 'Cloud Run did not return a valid HTTPS web URL'
 }
 

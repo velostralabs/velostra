@@ -124,8 +124,11 @@ async function unlockMetaMask(context: BrowserContext, host: Page): Promise<void
         if (!(await input.isVisible().catch(() => false))) continue
         if (!password) throw new Error('METAMASK_VAULT_PASSWORD is required for the locked test profile')
         await input.fill(password)
-        const unlocked = await clickMetaMaskAction(context, ['Unlock'])
-        if (!unlocked) throw new Error('MetaMask unlock action was not available')
+        const unlockButton = candidate.getByRole('button', { name: 'Unlock', exact: true })
+        if (!(await unlockButton.isVisible().catch(() => false))) {
+          throw new Error('MetaMask unlock action was not available')
+        }
+        await unlockButton.click()
         await input.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => undefined)
         if (await input.isVisible().catch(() => false)) {
           throw new Error('MetaMask remained locked after the unlock action')

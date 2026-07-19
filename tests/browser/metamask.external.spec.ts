@@ -92,12 +92,16 @@ async function triggerWalletRequest(control: Locator): Promise<void> {
 
 async function completeMetaMaskConnection(
   context: BrowserContext,
-  page: Page,
-  connectButton: Locator
+  page: Page
 ): Promise<void> {
   const deadline = Date.now() + 30_000
   while (Date.now() < deadline) {
-    if (!(await connectButton.isVisible().catch(() => false))) return
+    const connectedStates = await Promise.all([
+      page.getByRole('button', { name: 'Sign in securely' }).isVisible().catch(() => false),
+      page.getByText('CREDIT BALANCE').isVisible().catch(() => false),
+      page.getByRole('button', { name: 'Switch wallet to Robinhood Chain' }).isVisible().catch(() => false),
+    ])
+    if (connectedStates.some(Boolean)) return
     await clickMetaMaskAction(context, ['Next', 'Connect'], 3_000)
     await new Promise((resolve) => setTimeout(resolve, 400))
   }
@@ -220,7 +224,7 @@ test('real MetaMask isolated-staging money journey', async () => {
     if (await connectButton.isVisible().catch(() => false)) {
       await connectButton.click()
       await triggerWalletRequest(page.getByRole('button', { name: /MetaMask/i }))
-      await completeMetaMaskConnection(context, page, connectButton)
+      await completeMetaMaskConnection(context, page)
     }
 
     const switchButton = page.getByRole('button', { name: 'Switch wallet to Robinhood Chain' })

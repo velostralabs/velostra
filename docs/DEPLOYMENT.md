@@ -37,8 +37,9 @@ SHA and immutable image digests. The applied US foundation, managed data plane,
 twelve scoped secret values, and direct private-Telegram delivery are verified.
 Three disjoint canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token,
 and VelostraEscrow are deployed and live-verified on chain 46630. Immutable
-signer/API/web services, migration, reconciliation/webhook/monitor jobs, and staggered
-Scheduler triggers are deployed in us-east4. The isolated web origin is bound, deep
+signer/API/web services, the stateless secretless synthetic-agent service, migration,
+reconciliation/webhook/monitor jobs, and staggered Scheduler triggers are deployed
+in us-east4. The isolated web origin is bound, deep
 readiness passes, anonymous signer access is rejected, and paid writes remain
 disabled. The separate static Netlify preview satisfies no managed staging evidence
 gate until an explicit cutover.
@@ -59,6 +60,7 @@ flowchart LR
     API --> ESCROW["VelostraEscrow"]
     WALLETS["User wallets"] --> ESCROW
     SECRETS["Secret manager / restricted signer"] --> API
+    API --> SYNTH["Staging-only synthetic agent / no secrets"]
 ```
 
 Initial production topology has one logical signer writer, one continuous
@@ -98,6 +100,12 @@ node server/dist/jobs/monitor.js --watch
 ```
 
 All backend roles run strict role-aware production configuration validation.
+
+The synthetic staging endpoint is the exception to the stateful backend role set: it
+runs node server/dist/synthetic-agent/index.js, accepts only /health and bounded
+/execute requests, has no data-plane secret, and hard-fails unless environment
+staging, chain 46630, and its explicit enable flag all match. Database seeding is
+performed separately by the one-shot velostra-synthetic-agent-seed job.
 
 ## Required production environment
 

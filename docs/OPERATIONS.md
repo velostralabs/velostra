@@ -312,6 +312,18 @@ provider-native managed PITR drill remains an external mainnet release prerequis
 All commands below fail closed unless the explicit isolated-staging approval and
 attestation variables are present. Never point them at production/mainnet value.
 
+Before the wallet evidence run, provision the one approved synthetic agent from the
+deployed immutable runtime. Use only a dedicated encrypted testnet wallet. The
+script requires a clean worktree, binds to the ignored runtime artifact, validates
+US chain 46630 and paid writes disabled, health-checks the secretless service, then
+runs an idempotent Cloud Run seed job:
+
+    powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
+
+This step does not enable the API paid path. A separately guarded MetaMask canary
+window is still required for top-up, paid-call, correlated earnings, and claim
+evidence.
+
 ```bash
 # measured paid-call load; writes artifacts/phase2/load-*.json
 PHASE2_DRILL_APPROVED=isolated-staging-only \

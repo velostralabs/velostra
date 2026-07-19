@@ -208,7 +208,25 @@ Checkpoint: managed synthetic skipped-report repair is **PASS**. This proves the
 confirmed-chain/failed-report safety net on the live US testnet stack, without claiming
 the real MetaMask paid-call or claim journey. The reproducible command is
 `powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply`;
-outputs stay below ignored `artifacts/staging`.
+outputs stay below ignored artifacts/staging.
+
+### 2026-07-19 - Synthetic agent staging provisioned
+
+- built and deployed an immutable, stateless velostra-synthetic-agent service in
+  us-east4 with min zero/max one instance and the unprivileged web identity;
+- verified the service has no secret injection, database, or Redis access, accepts
+  only bounded staging traffic, never echoes input, and rejects non-46630 startup;
+- ran a release/image/runtime-bound seed job that created one approved
+  phase2-synthetic-agent at USDG 1.20 with an encrypted HMAC secret;
+- exhausted only the dedicated test wallet's free-tier counter, then reran the seed
+  idempotently and verified the marketplace still exposes exactly one agent without
+  secret material;
+- kept API paid writes disabled, so this checkpoint sent no paid-call or claim
+  transaction and authorized no public/mainnet value.
+
+Checkpoint: the synthetic target needed by the real MetaMask evidence lane is ready.
+The next distinct operation is a bounded paid-canary window plus the real extension
+profile; provisioning alone is not wallet money-loop evidence.
 
 ## What is complete
 
@@ -270,8 +288,9 @@ These are real external/runtime gates, not hidden repository TODOs:
 1. Keep the deployed US testnet runtime and the public preview separate; retain paid
    writes disabled.
 2. Run the real MetaMask auth/top-up/paid-call/earnings/claim journey against managed
-   staging and retain its frozen performance evidence. The synthetic skipped-report
-   reconciliation proof is already complete.
+   staging and retain its frozen performance evidence. The agent target and synthetic
+   skipped-report reconciliation proof are ready; the bounded paid-canary window and
+   dedicated extension-profile execution remain pending.
 3. Prove alert failure/acknowledgement/resolution, then execute managed secret and
    authority rotation, pause/unpause, compromise response, audit-log ownership,
    error-tracking, and redaction drills.

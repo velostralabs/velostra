@@ -11,6 +11,8 @@
 > On 2026-07-19, managed staging also passed a synthetic skipped-report
 > reconciliation repair: a direct testnet escrow deposit was recovered into Postgres
 > without calling the top-up report endpoint.
+> A stateless, secretless synthetic agent service and exactly one approved $1.20
+> staging agent are now provisioned for the pending real-MetaMask money journey.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
 ## Executive status
@@ -50,8 +52,8 @@ monthly envelope. Nine database migrations/30 tables, TLS Redis, primary/fallbac
 RPC, twelve scoped secrets, and private Telegram delivery are active. Three disjoint
 canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token, and
 VelostraEscrow are deployed and live-verified. The private signer, public API,
-isolated web, reconciliation/webhook/monitor jobs, migration, and Scheduler triggers
-are live; origin binding, deep readiness, solvency, worker heartbeats, and anonymous
+isolated web, stateless synthetic-agent service, reconciliation/webhook/monitor jobs,
+migration, and Scheduler triggers are live; origin binding, deep readiness, solvency, worker heartbeats, and anonymous
 signer rejection pass. Paid writes remain disabled.
 
 ## Audit decision
@@ -100,6 +102,25 @@ The run writes only ignored evidence under `artifacts/staging`; it does not enab
 paid writes, touch the public Netlify preview, or publish wallet addresses, hashes,
 provider identifiers, or credentials. Real MetaMask paid-call/claim evidence and the
 operator alert/drill packet remain separate gates.
+
+## Managed synthetic agent staging
+
+The isolated US testnet now contains one approved phase2-synthetic-agent priced at
+USDG 1.20. Its dedicated Cloud Run service uses the unprivileged web identity, scales
+from zero to at most one instance, receives no managed secret, has no database/Redis
+access, never echoes input, and hard-fails outside staging chain 46630. The
+idempotent seed job is release/image/runtime-bound, health-checks the service before
+database mutation, encrypts the agent HMAC secret, and exhausts only the dedicated
+test wallet's monthly free-tier counter so the next test call cannot pass as free.
+
+Provisioning and a second idempotence run both passed on 2026-07-19: the marketplace
+returned exactly one approved synthetic agent at the expected price and omitted the
+encrypted secret. API paid writes remained disabled; no paid call, claim, mainnet,
+production, or real-value transaction was authorized by this step.
+
+The guarded operator command is:
+
+    powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
 
 ## Public frontend deployment evidence
 

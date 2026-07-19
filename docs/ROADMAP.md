@@ -209,8 +209,11 @@ and must never be inferred from local tests.
   LCP/INP/CLS/WebGL budgets.
 - [x] Record the time-bounded MetaMask `uuid` advisory reachability disposition and
   fail CI if the reviewed call pattern changes.
-- [ ] Run the MetaMask harness with a dedicated extension profile and synthetic
-  staging value, then hash its evidence.
+- [x] Provision one idempotent approved USDG 1.20 synthetic agent behind a bounded,
+  stateless, secretless US-staging Cloud Run service; exhaust only its dedicated
+  test-wallet free tier while keeping API paid writes disabled.
+- [ ] Run the MetaMask harness with the dedicated extension profile and provisioned
+  synthetic staging value, then hash its evidence.
 - [ ] Capture performance baselines against the frozen managed-staging release.
 
 ### 2.5 Load, failure, and recovery drills

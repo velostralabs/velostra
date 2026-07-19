@@ -15,6 +15,7 @@ flowchart LR
     A -->|Drizzle| P[(PostgreSQL)]
     A -->|nonce / limit / quota| R[(Redis)]
     A -->|pinned HTTPS + HMAC| B["Builder endpoint"]
+    A -->|staging-only HMAC call| X["Stateless synthetic agent"]
     A -->|correlated idempotent request| S["Restricted remote signer"]
     S -->|SETTLER_ROLE| C
     W["Reconciliation worker"] -->|logs / receipts| RPC["Primary + fallback EVM RPCs"]
@@ -44,6 +45,9 @@ The low-cost managed translation preserves those failure domains in Virginia:
   domain with no backend or signer authority;
 - the deployed staging velostra-web and velostra-api Cloud Run services scale from
   zero to at most two instances;
+- the staging-only synthetic-agent service scales from zero to one instance under
+  the unprivileged web identity; it has no secret, database, or Redis access and
+  persists or echoes no request input;
 - private velostra-signer scales from zero to one instance and runs a dedicated
   signer entrypoint under its own identity;
 - reconciliation, webhook delivery, monitoring, and migration are separate one-task

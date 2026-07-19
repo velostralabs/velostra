@@ -24,7 +24,14 @@ function Invoke-NativeChecked {
   } finally {
     $ErrorActionPreference = $previous
   }
-  if ($exitCode -ne 0) { throw $FailureMessage }
+  if ($exitCode -ne 0) {
+    $rendered = ($output | Out-String)
+    $stage = [regex]::Match($rendered, '"stage":"([a-z-]+)"')
+    if ($stage.Success) {
+      throw ($FailureMessage + ' (stage: ' + $stage.Groups[1].Value + ')')
+    }
+    throw $FailureMessage
+  }
   return @($output)
 }
 

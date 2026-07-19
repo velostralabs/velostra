@@ -14,6 +14,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 
 const CHAIN_ID = 46630
 const APPROVAL = 'isolated-staging-reconciliation-approved'
+let activeStage = 'startup'
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const artifactsRoot = path.join(repositoryRoot, 'artifacts')
 
@@ -125,17 +126,21 @@ async function capture() {
   if (!/^0\.0[1-9]$/.test(targetAmount)) throw new Error('Deposit must be 0.01 through 0.09')
   const amount = parseUnits(targetAmount, 6)
   const network = evidenceChain(rpcUrl)
+  activeStage = 'rpc-check'
   const publicClient = createPublicClient({ chain: network, transport: http(rpcUrl) })
   if (await publicClient.getChainId() !== CHAIN_ID) throw new Error('RPC chain mismatch')
   const wallet = createWalletClient({ account, chain: network, transport: http(rpcUrl) })
   const funder = createWalletClient({ account: deployer, chain: network, transport: http(rpcUrl) })
   const pool = new Pool({ connectionString: required('DATABASE_URL'), max: 2 })
   try {
-    if (await publicClient.getBalance({ address: account.address }) < parseEther('0.005')) {
-      const hash = await funder.sendTransaction({ to: account.address, value: parseEther('0.01') })
+    activeStage = 'native-funding'
+    if (await publicClient.getBalance({ address: account.address }) < parseEther('0.0002')) {
+      const hash = await funder.sendTransaction({ to: account.address, value: parseEther('0.001') })
       await publicClient.waitForTransactionReceipt({ hash })
     }
+    activeStage = 'wallet-authentication'
     await authenticate(apiUrl.toString(), account)
+    activeStage = 'database-precondition'
     const before = await pool.query(
       `select coalesce(cb.balance_usd, 0)::text as balance,
               (select count(*) from transactions t where lower(t.wallet_address) = lower($1))::text as tx_count
@@ -146,16 +151,20 @@ async function capture() {
     }
     const token = address('SETTLEMENT_TOKEN_ADDRESS')
     const escrow = address('VELOSTRA_ESCROW_ADDRESS')
+    activeStage = 'token-mint'
     let hash = await wallet.writeContract({ address: token, abi: tokenAbi,
       functionName: 'mint', args: [account.address, amount] })
     await publicClient.waitForTransactionReceipt({ hash })
+    activeStage = 'token-approval'
     hash = await wallet.writeContract({ address: token, abi: tokenAbi,
       functionName: 'approve', args: [escrow, amount] })
     await publicClient.waitForTransactionReceipt({ hash })
+    activeStage = 'escrow-deposit'
     const depositHash = await wallet.writeContract({ address: escrow, abi: escrowAbi,
       functionName: 'depositCredits', args: [amount] })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: depositHash })
     if (receipt.status !== 'success') throw new Error('Evidence deposit was not confirmed')
+    activeStage = 'database-absence'
     const absent = await pool.query(
       `select (select count(*) from transactions where tx_hash = $1)::text as count,
               coalesce((select cb.balance_usd from credit_balances cb join users u on u.id = cb.user_id
@@ -173,6 +182,7 @@ async function capture() {
     }
     fs.mkdirSync(path.dirname(output), { recursive: true })
     fs.writeFileSync(output, JSON.stringify(record, null, 2) + '\n', { flag: 'wx' })
+    activeStage = 'safe-head'
     await waitForSafeHead(publicClient, receipt.blockNumber)
     console.log(JSON.stringify({ passed: true, stage: 'broadcast', reportSkipped: true,
       databaseRecordAbsent: true, safeHeadReached: true }))
@@ -188,6 +198,7 @@ async function verify() {
       record.reportEndpointCalled !== false) throw new Error('Evidence record identity is invalid')
   const pool = new Pool({ connectionString: required('DATABASE_URL'), max: 2 })
   try {
+    activeStage = 'database-verification'
     const result = await pool.query(
       `select t.type, t.status, t.amount::text, cb.balance_usd::text as balance,
               ce.reconciled, css.last_processed_block::text
@@ -221,7 +232,10 @@ if (process.argv.includes('--plan')) {
     : process.argv.includes('--verify') ? verify : null
   if (!operation) throw new Error('Use --plan, --broadcast, or --verify')
   operation().catch((error) => {
-    console.error('[staging-reconciliation-evidence] failed:', error instanceof Error ? error.message : 'unknown')
+    console.error(JSON.stringify({
+      passed: false, stage: activeStage,
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    }))
     process.exit(1)
   })
 }

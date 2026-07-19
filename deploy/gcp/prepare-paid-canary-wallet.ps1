@@ -72,7 +72,7 @@ foreach ($path in @($RuntimePath, $DeploymentPath, $DeployerPath, $WalletPath)) 
 $Runtime = Get-Content -Raw -LiteralPath $RuntimePath | ConvertFrom-Json
 $Deployment = Get-Content -Raw -LiteralPath $DeploymentPath | ConvertFrom-Json
 if (
-  [string]$Runtime.environment -ne 'staging' -or
+  [string]$Runtime.kind -ne 'velostra-us-staging-runtime' -or
   [string]$Runtime.region -ne 'us-east4' -or
   [int64]$Runtime.chainId -ne 46630 -or
   [string]$Runtime.paidWritesMode -ne 'disabled' -or

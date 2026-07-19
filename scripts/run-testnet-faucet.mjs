@@ -109,6 +109,21 @@ try {
       .then(() => true)
       .catch(() => false)
     if (optionReady) await metaMaskOption.click()
+    await page.waitForTimeout(1_000)
+    const approvalPage = context
+      .pages()
+      .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
+      .at(-1)
+    if (approvalPage) {
+      const approvalState = await approvalPage
+        .locator('body')
+        .innerText()
+        .catch(() => '')
+      console.info(
+        'MetaMask approval state:',
+        approvalState.replace(/0x[0-9a-fA-F]{4,40}/g, '[redacted]').trim().slice(0, 2_000)
+      )
+    }
     if (!(await clickMetaMaskAction(['Next', 'Connect'], 30_000))) {
       throw new Error('The faucet did not produce a MetaMask connection request')
     }
@@ -145,39 +160,6 @@ try {
     return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
   })
   if (connectedAccount !== expectedAddress) {
-    await page.bringToFront()
-    await page.keyboard.press('Alt+Shift+M')
-    await page.waitForTimeout(1_500)
-    let extensionPage = context
-      .pages()
-      .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
-      .at(-1)
-    if (!extensionPage) {
-      const extensionWorker = context.serviceWorkers().find((worker) =>
-        worker.url().startsWith('chrome-extension://')
-      )
-      if (extensionWorker) {
-        extensionPage = await context.newPage()
-        await extensionPage.goto(
-          new URL('/popup-init.html', extensionWorker.url()).toString(),
-          { waitUntil: 'domcontentloaded', timeout: 15_000 }
-        )
-        await extensionPage.waitForTimeout(3_000)
-      }
-    }
-    if (extensionPage) {
-      await extensionPage.waitForLoadState('domcontentloaded').catch(() => undefined)
-      const actions = await extensionPage
-        .getByRole('button')
-        .allTextContents()
-        .then((labels) =>
-          labels
-            .map((label) => label.replace(/0x[0-9a-fA-F]{4,40}/g, '[redacted]').trim())
-            .filter(Boolean)
-            .slice(0, 30)
-        )
-      console.info('MetaMask visible actions:', actions.join(' | ') || 'none')
-    }
     throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
   }
   console.info('Official faucet wallet connection verified.')

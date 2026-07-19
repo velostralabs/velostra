@@ -143,14 +143,20 @@ if ($Action -eq 'Close') {
 }
 
 $head = (& git -C $repositoryRoot rev-parse HEAD | Out-String).Trim().ToLowerInvariant()
-if ($LASTEXITCODE -ne 0 -or $head -notmatch '^[0-9a-f]{40}$') {
-  throw 'Unable to resolve the immutable operator release'
+$deployedRelease = ([string]$runtime.release).Trim().ToLowerInvariant()
+if (
+  $LASTEXITCODE -ne 0 -or
+  $head -notmatch '^[0-9a-f]{40}$' -or
+  $deployedRelease -notmatch '^[0-9a-f]{40}$'
+) {
+  throw 'Unable to resolve the immutable operator or deployed release'
+}
+& git -C $repositoryRoot merge-base --is-ancestor $deployedRelease $head
+if ($LASTEXITCODE -ne 0) {
+  throw 'Deployed release must be an ancestor of the clean operator scripts'
 }
 $dirty = (& git -C $repositoryRoot status --porcelain | Out-String).Trim()
 if ($dirty) { throw 'Opening the staging canary requires a clean worktree' }
-if ([string]$runtime.release -ne $head) {
-  throw 'Runtime release must equal the current clean commit before opening the canary'
-}
 if ($currentMode -ne 'disabled') {
   throw 'Staging API must be disabled before opening a new canary'
 }
@@ -172,7 +178,7 @@ foreach ($name in @(
 try {
   $env:DATABASE_URL = $databaseUrl
   $env:VELOSTRA_ENVIRONMENT = 'staging'
-  $env:VELOSTRA_RELEASE = $head
+  $env:VELOSTRA_RELEASE = $deployedRelease
   $env:VELOSTRA_PROCESS_ROLE = 'staging-canary-binding'
   $env:ROBINHOOD_CHAIN_ID = '46630'
   $env:PHASE2_STAGING_CANARY_APPROVAL = 'isolated-staging-paid-canary'
@@ -188,7 +194,7 @@ try {
 $binding = (($rawBinding | Select-Object -Last 1) | Out-String).Trim() | ConvertFrom-Json
 if (
   [string]$binding.kind -ne 'velostra-staging-canary-binding' -or
-  [string]$binding.release -ne $head -or
+  [string]$binding.release -ne $deployedRelease -or
   [int]$binding.chainId -ne 46630 -or
   [int]$binding.durationSeconds -ne 3600 -or
   [int]$binding.maxCalls -ne 1 -or
@@ -215,7 +221,7 @@ Invoke-GcloudQuiet @(
   '--remove-env-vars=PHASE3_RELEASE_MANIFEST,PHASE3_CANARY_POLICY_PATH,PHASE3_CANARY_EXIT_EVIDENCE,PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
   '--quiet'
 ) 'Failed to open the bounded staging paid canary'
-Wait-ApiHealth $apiUrl $head
+Wait-ApiHealth $apiUrl $deployedRelease
 
 $verified = Get-ServiceEnvironment
 if (

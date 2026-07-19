@@ -148,10 +148,22 @@ try {
     await page.bringToFront()
     await page.keyboard.press('Alt+Shift+M')
     await page.waitForTimeout(1_500)
-    const extensionPage = context
+    let extensionPage = context
       .pages()
       .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
       .at(-1)
+    if (!extensionPage) {
+      const extensionWorker = context.serviceWorkers().find((worker) =>
+        worker.url().startsWith('chrome-extension://')
+      )
+      if (extensionWorker) {
+        extensionPage = await context.newPage()
+        await extensionPage.goto(
+          new URL('/popup-init.html', extensionWorker.url()).toString(),
+          { waitUntil: 'domcontentloaded', timeout: 15_000 }
+        )
+      }
+    }
     if (extensionPage) {
       const actions = await extensionPage
         .getByRole('button')

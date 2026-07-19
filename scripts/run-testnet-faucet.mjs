@@ -145,6 +145,25 @@ try {
     return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
   })
   if (connectedAccount !== expectedAddress) {
+    await page.bringToFront()
+    await page.keyboard.press('Alt+Shift+M')
+    await page.waitForTimeout(1_500)
+    const extensionPage = context
+      .pages()
+      .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
+      .at(-1)
+    if (extensionPage) {
+      const actions = await extensionPage
+        .getByRole('button')
+        .allTextContents()
+        .then((labels) =>
+          labels
+            .map((label) => label.replace(/0x[0-9a-fA-F]{4,40}/g, '[redacted]').trim())
+            .filter(Boolean)
+            .slice(0, 30)
+        )
+      console.info('MetaMask visible actions:', actions.join(' | ') || 'none')
+    }
     throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
   }
   console.info('Official faucet wallet connection verified.')

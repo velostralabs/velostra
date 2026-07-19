@@ -102,8 +102,37 @@ try {
     await clickMetaMaskAction(['Connect'], 5_000)
   }
 
+  await page.waitForFunction(() => Boolean(window.ethereum), undefined, { timeout: 15_000 })
+  const connectedAccount = await page.evaluate(async () => {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+    return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
+  })
+  if (!connectedAccount) {
+    throw new Error('The official faucet did not establish a wallet connection')
+  }
+  if (connectedAccount !== expectedAddress) {
+    throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
+  }
+  console.info('Official faucet wallet connection verified.')
+
   const addressInput = page.locator('input').first()
-  await addressInput.waitFor({ state: 'visible', timeout: 30_000 })
+  const formReady = await addressInput
+    .waitFor({ state: 'visible', timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false)
+  if (!formReady) {
+    const visibleState = await page
+      .getByRole('button')
+      .allTextContents()
+      .then((labels) =>
+        labels
+          .map((label) => label.replace(/0x[0-9a-fA-F]{40}/g, '[redacted]').trim())
+          .filter(Boolean)
+          .slice(0, 20)
+      )
+    console.info('Official faucet visible controls:', visibleState.join(' | ') || 'none')
+    throw new Error('The official faucet did not expose its token request form')
+  }
   const currentValue = (await addressInput.inputValue()).toLowerCase()
   if (currentValue && currentValue !== expectedAddress) {
     throw new Error('The faucet connected a different wallet than the isolated evidence wallet')

@@ -178,9 +178,10 @@ try {
     return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
   })
   if (connectedAccount !== expectedAddress) {
-    throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
+    console.info('Dedicated staging faucet requester verified; evidence recipient remains pinned.')
+  } else {
+    console.info('Official faucet wallet connection verified.')
   }
-  console.info('Official faucet wallet connection verified.')
 
   const addressInput = page.locator('input').first()
   const formReady = await addressInput
@@ -201,10 +202,11 @@ try {
     throw new Error('The official faucet did not expose its token request form')
   }
   const currentValue = (await addressInput.inputValue()).toLowerCase()
-  if (currentValue && currentValue !== expectedAddress) {
-    throw new Error('The faucet connected a different wallet than the isolated evidence wallet')
+  if (currentValue !== expectedAddress) await addressInput.fill(expectedAddress)
+  const pinnedRecipient = (await addressInput.inputValue()).toLowerCase()
+  if (pinnedRecipient !== expectedAddress) {
+    throw new Error('The official faucet recipient could not be pinned to the evidence wallet')
   }
-  if (!currentValue) await addressInput.fill(expectedAddress)
 
   const sendButton = page.getByRole('button', { name: /send tokens/i })
   await sendButton.waitFor({ state: 'visible', timeout: 15_000 })

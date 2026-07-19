@@ -65,6 +65,10 @@ $runtimeScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'deploy-runtime.ps1')
 $webScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'deploy-web.ps1')
+$reconciliationEvidenceRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\capture-staging-reconciliation.mjs')
+$reconciliationEvidenceScriptText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'run-reconciliation-evidence.ps1')
 
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
@@ -138,5 +142,13 @@ Reject-Match $runtimeText 'run jobs execute velostra-migration' 'Migration execu
 Require-Match $webText 'run deploy velostra-web .*--service-account=velostra-web@.*--min-instances=0 --max-instances=2 .*--allow-unauthenticated' 'Web service policy is incomplete'
 Require-Match $runtimeText ([regex]::Escape('--image=' + $serverImage)) 'Runtime must use the immutable server digest'
 Require-Match $webText ([regex]::Escape('--image=' + $webImage)) 'Web must use the immutable web digest'
+Require-Match $reconciliationEvidenceRunnerText 'const CHAIN_ID = 46630' 'Evidence runner must remain testnet-only'
+Require-Match $reconciliationEvidenceRunnerText "PHASE3_PAID_WRITES_MODE.*disabled" 'Evidence runner must require disabled paid writes'
+Reject-Match $reconciliationEvidenceRunnerText '/api/dashboard/topup' 'Skipped-report evidence must not call the top-up report endpoint'
+Require-Match $reconciliationEvidenceScriptText 'DPAPI-CurrentUser' 'Evidence wallet must remain encrypted for the current operator'
+Require-Match $reconciliationEvidenceScriptText "scheduler.*jobs.*pause.*velostra-reconciliation-every-15m" 'Evidence fault injection must pause reconciliation scheduling'
+Require-Match $reconciliationEvidenceScriptText "scheduler.*jobs.*resume.*velostra-reconciliation-every-15m" 'Evidence cleanup must resume reconciliation scheduling'
+Require-Match $reconciliationEvidenceScriptText 'finally' 'Evidence cleanup must be protected by finally'
+Reject-Match $reconciliationEvidenceScriptText 'PHASE3_PAID_WRITES_MODE = ''(?:canary|public)''' 'Evidence orchestration must never enable paid writes'
 
 Write-Output 'US staging deployment plan: PASS'

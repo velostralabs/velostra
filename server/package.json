@@ -63,7 +63,8 @@
     "test:observability-db": "tsx test/observability-db.e2e.test.ts",
     "heartbeat:record": "tsx src/scripts/record-heartbeat.ts",
     "phase3:snapshot": "tsx src/scripts/capture-phase3-readiness.ts",
-    "phase3:canary-summary": "tsx src/scripts/capture-phase3-canary.ts"
+    "phase3:canary-summary": "tsx src/scripts/capture-phase3-canary.ts",
+    "staging:reconciliation-evidence": "node scripts/capture-staging-reconciliation.mjs"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

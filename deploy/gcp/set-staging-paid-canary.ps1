@@ -19,12 +19,12 @@ if ($region -ne 'us-east4' -or [int]$config.network.chainId -ne 46630) {
 
 $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
 $gcloud = @(
-  (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
-  (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
-  (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
   (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
   (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
-  (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd')
+  (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
+  (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
+  (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1'),
+  (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.ps1')
 ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (-not $gcloud) { throw 'Google Cloud CLI is required' }
 

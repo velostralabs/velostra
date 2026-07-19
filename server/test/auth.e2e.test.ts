@@ -21,6 +21,7 @@ async function main(): Promise<void> {
   process.env.WEB_ORIGIN = 'https://app.velostra.test'
   process.env.AUTH_PUBLIC_URI = 'https://app.velostra.test'
   process.env.AUTH_NONCE_STORE = 'memory'
+  process.env.ROBINHOOD_CHAIN_ID = '46630'
 
   const sharedStore = new MemoryAuthNonceStore()
   const instanceA = new AuthNonceService(sharedStore)
@@ -33,8 +34,18 @@ async function main(): Promise<void> {
   const { message } = await generateAuthNonce(account.address)
   assert(message.startsWith('app.velostra.test wants you to sign in'), 'challenge is bound to the configured public domain')
   assert(message.includes('URI: https://app.velostra.test'), 'challenge is bound to the configured URI')
-  assert(message.includes('Chain ID: 4663'), 'challenge is bound to the target chain')
+  assert(message.includes('Chain ID: 46630'), 'challenge is bound to the configured staging chain')
   assert(message.includes('Expiration Time:'), 'challenge carries an explicit expiry')
+
+  process.env.ROBINHOOD_CHAIN_ID = 'not-a-chain'
+  let invalidChainRejected = false
+  try {
+    await instanceA.generate(account.address)
+  } catch (error) {
+    invalidChainRejected = error instanceof Error && error.message.includes('positive integer')
+  }
+  assert(invalidChainRejected, 'invalid runtime chain configuration fails closed')
+  process.env.ROBINHOOD_CHAIN_ID = '46630'
 
   const signature = await account.signMessage({ message })
   assert(await instanceB.verify(account.address, signature), 'a second API instance verifies the shared challenge')

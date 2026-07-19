@@ -10,6 +10,14 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'dev-secre
 const NONCE_TTL_MS = 5 * 60 * 1000
 const NONCE_PREFIX = 'velostra:auth:nonce:'
 
+function authChainId(): number {
+  const value = Number(process.env.ROBINHOOD_CHAIN_ID ?? 4663)
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new Error('ROBINHOOD_CHAIN_ID must be a positive integer')
+  }
+  return value
+}
+
 export interface AuthPayload {
   id: string
   wallet_address: string
@@ -131,7 +139,7 @@ export class AuthNonceService {
       '',
       `URI: ${publicOrigin.origin}`,
       'Version: 1',
-      'Chain ID: 4663',
+      `Chain ID: ${authChainId()}`,
       `Nonce: ${nonce}`,
       `Issued At: ${issuedAt.toISOString()}`,
       `Expiration Time: ${new Date(expiresAt).toISOString()}`,

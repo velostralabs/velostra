@@ -88,6 +88,12 @@ function Reject-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -match $Pattern) { throw $Message }
 }
+$webDockerText = Get-Content -Raw -LiteralPath (Join-Path $repositoryRoot 'Dockerfile')
+$webCloudBuildText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'cloudbuild-web.yaml')
+$frontendChainText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'src\lib\chain.ts')
+
 
 Require-Match $all '(?i)us-east4' 'Deployment plan must use us-east4'
 $regionMentions = [regex]::Matches(
@@ -136,6 +142,14 @@ Require-Match $runtimeText 'run deploy velostra-synthetic-agent .*--max-instance
 Require-Match $runtimeScriptText "syntheticEnv[.]SYNTHETIC_AGENT_ENABLED = 'true'" 'Synthetic agent must be explicitly enabled only in the staging runtime'
 Require-Match $runtimeScriptText "syntheticAgentUrl" 'Runtime artifact must record the synthetic agent endpoint'
 Require-Match $syntheticServiceText "VELOSTRA_ENVIRONMENT !== 'staging'" 'Synthetic endpoint must fail outside staging'
+Require-Match $webDockerText 'VITE_CHAIN_ID=.*[$][{]PUBLIC_CHAIN_ID[}]' 'Web image must bind its public chain at build time'
+Require-Match $webCloudBuildText 'PUBLIC_CHAIN_ID=.*[$][{]_PUBLIC_CHAIN_ID[}]' 'Cloud Build must pass the public chain explicitly'
+Require-Match $buildScriptText '_PUBLIC_CHAIN_ID=.*config[.]network[.]chainId' 'Staging image build must source chain ID from the guarded config'
+Require-Match $frontendChainText 'ROBINHOOD_CHAIN_ID !== 4663.*ROBINHOOD_CHAIN_ID !== 46630' 'Frontend must reject unsupported chain IDs'
+Require-Match $frontendChainText "ROBINHOOD_IS_TESTNET = ROBINHOOD_CHAIN_ID === 46630" 'Frontend testnet selection must be explicit'
+Require-Match $frontendChainText 'rpc[.]testnet[.]chain[.]robinhood[.]com' 'Frontend must use the official credential-free testnet RPC fallback'
+Require-Match $frontendChainText 'explorer[.]testnet[.]chain[.]robinhood[.]com' 'Frontend must use the testnet explorer'
+
 Require-Match $syntheticServiceText "ROBINHOOD_CHAIN_ID !== '46630'" 'Synthetic endpoint must fail outside Robinhood testnet'
 Require-Match $syntheticServiceText 'input[.]length > 10_000' 'Synthetic endpoint must enforce a bounded input'
 Reject-Match $syntheticServiceText '(?:db/client|REDIS_URL|DATABASE_URL)' 'Synthetic endpoint must remain stateless and unprivileged'

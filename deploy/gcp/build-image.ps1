@@ -133,7 +133,8 @@ if ($Component -eq 'server') {
   $substitutions = '_IMAGE=' + $imageTag +
     ',_PUBLIC_API_URL=' + $ApiUrl +
     ',_PUBLIC_ESCROW_ADDRESS=' + $EscrowAddress +
-    ',_PUBLIC_SETTLEMENT_TOKEN_ADDRESS=' + $SettlementTokenAddress
+    ',_PUBLIC_SETTLEMENT_TOKEN_ADDRESS=' + $SettlementTokenAddress +
+    ',_PUBLIC_CHAIN_ID=' + [int]$config.network.chainId
   $buildArgs = @(
     'builds', 'submit', $repositoryRoot,
     ('--config=' + (Join-Path $PSScriptRoot 'cloudbuild-web.yaml')),

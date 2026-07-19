@@ -9,6 +9,8 @@ steps:
       - PUBLIC_ESCROW_ADDRESS=${_PUBLIC_ESCROW_ADDRESS}
       - --build-arg
       - PUBLIC_SETTLEMENT_TOKEN_ADDRESS=${_PUBLIC_SETTLEMENT_TOKEN_ADDRESS}
+      - --build-arg
+      - PUBLIC_CHAIN_ID=${_PUBLIC_CHAIN_ID}
       - --tag
       - ${_IMAGE}
       - .

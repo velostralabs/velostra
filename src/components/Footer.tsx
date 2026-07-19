@@ -2,6 +2,7 @@ import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from './BrandMark'
 import './Footer.css'
+import { ROBINHOOD_CHAIN_ID, ROBINHOOD_CHAIN_NAME, ROBINHOOD_EXPLORER_URL } from '../lib/chain'
 
 export default function Footer({ compact = false }: { compact?: boolean }) {
   return (
@@ -32,7 +33,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             <span>velostra</span>
           </Link>
           <p>Autonomous intelligence, priced and settled with proof.</p>
-          <span className="mono">ROBINHOOD CHAIN / 4663</span>
+          <span className="mono">{ROBINHOOD_CHAIN_NAME.toUpperCase()} / {ROBINHOOD_CHAIN_ID}</span>
         </div>
 
         <div className="footer__cols">
@@ -48,7 +49,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
             <Link to="/docs">Documentation</Link>
             <Link to="/proof">Settlement proof</Link>
             <Link to="/economics">Economics</Link>
-            <a href="https://robinhoodchain.blockscout.com" target="_blank" rel="noreferrer">
+            <a href={ROBINHOOD_EXPLORER_URL} target="_blank" rel="noreferrer">
               Block explorer
             </a>
           </div>

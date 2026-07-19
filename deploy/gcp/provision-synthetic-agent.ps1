@@ -31,7 +31,10 @@ if ($endpoint.Scheme -ne 'https' -or $endpoint.UserInfo -or $endpoint.AbsolutePa
   throw 'Synthetic endpoint must be credential-free HTTPS /execute'
 }
 $head = (& git -C $repositoryRoot rev-parse HEAD | Out-String).Trim()
-if ($head -ne $Release.ToLowerInvariant()) { throw 'Release must equal the current full commit SHA' }
+& git -C $repositoryRoot cat-file -e ($Release + '^{commit}') 2>$null
+if ($LASTEXITCODE -ne 0) { throw 'Release must identify a local commit' }
+& git -C $repositoryRoot merge-base --is-ancestor $Release.ToLowerInvariant() $head
+if ($LASTEXITCODE -ne 0) { throw 'Deployed release must be an ancestor of the operator scripts' }
 if ($Apply) {
   $dirty = (& git -C $repositoryRoot status --porcelain | Out-String).Trim()
   if ($dirty) { throw 'Synthetic provisioning requires a clean worktree' }

@@ -75,7 +75,7 @@ $job = @(
   ('--service-account=velostra-jobs@' + $ProjectId + '.iam.gserviceaccount.com'),
   '--cpu=1', '--memory=512Mi', '--tasks=1', '--max-retries=0', '--task-timeout=300s',
   '--command=node', '--args=dist/scripts/provision-staging-agent.js',
-  '--set-env-vars=NODE_ENV=production,VELOSTRA_ENVIRONMENT=staging,VELOSTRA_RELEASE=' + $Release.ToLowerInvariant() + ',VELOSTRA_PROCESS_ROLE=synthetic-seed,ROBINHOOD_CHAIN_ID=46630,PHASE2_SYNTHETIC_AGENT_APPROVAL=isolated-staging-agent-approved,AGENT_SECRET_ENCRYPTION_KEY_ID=staging-primary,SYNTHETIC_AGENT_ENDPOINT_URL=' + $SyntheticAgentUrl + ',SYNTHETIC_AGENT_BUILDER_WALLET=' + $BuilderWallet,
+  ('--set-env-vars=NODE_ENV=production,VELOSTRA_ENVIRONMENT=staging,VELOSTRA_RELEASE=' + $Release.ToLowerInvariant() + ',VELOSTRA_PROCESS_ROLE=synthetic-seed,ROBINHOOD_CHAIN_ID=46630,PHASE2_SYNTHETIC_AGENT_APPROVAL=isolated-staging-agent-approved,AGENT_SECRET_ENCRYPTION_KEY_ID=staging-primary,SYNTHETIC_AGENT_ENDPOINT_URL=' + $SyntheticAgentUrl + ',SYNTHETIC_AGENT_BUILDER_WALLET=' + $BuilderWallet),
   '--set-secrets=DATABASE_URL=database-url:latest,REDIS_URL=redis-url:latest,AGENT_SECRET_ENCRYPTION_KEY=agent-secret-encryption-key:latest',
   '--labels=application=velostra,environment=staging,residency=us-only'
 )

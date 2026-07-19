@@ -136,6 +136,7 @@ Require-Match $syntheticServiceText "ROBINHOOD_CHAIN_ID !== '46630'" 'Synthetic 
 Require-Match $syntheticServiceText 'input[.]length > 10_000' 'Synthetic endpoint must enforce a bounded input'
 Reject-Match $syntheticServiceText '(?:db/client|REDIS_URL|DATABASE_URL)' 'Synthetic endpoint must remain stateless and unprivileged'
 Require-Match $syntheticProvisionScriptText 'isolated-staging-agent-approved' 'Synthetic seed job must require its explicit approval sentinel'
+Require-Match $syntheticProvisionScriptText '[(].*--set-env-vars=.*[+] [\$]BuilderWallet[)]' 'Synthetic seed environment must remain one native CLI argument'
 Require-Match $syntheticProvisionScriptText 'staging[.]config[.]json' 'Synthetic seed job must validate the US staging policy'
 Require-Match $syntheticProvisionScriptText 'paidWritesMode.*-ne ''disabled''' 'Synthetic seed must bind to a disabled-write runtime artifact'
 Require-Match $syntheticProvisionScriptText 'Invoke-RestMethod .*[/]health' 'Synthetic seed must health-check the deployed endpoint before database mutation'

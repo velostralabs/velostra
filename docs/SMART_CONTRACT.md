@@ -1,12 +1,15 @@
 # Smart contract - VelostraEscrow
 
-> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-18.
+> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> Status: Phase 1 implementation baseline published, local and Linux-CI EVM tested;
-> not independently audited and not deployed to Robinhood testnet or mainnet.
-> The public Netlify frontend contains no escrow/token deployment addresses.
+> Status: local/Linux-CI EVM tested and deployed on Robinhood testnet chain 46630 with
+> three verified Safe authorities plus a synthetic 6-decimal token; 23 live bytecode,
+> receipt, role, event, token, and solvency checks pass. It is not independently
+> audited and is not deployed to mainnet.
+> The public Netlify frontend contains no escrow/token deployment addresses; only the
+> separate isolated staging web image is bound to the testnet deployment.
 
 ## Build
 

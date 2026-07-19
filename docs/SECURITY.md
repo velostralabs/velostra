@@ -1,6 +1,6 @@
 # Security posture
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -22,8 +22,8 @@
   signer, governance, or treasury truth.
 
 This public preview expands the browser/supply-chain surface but does not expand
-financial authority. API-backed and onchain actions remain inactive until the
-separately gated US staging runtime exists.
+financial authority. A separately gated US testnet runtime now exists, but paid
+writes remain disabled and the public preview is not connected to it.
 
 ### Wallet auth and HTTP boundary
 

@@ -4,14 +4,15 @@ This directory is the executable deployment policy for the low-cost Velostra
 staging stack. It is isolated from Robinhood mainnet and rejects every non-US
 region.
 
-Deployment truth as of 2026-07-18: the separate static protocol preview is live on
-Netlify at `velostra.xyz` with no managed API or contract build values. The applied
-US foundation, managed Neon/Upstash/Alchemy data plane, twelve scoped secrets, HSM
-settler, and direct private-Telegram connection are verified. Three disjoint canonical
-Safe 1.4.1 2-of-3 authority sets have encrypted testnet-only custody, and the live
-read-only preflight verifies their unique predictions plus canonical factory code.
-The isolated deployer is unfunded; zero Safes, runtime workloads, Scheduler triggers,
-runtime alert lifecycle, token, or escrow contract are deployed.
+Deployment truth as of 2026-07-19: the separate static protocol preview remains live
+on Netlify at `velostra.xyz` and is not connected to staging. The US foundation,
+managed Neon/Upstash/Alchemy data plane, twelve scoped secrets, HSM settler, and
+private-Telegram transport are active. Three disjoint canonical Safe 1.4.1 2-of-3
+authorities, a synthetic 6-decimal token, and VelostraEscrow are deployed and
+live-verified on Robinhood testnet. Immutable signer/API/web services, migration,
+reconciliation/webhook/monitor jobs, and staggered Scheduler triggers are deployed in
+us-east4. The isolated web origin is bound, deep readiness passes, the signer rejects
+anonymous access, and paid writes remain disabled.
 
 ## Fixed policy
 
@@ -204,11 +205,13 @@ It is a staging evidence origin, not the current public Netlify origin.
 
 ## 8. Bind the canonical web origin
 
-Rerun the runtime command without RunMigration and use the exact webUrl from
-web-runtime.json as the isolated staging WebOrigin. This creates the final CORS and
-wallet-auth binding for the evidence environment. Do not leave
-staging.velostra.invalid configured, and do not bind `velostra.xyz` until a separate
-review explicitly connects the public Netlify build to the verified staging API.
+Rerun the runtime command with the exact webUrl from web-runtime.json as the isolated
+staging WebOrigin. RunMigration may be retained because the migration runner is
+idempotent; the deployment record must still state that migration executed. This
+creates the final CORS and wallet-auth binding for the evidence environment. Do not
+leave staging.velostra.invalid configured, and do not bind `velostra.xyz` until a
+separate review explicitly connects the public Netlify build to the verified staging
+API.
 
 After the second pass, verify that runtime.json contains the final web origin
 and that API readiness, reconciliation, webhook, and monitor jobs are healthy.
@@ -231,11 +234,16 @@ The stack is not considered staging-ready until all of these are captured:
 Repository tests prove the implementation and deployment policy. They do not
 substitute for these external runtime evidence gates.
 
-## Current external blockers
+## Current managed checkpoint
 
-The US foundation, managed data plane, twelve scoped secrets, HSM settler, and direct
-private-Telegram connection are active. Encrypted testnet-only Safe custody exists and
-the canonical Safe readiness preflight passes except for deployer funding. The public
-Netlify preview remains separate. Zero of three Safes, every application workload,
-Scheduler trigger, runtime alert-lifecycle artifact, synthetic token, and escrow
-contract remain undeployed.
+The US foundation, data plane, twelve scoped secrets, HSM settler, private Telegram
+transport, three testnet Safe authorities, synthetic token, escrow, immutable runtime
+services, workers, Scheduler triggers, migration, and isolated web origin are live.
+API deep readiness passes and all scheduled worker entrypoints have completed at least
+one manual verification run. The public Netlify preview remains intentionally
+separate and paid writes remain disabled.
+
+Remaining gates are external evidence rather than missing deployment: real MetaMask
+money-loop and reconciliation repair, alert failure/acknowledgement/resolution,
+secret/authority/pause/compromise drills, one-hour outage catch-up, provider-native
+PITR, minimum 72-hour soak, independent review, and accountable release approval.

@@ -1,6 +1,6 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -28,11 +28,13 @@ Frontend, API, reconciliation worker, webhook worker, Postgres, Redis, RPC, and
 contract are separate failure domains. Backend roles use the same immutable build but
 run as separate supervised processes.
 
-Current deployment overlay (2026-07-18): the Vite/React client is public on Netlify
-at `velostra.xyz`. The API, workers, Postgres, Redis, RPC credentials, signer, and
-escrow shown above are not deployed. The public client has no API/escrow/token build
-values, so this diagram describes the full target system rather than a claim that every
-node is live.
+Current deployment overlay (2026-07-19): the Vite/React protocol preview remains
+public on Netlify at `velostra.xyz` with no staging build values. A separate isolated
+Cloud Run web origin is bound to the managed API. The API, private signer,
+reconciliation/webhook/monitor jobs, Scheduler triggers, Neon Postgres, Upstash Redis,
+primary/fallback RPC, three Safe authorities, synthetic token, and escrow are live in
+the approved US testnet environment. Deep readiness passes and paid writes remain
+disabled.
 
 ## US-only staging runtime
 
@@ -40,8 +42,8 @@ The low-cost managed translation preserves those failure domains in Virginia:
 
 - the existing public Netlify protocol preview remains a separate static failure
   domain with no backend or signer authority;
-- future staging velostra-web and velostra-api Cloud Run services scale from zero to
-  at most two instances;
+- the deployed staging velostra-web and velostra-api Cloud Run services scale from
+  zero to at most two instances;
 - private velostra-signer scales from zero to one instance and runs a dedicated
   signer entrypoint under its own identity;
 - reconciliation, webhook delivery, monitoring, and migration are separate one-task

@@ -251,14 +251,16 @@ signer, bounded web/API services, and staggered one-task jobs:
 
 The applied foundation, managed data plane, twelve scoped secrets, and private
 Telegram connection are active in approved US regions. Three disjoint canonical
-Safe 1.4.1 authority accounts are prepared as 2-of-3 testnet-only principals; owner
-and deployer keys are DPAPI-encrypted below ignored artifacts and never written in
-plaintext. The read-only chain preflight proves canonical factory availability,
-unique predicted addresses, and isolated KMS settlement authority. The isolated
-deployer remains unfunded, no Safe or escrow is deployed, and every Cloud Run
-workload/schedule remains absent. The public Netlify preview remains separate. See
-the [US staging runbook](./deploy/gcp/README.md). Paid writes remain disabled and
-this path cannot target mainnet.
+Safe 1.4.1 authority accounts are deployed and live-verified as 2-of-3 testnet-only
+principals; owner and deployer keys remain DPAPI-encrypted below ignored artifacts
+and are never written in plaintext. A synthetic 6-decimal token and VelostraEscrow
+are deployed on Robinhood testnet and passed bytecode, receipt, role, solvency,
+token, and authority verification. Immutable server/web images now run the private
+signer, public API, isolated staging web, migration, reconciliation, webhook, and
+monitor jobs plus staggered Scheduler triggers in us-east4. The generated web origin
+is bound to the API, deep readiness is green, anonymous signer access is rejected,
+and paid writes remain disabled. The public Netlify preview remains separate. See
+the [US staging runbook](./deploy/gcp/README.md). This path cannot target mainnet.
 
 ## Controlled release tooling
 
@@ -312,17 +314,18 @@ security, exactly-once recovery, staging/observability, immutable release identi
 guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
 immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
 governance. The public Netlify protocol preview is live at `velostra.xyz`; the
-US-only Robinhood testnet backend/contract deployment policy and dry-run plan also
-pass locally. The managed US foundation/data plane, twelve secrets, Telegram
-connection, encrypted testnet authority custody, and canonical Safe preflight are
-complete. The isolated deployer is not funded; no Safe, escrow, managed API, or
-worker runtime is deployed.
+separate US-only Robinhood testnet environment is now deployed in approved Virginia
+regions. It includes three verified Safe authorities, a verified synthetic token and
+escrow, immutable API/signer/web images, migrations, reconciliation/webhook/monitor
+jobs, Scheduler triggers, scoped secrets, and private Telegram alert delivery. API
+deep readiness passes, the signer is private, the isolated web origin is bound, and
+paid writes remain disabled.
 
 No mainnet deployment, closed-beta activation, or real-value authorization is
-recorded. Independent review, managed MetaMask/alert/outage/PITR/72-hour evidence,
-accountable approvals, actual deployment verification, and the low-value canary
-remain mandatory. A passing canary returns PASS_AWAITING_OPERATOR and never expands
-traffic by itself.
+recorded. Real MetaMask money-loop evidence, full alert acknowledgement/resolution,
+authority/secret drills, one-hour outage, provider-native PITR, minimum 72-hour soak,
+independent review, accountable approvals, and the low-value canary remain mandatory.
+A passing canary returns PASS_AWAITING_OPERATOR and never expands traffic by itself.
 
 ## Security
 

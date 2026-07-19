@@ -2,8 +2,9 @@
 
 This runbook is for isolated managed staging and Phase 3 release preparation. It
 does not authorize a production or mainnet rollout. The managed US identities,
-secrets, HSM settlement signer, provider data plane, and encrypted testnet authority
-custody exist; no Safe authority, escrow, or application runtime is deployed. The
+secrets, HSM settlement signer, provider data plane, three synthetic testnet Safe
+authorities, synthetic token, escrow, and immutable application runtime are deployed.
+Deep readiness passes, the signer is private, and paid writes remain disabled. The
 public Netlify preview contains none of these managed values.
 
 ## Secret delivery
@@ -14,9 +15,11 @@ credentials from its managed secret store immediately before process start. Valu
 must not be baked into an image, checked into Git, exposed through frontend variables,
 or printed by a release command.
 
-Use distinct service identities for the API, reconciliation worker, migration job,
-and restricted signer. Limit each identity to the exact secret references it needs.
-The API and worker may call the signer, but neither receives its private key.
+Use distinct service identities for the web, API, reconciliation/webhook/monitor
+jobs, migration job, Scheduler, build path, and restricted signer. Limit each
+identity to the exact secret references it needs. The API and reconciliation job may
+call the signer, but neither receives its private key; the web identity has no signer
+or database authority.
 
 ## Restricted signer contract
 

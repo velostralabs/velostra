@@ -1,14 +1,15 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts and the public frontend: 2026-07-18.
+> Last verified against build/deploy scripts and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> The static public frontend is deployed at https://velostra.xyz/. No managed API,
-> worker, signer runtime, escrow, closed-beta, or mainnet deployment is recorded.
-> Managed Neon Postgres, Upstash Redis, Alchemy primary RPC, the public fallback RPC,
-> and all twelve scoped secret values are active in approved US regions. Direct
-> private-Telegram connection delivery is verified; application workloads are absent.
+> The static public frontend remains at https://velostra.xyz/ and is not connected to
+> staging. A separate US-only Robinhood testnet stack now runs the private signer,
+> API, isolated web, migration, reconciliation/webhook/monitor jobs, and Scheduler
+> triggers against verified testnet Safe authorities and escrow. Deep readiness
+> passes and paid writes remain disabled. No closed beta, mainnet deployment, or
+> real-value authorization is recorded.
 
 ## Release gates
 
@@ -34,13 +35,13 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 All mutation scripts are plan-only without Apply. They require a clean full release
 SHA and immutable image digests. The applied US foundation, managed data plane,
 twelve scoped secret values, and direct private-Telegram delivery are verified.
-Three disjoint canonical Safe 1.4.1 2-of-3 authority sets now have CSPRNG-generated,
-DPAPI-encrypted testnet-only custody under ignored artifacts. A read-only chain
-preflight verifies unique predictions, canonical factory code, and separation from
-the HSM settler. The isolated deployer remains unfunded; no Safe, Cloud Run
-service/job, Scheduler job, or escrow contract is deployed. This is not a completed
-staging deployment, and the separate static Netlify preview satisfies no managed
-staging evidence gate.
+Three disjoint canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token,
+and VelostraEscrow are deployed and live-verified on chain 46630. Immutable
+signer/API/web services, migration, reconciliation/webhook/monitor jobs, and staggered
+Scheduler triggers are deployed in us-east4. The isolated web origin is bound, deep
+readiness passes, anonymous signer access is rejected, and paid writes remain
+disabled. The separate static Netlify preview satisfies no managed staging evidence
+gate until an explicit cutover.
 
 ## Target topology
 
@@ -67,9 +68,10 @@ reconciliation, webhooks, and monitoring as separate one-task Cloud Run Jobs on
 staggered 15-minute schedules. API read traffic may scale only within its bounded
 two-instance cap; signer nonce behavior stays isolated.
 
-Current deployment overlay: only the static Netlify frontend node is public. The
-Express API and every stateful/financial dependency in this diagram remain target
-runtime components. The current client has no deployed API or contract build values.
+Current deployment overlay: the static Netlify frontend remains the public preview and
+has no staging API/contract build values. The diagram's API and stateful/financial
+nodes are live only behind the separate isolated staging web origin. That environment
+is testnet-only, readiness-green, and write-disabled.
 
 ## Database release
 

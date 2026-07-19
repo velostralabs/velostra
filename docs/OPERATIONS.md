@@ -1,13 +1,14 @@
 # Operations and incident runbook
 
-> Last verified against the workspace and public frontend: 2026-07-18.
+> Last verified against the workspace and managed staging: 2026-07-19.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
-> The static protocol preview is live at https://velostra.xyz/. The isolated US
-> foundation/data plane and encrypted testnet Safe custody exist, but the deployer is
-> unfunded and no Safe, managed application runtime, testnet escrow, closed beta,
-> mainnet, or real-value deployment is recorded.
+> The static protocol preview remains live at https://velostra.xyz/ and separate from
+> staging. The US-only chain-46630 authorities, token, escrow, signer/API/web runtime,
+> migration, workers, and Scheduler triggers are deployed; deep readiness passes and
+> paid writes remain disabled. No closed beta, mainnet, or real-value deployment is
+> recorded.
 
 ## Current public frontend operations
 
@@ -81,11 +82,13 @@ any Apply action:
 
 The US foundation, managed data plane, twelve scoped secrets, HSM settler, and direct
 private-Telegram connection are active. Three disjoint canonical Safe 1.4.1 2-of-3
-sets have encrypted testnet-only custody, and their read-only factory/prediction/
-isolation preflight passes. The deployer is unfunded; zero Safes, every Cloud Run
-service/job and Scheduler trigger, the escrow, and runtime alert lifecycle evidence
-are absent. Do not record authority deployment, readiness, rotation, alert, outage,
-PITR, or soak evidence until the actual managed resource produced it.
+authorities plus the synthetic token and escrow are deployed and verified. Immutable
+Cloud Run signer/API/web services, migration, reconciliation/webhook/monitor jobs,
+and Scheduler triggers are live. The web origin is bound, all deep-readiness checks
+pass, the signer is private, and paid writes are disabled. Manual executions have
+verified each scheduled worker entrypoint. Do not mark wallet, repair, rotation,
+alert-lifecycle, outage, PITR, or soak evidence complete until its specific managed
+drill produces a retained artifact.
 
 ## Reconciliation commands
 

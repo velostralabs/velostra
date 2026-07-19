@@ -15,6 +15,12 @@
 > staging agent are now provisioned for the pending real-MetaMask money journey.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
+The isolated staging web bundle is now explicitly chain-aware: the managed build is
+bound to Robinhood testnet chain 46630 and its testnet RPC/explorer values, while the
+public Netlify preview remains intentionally chain-neutral. The disposable MetaMask
+popup probe did not produce a stable wallet UI, so no key was imported, no provider
+was connected, and no paid canary was opened. This remains a documented external gate.
+
 ## Executive status
 
 Velostra now includes the repository-side Phase 4 platform on top of the cleared

@@ -15,6 +15,7 @@
 | Financial activation | Paid writes disabled; no real-value authorization |
 | Independent review | Not yet performed |
 | Active external next | Real-wallet, alert/drill, outage, PITR, and soak evidence |
+| Latest staging verification | Managed web bundle bound to testnet 46630; paid canary still closed |
 | Active repository next | Freeze Phase 5 scope before implementation |
 
 ## Journey timeline
@@ -227,6 +228,20 @@ outputs stay below ignored artifacts/staging.
 Checkpoint: the synthetic target needed by the real MetaMask evidence lane is ready.
 The next distinct operation is a bounded paid-canary window plus the real extension
 profile; provisioning alone is not wallet money-loop evidence.
+
+### 2026-07-19 - Staging web binding and wallet gate checkpoint
+
+- rebuilt the managed web image with an explicit 46630 testnet chain contract;
+- verified the served bundle contains the testnet chain, RPC, and explorer bindings;
+- retained the public Netlify preview as a separate, chain-neutral product surface;
+- ran a disposable MetaMask popup probe without importing a key, connecting a wallet,
+  signing, or sending a transaction;
+- kept the managed paid-write mode disabled and the canary binding absent after the
+  popup probe did not yield a deterministic wallet UI.
+
+Checkpoint: staging web binding is **PASS**; real MetaMask money-loop evidence is
+still **PENDING**. The next execution must use a deterministic dedicated extension
+popup/profile before any separately approved paid-canary window is considered.
 
 ## What is complete
 

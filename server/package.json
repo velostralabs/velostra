@@ -66,7 +66,8 @@
     "phase3:snapshot": "tsx src/scripts/capture-phase3-readiness.ts",
     "phase3:canary-summary": "tsx src/scripts/capture-phase3-canary.ts",
     "staging:reconciliation-evidence": "node scripts/capture-staging-reconciliation.mjs",
-    "staging:canary-binding": "tsx src/scripts/create-staging-canary-binding.ts"
+    "staging:canary-binding": "tsx src/scripts/create-staging-canary-binding.ts",
+    "staging:canary-status": "node scripts/check-staging-canary.mjs"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

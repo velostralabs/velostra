@@ -58,6 +58,7 @@ async function clickMetaMaskAction(
         if (await button.isVisible().catch(() => false)) {
           console.info('MetaMask action completed:', name)
           await button.click()
+          await candidate.waitForTimeout(1_500).catch(() => undefined)
           return true
         }
       }
@@ -66,6 +67,7 @@ async function clickMetaMaskAction(
         const button = candidate.getByTestId(testId)
         if (await button.isVisible().catch(() => false)) {
           await button.click()
+          await candidate.waitForTimeout(1_500).catch(() => undefined)
           console.info('MetaMask action completed via test id:', testId)
           return true
         }
@@ -176,7 +178,7 @@ async function unlockMetaMask(context: BrowserContext, host: Page): Promise<void
 test('real MetaMask isolated-staging money journey', async () => {
   const staging = new URL(baseURL!)
   const api = new URL(apiURL!)
-  test.setTimeout(180_000)
+  test.setTimeout(300_000)
   const unsafeWeb = staging.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(staging.hostname)
   const unsafeApi = api.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(api.hostname)
   if (unsafeWeb || unsafeApi) {
@@ -328,7 +330,9 @@ test('real MetaMask isolated-staging money journey', async () => {
     await triggerWalletRequest(page.getByRole('button', { name: 'Deposit onchain' }))
     await requireMetaMaskAction(context, ['Confirm'])
     await requireMetaMaskAction(context, ['Confirm'])
-    await expect(page.getByRole('button', { name: 'Deposit onchain' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Deposit onchain' })).toBeEnabled({
+      timeout: 120_000,
+    })
 
     const slug = process.env.PHASE2_WALLET_AGENT_SLUG
     if (!slug) throw new Error('PHASE2_WALLET_AGENT_SLUG is required')
@@ -341,7 +345,9 @@ test('real MetaMask isolated-staging money journey', async () => {
     await page.getByLabel('Amount (USDG)').fill(String(claim))
     await triggerWalletRequest(page.getByRole('button', { name: 'Claim to wallet' }))
     await requireMetaMaskAction(context, ['Confirm'])
-    await expect(page.getByRole('button', { name: 'Claim to wallet' })).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Claim to wallet' })).toBeEnabled({
+      timeout: 90_000,
+    })
 
     await context.clearCookies()
     await page.reload()

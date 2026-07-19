@@ -123,7 +123,7 @@ if ($Action -eq 'Close') {
     'run', 'services', 'update', 'velostra-api',
     ('--region=' + $region), ('--project=' + $ProjectId),
     '--update-env-vars=PHASE3_PAID_WRITES_MODE=disabled,PHASE3_CANARY_EXIT_APPROVAL=not-approved',
-    '--remove-env-vars=PHASE2_STAGING_CANARY_APPROVAL,PHASE3_RELEASE_MANIFEST_B64,PHASE3_RELEASE_MANIFEST_SHA256,PHASE3_CANARY_POLICY_B64,PHASE3_CANARY_POLICY_SHA256,PHASE3_CANARY_STARTED_AT',
+    '--remove-env-vars=@PHASE3_PAID_WRITES_MODE,PHASE2_STAGING_CANARY_APPROVAL,PHASE3_RELEASE_MANIFEST_B64,PHASE3_RELEASE_MANIFEST_SHA256,PHASE3_CANARY_POLICY_B64,PHASE3_CANARY_POLICY_SHA256,PHASE3_CANARY_STARTED_AT',
     '--quiet'
   ) 'Failed to close the staging paid canary'
   Wait-ApiHealth $apiUrl ([string]$runtime.release)
@@ -204,7 +204,7 @@ if (
 ) { throw 'Generated staging canary binding failed validation' }
 
 $startedAt = [DateTime]::UtcNow.ToString('o')
-$updated = '^@^' + (@(
+$updated = '^^@^^' + (@(
   'PHASE3_PAID_WRITES_MODE=canary',
   'PHASE2_STAGING_CANARY_APPROVAL=isolated-staging-paid-canary',
   'PHASE3_RELEASE_MANIFEST_B64=' + [string]$binding.manifestB64,
@@ -218,7 +218,7 @@ Invoke-GcloudQuiet @(
   'run', 'services', 'update', 'velostra-api',
   ('--region=' + $region), ('--project=' + $ProjectId),
   ('--update-env-vars=' + $updated),
-  '--remove-env-vars=PHASE3_RELEASE_MANIFEST,PHASE3_CANARY_POLICY_PATH,PHASE3_CANARY_EXIT_EVIDENCE,PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
+  '--remove-env-vars=@PHASE3_PAID_WRITES_MODE,PHASE3_RELEASE_MANIFEST,PHASE3_CANARY_POLICY_PATH,PHASE3_CANARY_EXIT_EVIDENCE,PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
   '--quiet'
 ) 'Failed to open the bounded staging paid canary'
 Wait-ApiHealth $apiUrl $deployedRelease

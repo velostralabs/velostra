@@ -162,9 +162,11 @@ try {
           new URL('/popup-init.html', extensionWorker.url()).toString(),
           { waitUntil: 'domcontentloaded', timeout: 15_000 }
         )
+        await extensionPage.waitForTimeout(3_000)
       }
     }
     if (extensionPage) {
+      await extensionPage.waitForLoadState('domcontentloaded').catch(() => undefined)
       const actions = await extensionPage
         .getByRole('button')
         .allTextContents()

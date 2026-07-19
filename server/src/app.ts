@@ -69,7 +69,7 @@ export function createApp(): express.Express {
       environment: process.env.VELOSTRA_ENVIRONMENT ?? 'local',
       release: process.env.VELOSTRA_RELEASE ?? 'development',
       chain: 'Robinhood Chain',
-      chainId: 4663,
+      chainId: Number(process.env.ROBINHOOD_CHAIN_ID ?? 4663),
     })
   })
   app.get('/ready', readinessHandler)

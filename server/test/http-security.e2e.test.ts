@@ -12,6 +12,7 @@ async function main(): Promise<void> {
   process.env.JWT_SECRET = 'http-security-test-secret-that-is-long-enough'
   process.env.AGENT_SECRET_ENCRYPTION_KEY = '00'.repeat(32)
   process.env.METRICS_AUTH_TOKEN = 'metrics-test-token-that-is-long-enough'
+  process.env.ROBINHOOD_CHAIN_ID = '46630'
 
   const { createApp } = await import('../src/app.js')
   const app = createApp()
@@ -28,6 +29,8 @@ async function main(): Promise<void> {
       headers: { origin: 'https://app.velostra.test' },
     })
     assert(health.status === 200, 'allowlisted origin reaches the API')
+    const healthBody = await health.json() as { chainId?: number }
+    assert(healthBody.chainId === 46630, 'health reports the configured staging chain')
     assert(health.headers.get('x-content-type-options') === 'nosniff', 'nosniff header is present')
     assert(health.headers.get('x-frame-options') === 'DENY', 'frame embedding is denied')
     assert(Boolean(health.headers.get('x-request-id')), 'request correlation ID is returned')

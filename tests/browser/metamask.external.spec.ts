@@ -48,7 +48,7 @@ async function clickMetaMaskAction(
             throw new Error('MetaMask unlock action was not available')
           }
           await unlockButton.click()
-          await visibleInput.waitFor({ state: 'hidden', timeout: 10_000 })
+          await candidate.waitForTimeout(2_000)
           continue
         }
       }
@@ -129,21 +129,9 @@ async function unlockMetaMask(context: BrowserContext, host: Page): Promise<void
           throw new Error('MetaMask unlock action was not available')
         }
         await unlockButton.click()
-        await input.waitFor({ state: 'hidden', timeout: 10_000 }).catch(() => undefined)
+        await candidate.waitForTimeout(2_000)
         if (await input.isVisible().catch(() => false)) {
-          const diagnostics = await candidate
-            .locator('[role="alert"], .mm-form-text-field__help-text, [data-testid*="error"]')
-            .allTextContents()
-          const redactedDiagnostics = diagnostics
-            .map((value) =>
-              value
-                .replace(/0x[0-9a-fA-F]{40}/g, '[redacted-address]')
-                .replace(/[A-Za-z0-9_-]{24,}/g, '[redacted-value]')
-                .trim()
-            )
-            .filter(Boolean)
           console.info('MetaMask unlock route:', new URL(candidate.url()).hash.split('?')[0])
-          console.info('MetaMask unlock diagnostics:', redactedDiagnostics.join(' | ') || 'no error text')
           throw new Error('MetaMask remained locked after the unlock action')
         }
         await candidate.close().catch(() => undefined)

@@ -7,10 +7,11 @@ const paidCanaryApproved = process.env.PHASE2_WALLET_PAID_WRITES_APPROVED === 'i
 const extensionPath = process.env.METAMASK_EXTENSION_PATH
 const profilePath = process.env.METAMASK_USER_DATA_DIR
 const baseURL = process.env.PLAYWRIGHT_BASE_URL
+const apiURL = process.env.PHASE2_WALLET_API_URL
 
 test.skip(
-  !approved || (!paidCanaryApproved && !preflightOnly) || !extensionPath || !profilePath || !baseURL,
-  'Real MetaMask evidence requires isolated staging approval, an explicit preflight or paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
+  !approved || (!paidCanaryApproved && !preflightOnly) || !extensionPath || !profilePath || !baseURL || !apiURL,
+  'Real MetaMask evidence requires isolated staging approval, explicit web/API origins, a preflight or paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
 )
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -25,7 +26,10 @@ async function clickMetaMaskAction(
   while (Date.now() < deadline) {
     const pages = context.pages().filter((page) => page.url().startsWith('chrome-extension://')).reverse()
     for (const candidate of pages) {
-      await candidate.bringToFront().catch(() => undefined)
+      await Promise.race([
+        candidate.bringToFront().catch(() => undefined),
+        new Promise((resolve) => setTimeout(resolve, 750)),
+      ])
 
       for (const name of names) {
         const button = candidate.getByRole('button', { name, exact: true })
@@ -112,19 +116,31 @@ async function unlockMetaMask(context: BrowserContext, host: Page): Promise<void
       await host.keyboard.press('Alt+Shift+M')
       shortcutOpened = true
     } else if (extensionPages.length > 0 && Date.now() - startedAt >= 2_000) {
-      await Promise.all(extensionPages.map((candidate) => candidate.close().catch(() => undefined)))
-      await host.bringToFront()
-      return
+      const extensionRoutes = extensionPages.map(
+        (candidate) => new URL(candidate.url()).hash.split('?')[0]
+      )
+      const knownUnlockedPage =
+        extensionRoutes.length > 0 &&
+        extensionRoutes.every((route) => route && !route.startsWith('#/unlock'))
+      if (knownUnlockedPage) {
+        await Promise.all(extensionPages.map((candidate) => candidate.close().catch(() => undefined)))
+        await host.bringToFront()
+        return
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, 200))
   }
+  throw new Error('MetaMask unlock state did not settle')
 }
 
 test('real MetaMask isolated-staging money journey', async () => {
   const staging = new URL(baseURL!)
-  test.setTimeout(120_000)
-  if (staging.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(staging.hostname)) {
-    throw new Error('Real-wallet automation requires HTTPS or localhost')
+  const api = new URL(apiURL!)
+  test.setTimeout(180_000)
+  const unsafeWeb = staging.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(staging.hostname)
+  const unsafeApi = api.protocol !== 'https:' && !['127.0.0.1', 'localhost'].includes(api.hostname)
+  if (unsafeWeb || unsafeApi) {
+    throw new Error('Real-wallet automation requires HTTPS or localhost for both web and API')
   }
   const expectedAddress = process.env.PHASE2_WALLET_EXPECTED_ADDRESS?.toLowerCase()
   if (!expectedAddress || !/^0x[0-9a-f]{40}$/.test(expectedAddress)) {
@@ -146,6 +162,21 @@ test('real MetaMask isolated-staging money journey', async () => {
   })
   try {
     const page = await context.newPage()
+    const authNetworkEvents: string[] = []
+    page.on('response', (response) => {
+      const requestUrl = new URL(response.url())
+      if (requestUrl.pathname.startsWith('/api/auth/')) {
+        authNetworkEvents.push(`${response.request().method()} ${requestUrl.pathname} ${response.status()}`)
+      }
+    })
+    page.on('requestfailed', (request) => {
+      const requestUrl = new URL(request.url())
+      if (requestUrl.pathname.startsWith('/api/auth/')) {
+        authNetworkEvents.push(
+          `${request.method()} ${requestUrl.pathname} failed: ${request.failure()?.errorText ?? 'unknown'}`
+        )
+      }
+    })
     await page.goto(new URL('/dashboard', staging).toString())
     await unlockMetaMask(context, page)
 
@@ -165,15 +196,33 @@ test('real MetaMask isolated-staging money journey', async () => {
     const signInButton = page.getByRole('button', { name: 'Sign in securely' })
     await expect(signInButton).toBeVisible({ timeout: 30_000 })
     await triggerWalletRequest(signInButton)
-    await requireMetaMaskAction(context, ['Sign', 'Confirm'])
+    await page.waitForTimeout(750)
+    if (context.pages().every((candidate) => !candidate.url().startsWith('chrome-extension://'))) {
+      await page.keyboard.press('Alt+Shift+M')
+    }
+    if (!(await clickMetaMaskAction(context, ['Sign', 'Confirm'], 30_000))) {
+      const authError = await page.locator('.form-message--error').textContent().catch(() => null)
+      console.info('Auth network state:', authNetworkEvents.join(' | ') || 'no auth request')
+      console.info('Auth UI state:', authError || 'no auth error')
+      const extensionRoutes = context.pages()
+        .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
+        .map((candidate) => new URL(candidate.url()).hash.split('?')[0] || '#')
+      console.info(
+        'MetaMask extension state:',
+        extensionRoutes.length ? extensionRoutes.join(' | ') : 'no extension page'
+      )
+      throw new Error('Expected a MetaMask signature action')
+    }
     await expect(page.getByText('CREDIT BALANCE')).toBeVisible({ timeout: 30_000 })
-    const runtimeState = await page.evaluate(async () => {
+    const runtimeState = await page.evaluate(async (apiOrigin) => {
       const ethereum = (window as unknown as { ethereum?: { request(input: { method: string }): Promise<unknown> } }).ethereum
       if (!ethereum) throw new Error('Injected wallet provider is unavailable')
       const [chainId, accounts, response] = await Promise.all([
         ethereum.request({ method: 'eth_chainId' }),
         ethereum.request({ method: 'eth_accounts' }),
-        fetch('/api/auth/me'),
+        fetch(new URL('/api/auth/me', apiOrigin).toString(), {
+          credentials: 'include',
+        }),
       ])
       if (!response.ok) throw new Error('Auth session probe failed')
       const body = (await response.json()) as { auth?: { wallet_address?: string } }
@@ -182,7 +231,7 @@ test('real MetaMask isolated-staging money journey', async () => {
         account: Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : '',
         authWallet: String(body.auth?.wallet_address ?? '').toLowerCase(),
       }
-    })
+    }, api.toString())
     if (
       runtimeState.chainId !== '0xb626' ||
       runtimeState.account !== expectedAddress ||
@@ -191,12 +240,14 @@ test('real MetaMask isolated-staging money journey', async () => {
       throw new Error('Wallet account, chain, and authenticated session are not consistently bound')
     }
 
-    const freeTierRemaining = await page.evaluate(async () => {
-      const response = await fetch('/api/dashboard')
+    const freeTierRemaining = await page.evaluate(async (apiOrigin) => {
+      const response = await fetch(new URL('/api/dashboard', apiOrigin).toString(), {
+        credentials: 'include',
+      })
       if (!response.ok) throw new Error('Dashboard preflight failed')
       const body = (await response.json()) as { free_tier?: { remaining?: number } }
       return body.free_tier?.remaining
-    })
+    }, api.toString())
     expect(freeTierRemaining).toBe(0)
     if (preflightOnly) {
       await context.clearCookies()

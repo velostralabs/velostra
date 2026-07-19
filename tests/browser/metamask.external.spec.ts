@@ -201,6 +201,7 @@ test('real MetaMask isolated-staging money journey', async () => {
     ],
   })
   try {
+    await context.clearCookies()
     const page = await context.newPage()
     const authNetworkEvents: string[] = []
     page.on('response', (response) => {
@@ -219,6 +220,22 @@ test('real MetaMask isolated-staging money journey', async () => {
     })
     await page.goto(new URL('/dashboard', staging).toString())
     await unlockMetaMask(context, page)
+    const hadWalletPermission = await page.evaluate(async () => {
+      const ethereum = (window as unknown as {
+        ethereum?: {
+          request(input: { method: string; params?: unknown[] }): Promise<unknown>
+        }
+      }).ethereum
+      if (!ethereum) throw new Error('Injected wallet provider is unavailable')
+      const accounts = await ethereum.request({ method: 'eth_accounts' })
+      if (!Array.isArray(accounts) || accounts.length === 0) return false
+      await ethereum.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }],
+      })
+      return true
+    })
+    if (hadWalletPermission) await page.reload()
 
     const connectButton = page.locator('.auth-gate').getByRole('button', { name: 'Connect Wallet' })
     if (await connectButton.isVisible().catch(() => false)) {

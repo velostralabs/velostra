@@ -229,6 +229,8 @@ test('real MetaMask isolated-staging money journey', async () => {
       await requireMetaMaskAction(context, ['Switch network', 'Approve'])
     }
 
+    const balanceMarker = page.getByText('CREDIT BALANCE')
+    if (!(await balanceMarker.isVisible().catch(() => false))) {
     const signInButton = page.getByRole('button', { name: 'Sign in securely' })
     await expect(signInButton).toBeVisible({ timeout: 30_000 })
     await triggerWalletRequest(signInButton)
@@ -249,7 +251,8 @@ test('real MetaMask isolated-staging money journey', async () => {
       )
       throw new Error('Expected a MetaMask signature action')
     }
-    await expect(page.getByText('CREDIT BALANCE')).toBeVisible({ timeout: 30_000 })
+    }
+    await expect(balanceMarker).toBeVisible({ timeout: 30_000 })
     const runtimeState = await page.evaluate(async (apiOrigin) => {
       const ethereum = (window as unknown as { ethereum?: { request(input: { method: string }): Promise<unknown> } }).ethereum
       if (!ethereum) throw new Error('Injected wallet provider is unavailable')

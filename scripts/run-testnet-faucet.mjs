@@ -88,6 +88,20 @@ try {
   await page.goto(FAUCET_URL, { waitUntil: 'domcontentloaded', timeout: 45_000 })
   await unlockMetaMask(page)
   await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 })
+  await page.waitForFunction(() => Boolean(window.ethereum), undefined, { timeout: 15_000 })
+  const previouslyAuthorized = await page.evaluate(async () => {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+    return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
+  })
+  if (previouslyAuthorized && previouslyAuthorized !== expectedAddress) {
+    await page.evaluate(() =>
+      window.ethereum.request({
+        method: 'wallet_revokePermissions',
+        params: [{ eth_accounts: {} }],
+      })
+    )
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45_000 })
+  }
 
   const connectButton = page.getByRole('button', { name: /connect wallet/i })
   let connectReady = await connectButton

@@ -28,8 +28,10 @@ A separate US-only Robinhood testnet stack is live: three verified Safe authorit
 a verified synthetic token and escrow, immutable private signer/public API/isolated
 web services, migration, reconciliation/webhook/monitor jobs, and staggered Scheduler
 triggers. Deep readiness passes, the web origin is bound, the signer is private, and
-paid writes remain disabled. The public preview still has no staging API/escrow/token
-build values and closes no Phase 2/3/4 activation or evidence gate. No closed beta,
+paid writes remain disabled. Managed staging has also passed a direct-deposit,
+skipped-report reconciliation repair with the report endpoint intentionally omitted.
+The public preview still has no staging API/escrow/token build values and closes no
+Phase 2/3/4 activation or evidence gate. No closed beta,
 mainnet contract, or real-value flow is live.
 
 ## Phase 0 - Recoverable product foundation (DONE)
@@ -225,6 +227,9 @@ and must never be inferred from local tests.
   requests produced ten
   successful settlements plus two intentional limits; 27-block catch-up completed
   with zero drift.
+- [x] Capture managed skipped-report recovery evidence with a direct synthetic-token
+  escrow deposit, missing Postgres precondition, worker backfill, safe cursor advance,
+  Scheduler cleanup, and paid writes disabled.
 - [ ] Hold API/worker down for a real hour in managed staging, inject DB/Redis/RPC
   failures and restart mid-settlement, then prove catch-up within the candidate SLO.
 - [ ] Restore a provider-native managed PITR point into a clean environment and meet
@@ -389,8 +394,9 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 ### Staging/evidence lane (active external next)
 
 1. retain the verified public preview and the deployed write-disabled US testnet stack;
-2. run the real MetaMask journey for auth, top-up, paid call, builder credit, claim,
-   and an intentionally skipped-report reconciliation repair;
+2. run the real MetaMask journey for auth, top-up, paid call, builder credit, and claim;
+   retain its frozen staging performance evidence (the synthetic skipped-report repair
+   is already complete);
 3. exercise alert failure, acknowledgement, and resolution plus secret/authority,
    pause/unpause, signer-rotation, and compromise-response drills;
 4. run one-hour outage/provider faults, provider-native PITR, and minimum 72-hour soak

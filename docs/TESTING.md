@@ -37,6 +37,7 @@
 | US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, checked native-command failures, private signer entrypoint, bounded services, valid worker intervals, staggered jobs, and no migration without opt-in |
 | Testnet Safe authority | `npm run test:testnet-authorities` | Windows PowerShell + Node.js 22 | CSPRNG/DPAPI custody round trip, three disjoint 2-of-3 plans, plan-only clean-tree broadcast, private-key cleanup, and live policy validation |
 | Managed staging live probe | guarded runbook steps with ignored artifacts | Robinhood testnet + US providers | 23 contract checks, migration, API deep readiness, worker heartbeats, isolated web response, private signer boundary, and paid-write-disabled state |
+| Managed skipped-report reconciliation | `powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply` | managed US testnet staging | direct synthetic escrow deposit with no report endpoint, missing-DB precondition, event backfill, safe cursor advancement, Scheduler cleanup, and paid writes disabled |
 | Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
@@ -216,6 +217,12 @@ the effective assertion limit so the allowance cannot hide silently.
 Real MetaMask is therefore automated but not yet evidenced. Execute
 `npm run test:wallet:metamask` only against isolated staging and attach its report to
 the Phase 2 evidence manifest.
+
+The managed skipped-report repair is separately evidenced and passed on 2026-07-19.
+The guarded runner deliberately sends a direct synthetic-token escrow deposit without
+calling `/api/dashboard/topup`, verifies the missing Postgres row, runs one
+reconciliation pass, and checks the repaired record/cursor before resuming Scheduler.
+It is a recovery proof, not a substitute for real MetaMask paid-call/claim evidence.
 
 ## Current dependency audit
 

@@ -224,7 +224,8 @@ The stack is not considered staging-ready until all of these are captured:
 - API health and readiness pass;
 - a real wallet can authenticate on Robinhood testnet;
 - top-up, paid call, builder credit, and claim complete on testnet;
-- reconciliation repairs intentionally skipped database reports;
+- reconciliation repairs intentionally skipped database reports (managed synthetic
+  direct-deposit proof passed on 2026-07-19; rerun with the guarded command below);
 - webhook retry and dead-letter behavior is observed;
 - alert delivery is observed;
 - a Neon point-in-time recovery drill succeeds;
@@ -244,6 +245,14 @@ one manual verification run. The public Netlify preview remains intentionally
 separate and paid writes remain disabled.
 
 Remaining gates are external evidence rather than missing deployment: real MetaMask
-money-loop and reconciliation repair, alert failure/acknowledgement/resolution,
-secret/authority/pause/compromise drills, one-hour outage catch-up, provider-native
-PITR, minimum 72-hour soak, independent review, and accountable release approval.
+money-loop, alert failure/acknowledgement/resolution, secret/authority/pause/compromise
+drills, one-hour outage catch-up, provider-native PITR, minimum 72-hour soak,
+independent review, and accountable release approval.
+
+To reproduce the managed skipped-report proof without enabling paid writes:
+
+    powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply
+
+The runner uses only synthetic chain value, pauses Scheduler during the deliberate
+missing-report window, validates the backfill and safe cursor, and resumes Scheduler
+in cleanup. Its evidence remains below ignored `artifacts/staging`.

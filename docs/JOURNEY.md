@@ -14,7 +14,7 @@
 | Escrow | Safe authorities, synthetic token, and escrow verified on chain 46630; no mainnet deployment |
 | Financial activation | Paid writes disabled; no real-value authorization |
 | Independent review | Not yet performed |
-| Active external next | Real-wallet, repair, alert/drill, outage, PITR, and soak evidence |
+| Active external next | Real-wallet, alert/drill, outage, PITR, and soak evidence |
 | Active repository next | Freeze Phase 5 scope before implementation |
 
 ## Journey timeline
@@ -194,6 +194,22 @@ Checkpoint: the managed US testnet stack is online and deep-readiness green. The
 public Netlify preview remains separate. Mainnet, real value, closed beta, public paid
 writes, independent review, and the remaining managed evidence are not authorized.
 
+### 2026-07-19 - Managed skipped-report reconciliation proof
+
+- created a dedicated encrypted test-only wallet without exposing its address or key;
+- minted synthetic testnet USD and sent a direct escrow deposit while deliberately
+  skipping `/api/dashboard/topup`;
+- confirmed the database had no matching transaction or balance before repair;
+- paused the Scheduler only for the fault-injection window, ran reconciliation, and
+  verified event-driven backfill, safe cursor advancement, and idempotent ownership;
+- resumed the Scheduler in the cleanup path and kept paid writes disabled throughout.
+
+Checkpoint: managed synthetic skipped-report repair is **PASS**. This proves the
+confirmed-chain/failed-report safety net on the live US testnet stack, without claiming
+the real MetaMask paid-call or claim journey. The reproducible command is
+`powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply`;
+outputs stay below ignored `artifacts/staging`.
+
 ## What is complete
 
 ### Product and identity
@@ -234,8 +250,8 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 1. The public frontend remains intentionally separate and has no staging API, escrow,
    or settlement-token build values.
-2. The real MetaMask staging money loop and intentionally skipped-report
-   reconciliation repair have not yet been retained as managed evidence.
+2. The real MetaMask staging money loop (auth, top-up, paid call, correlated earnings,
+   and claim) and its frozen browser-performance baseline have not yet been retained.
 3. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
    logs, and signed ownership evidence are pending.
 4. Runtime alert failure/acknowledgement/resolution plus production error-tracking
@@ -253,8 +269,9 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 1. Keep the deployed US testnet runtime and the public preview separate; retain paid
    writes disabled.
-2. Run the real MetaMask auth/top-up/paid-call/earnings/claim journey and an
-   intentionally skipped-report reconciliation repair against managed staging.
+2. Run the real MetaMask auth/top-up/paid-call/earnings/claim journey against managed
+   staging and retain its frozen performance evidence. The synthetic skipped-report
+   reconciliation proof is already complete.
 3. Prove alert failure/acknowledgement/resolution, then execute managed secret and
    authority rotation, pause/unpause, compromise response, audit-log ownership,
    error-tracking, and redaction drills.
@@ -288,11 +305,11 @@ The managed-US-staging-online checkpoint is complete: identities/secrets, verifi
 chain authorities and escrow, immutable runtimes, migration, exact origin binding,
 and deep readiness are live with paid writes disabled.
 
-The next honest milestone is **managed real-wallet and recovery evidence complete**.
+The next honest milestone is **managed real-wallet and operator evidence complete**.
 It requires the exact staging origin to complete auth, top-up, paid call, correlated
-builder credit, claim, and an intentionally skipped-report reconciliation repair;
-the alert failure/acknowledgement/resolution lifecycle must also be retained without
-publishing personal data, provider identifiers, or raw credentials.
+builder credit, and claim; the synthetic skipped-report reconciliation repair is
+already retained. The alert failure/acknowledgement/resolution lifecycle must also
+be retained without publishing personal data, provider identifiers, or raw credentials.
 
 That checkpoint does not authorize mainnet, public paid writes, or closed beta.
 

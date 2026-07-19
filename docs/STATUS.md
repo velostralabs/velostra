@@ -8,6 +8,9 @@
 > and separate from staging. The US-only chain-46630 Safe authorities, token, escrow,
 > private signer, API, isolated web, migration, workers, and Scheduler triggers are
 > deployed; deep readiness passes and paid writes remain disabled.
+> On 2026-07-19, managed staging also passed a synthetic skipped-report
+> reconciliation repair: a direct testnet escrow deposit was recovered into Postgres
+> without calling the top-up report endpoint.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
 ## Executive status
@@ -68,7 +71,7 @@ signer rejection pass. Paid writes remain disabled.
 |---|---|---|
 | Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values, real MetaMask, and managed-staging performance evidence pending |
 | Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
-| Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | timed managed one-hour outage evidence pending |
+| Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | managed synthetic skipped-report backfill passed; timed managed one-hour outage evidence pending |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
@@ -77,6 +80,26 @@ signer rejection pass. Paid writes remain disabled.
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness and manual worker/monitor runs pass; full failure/acknowledgement/resolution evidence pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
+
+## Managed skipped-report reconciliation evidence
+
+The managed US staging repair proof passed on 2026-07-19 with paid writes disabled.
+The guarded runner created an encrypted, test-only evidence wallet, minted synthetic
+testnet USD, and sent a direct escrow `Deposit` without calling
+`/api/dashboard/topup`. After the precondition confirmed that Postgres had no matching
+transaction or balance row, the reconciliation job decoded the confirmed event,
+backfilled the missing record, and advanced the confirmation-safe cursor. Unique
+transaction constraints and the worker's conditional ownership make a repeat a
+no-op. The wrapper always resumes the Scheduler trigger, including on failure.
+
+Run the same evidence check only against the managed US testnet with:
+
+    powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply
+
+The run writes only ignored evidence under `artifacts/staging`; it does not enable
+paid writes, touch the public Netlify preview, or publish wallet addresses, hashes,
+provider identifiers, or credentials. Real MetaMask paid-call/claim evidence and the
+operator alert/drill packet remain separate gates.
 
 ## Public frontend deployment evidence
 
@@ -270,7 +293,8 @@ continued non-mainnet development. They block only real-value/mainnet authorizat
 1. Provision the isolated managed topology and attach configuration/backup evidence.
 2. Execute managed secret, signer, settler, pause, and compromise-response drills.
 3. Deliver every required injected alert to a real operator and record acknowledgement.
-4. Run the guarded real-MetaMask journey and capture frozen-staging web vitals.
+4. Run the guarded real-MetaMask auth/top-up/paid-call/earnings/claim journey and
+   capture frozen-staging web vitals.
 5. Hold API/worker down for one real hour; inject DB, Redis, RPC, restart, and broadcast
    failures; meet the candidate catch-up/error/outbox SLOs with zero drift.
 6. Restore provider-native managed PITR and meet RPO/RTO.
@@ -301,8 +325,8 @@ with a verified Robinhood testnet escrow is online and deep-readiness green whil
 paid writes remain disabled.
 
 Keep the public preview separate and the deployed staging stack write-disabled. The
-next checkpoint is retained real MetaMask auth/top-up/paid-call/claim evidence plus an
-intentionally skipped-report reconciliation repair, followed by the alert lifecycle,
+next checkpoint is retained real MetaMask auth/top-up/paid-call/claim evidence;
+the managed synthetic skipped-report repair is already passed. Follow it with the alert lifecycle,
 secret/authority/pause/compromise drills, one-hour outage, provider-native PITR, and
 minimum 72-hour soak. No external gate may be marked complete from a local plan or
 read-only preflight. Do not use mainnet value.

@@ -198,7 +198,22 @@ try {
           .filter(Boolean)
           .slice(0, 20)
       )
+    const currentUrl = new URL(page.url())
+    const bodyState = await page
+      .locator('body')
+      .innerText()
+      .then((value) => value.replace(/0x[0-9a-fA-F]{4,40}/g, '[redacted]').trim().slice(0, 2_000))
+      .catch(() => '')
     console.info('Official faucet visible controls:', visibleState.join(' | ') || 'none')
+    console.info(
+      'Official faucet page state:',
+      JSON.stringify({
+        origin: currentUrl.origin,
+        path: currentUrl.pathname,
+        title: await page.title().catch(() => ''),
+        body: bodyState,
+      })
+    )
     throw new Error('The official faucet did not expose its token request form')
   }
   const currentValue = (await addressInput.inputValue()).toLowerCase()

@@ -101,6 +101,13 @@ async function completeMetaMaskConnection(
     await clickMetaMaskAction(context, ['Next', 'Connect'], 3_000)
     await new Promise((resolve) => setTimeout(resolve, 400))
   }
+  const approvalPage = context
+    .pages()
+    .filter((candidate) => candidate.url().startsWith('chrome-extension://'))
+    .at(-1)
+  await approvalPage
+    ?.screenshot({ path: path.resolve('artifacts/staging/evidence/private/metamask-connection.png') })
+    .catch(() => undefined)
   const statuses = await page
     .locator('.wallet-picker__error, .wallet-option__status')
     .allTextContents()

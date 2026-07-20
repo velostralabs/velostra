@@ -198,7 +198,10 @@ function DashboardContent() {
       </div>
 
       <div className="panel panel--spaced">
-        <h3 className="panel-title">Top up credits</h3>
+        <div className="panel-title-row">
+          <h3 className="panel-title">Top up credits</h3>
+          <Link className="panel-title-link" to="/testnet">Testnet setup guide</Link>
+        </div>
         <div className="action-row">
           <div className="field-row action-row__field">
             <label htmlFor="dashboard-topup-amount">Amount (USDG)</label>

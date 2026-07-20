@@ -4,6 +4,7 @@ import { ArrowUpRight, Menu, X } from 'lucide-react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import BrandMark from './BrandMark'
 import WalletButton from './WalletButton'
+import { ROBINHOOD_IS_TESTNET } from '../lib/chain'
 import './Nav.css'
 
 const navItems = [
@@ -12,6 +13,7 @@ const navItems = [
   { to: '/proof', label: 'Proof' },
   { to: '/economics', label: 'Economics' },
   { to: '/marketplace', label: 'Agents' },
+  { to: '/testnet', label: 'Testnet' },
   { to: '/docs', label: 'Protocol' },
   { to: '/builder', label: 'Builders' },
 ]
@@ -40,6 +42,7 @@ export default function Nav() {
         <Link to="/" className="nav__brand" aria-label="Velostra home">
           <BrandMark className="nav__mark" />
           <span className="nav__word">velostra</span>
+          {ROBINHOOD_IS_TESTNET && <span className="nav__network mono">TESTNET</span>}
         </Link>
 
         <div className="nav__links">
@@ -95,7 +98,7 @@ export default function Nav() {
               </NavLink>
             ))}
             <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'nav__mobile-link--active' : undefined}>
-              <span className="mono">08</span>
+              <span className="mono">09</span>
               Execution console
             </NavLink>
           </motion.nav>

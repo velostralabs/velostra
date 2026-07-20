@@ -10,6 +10,7 @@ import {
 import { ArrowUpRight, Check, Fingerprint, RadioTower, ScrollText, WalletCards } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from './BrandMark'
+import { ROBINHOOD_CHAIN_ID } from '../lib/chain'
 import './SettlementProof.css'
 
 const trace = [
@@ -238,7 +239,7 @@ export default function SettlementProof() {
         </motion.div>
 
         <div className="proof__narrative">
-          <div className="proof__status"><span><i /> Deterministic by design</span><span className="mono">RHC / 4663</span></div>
+          <div className="proof__status"><span><i /> Deterministic by design</span><span className="mono">RHC / {ROBINHOOD_CHAIN_ID}</span></div>
           <h3>A settlement system that can explain itself.</h3>
           <p>
             No invisible payout queue. No spreadsheet between value creation and ownership.

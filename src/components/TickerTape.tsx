@@ -1,4 +1,4 @@
-import { CHAIN_FACTS } from '../lib/chain'
+import { CHAIN_FACTS, ROBINHOOD_IS_TESTNET } from '../lib/chain'
 import './TickerTape.css'
 
 export default function TickerTape() {
@@ -8,7 +8,7 @@ export default function TickerTape() {
     <div className="ticker" aria-label="Network status">
       <div className="ticker__status">
         <span className="ticker__pulse" />
-        <span>Protocol preview</span>
+        <span>{ROBINHOOD_IS_TESTNET ? 'Public testnet' : 'Protocol preview'}</span>
       </div>
       <div className="ticker__viewport">
         <div className="ticker__track">

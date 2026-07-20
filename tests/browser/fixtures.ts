@@ -15,6 +15,8 @@ export interface ProductState {
   balance: number
   availableEarnings: number
   totalClaimed: number
+  publicTestnet: boolean
+  paidWrites: 'enabled' | 'bounded' | 'disabled'
 }
 
 export function createProductState(): ProductState {
@@ -25,6 +27,8 @@ export function createProductState(): ProductState {
     balance: 12.5,
     availableEarnings: 4.75,
     totalClaimed: 1.25,
+    publicTestnet: true,
+    paidWrites: 'enabled',
   }
 }
 
@@ -124,7 +128,7 @@ export async function installInjectedWallet(
     },
     {
       account: TEST_WALLET,
-      initialChainId: options.initialChainId ?? 4663,
+      initialChainId: options.initialChainId ?? 46630,
       rejectFirstConnection: options.rejectFirstConnection ?? false,
       hashes: TX_HASHES,
     }
@@ -144,11 +148,11 @@ function json(route: Route, body: unknown, status = 200) {
 }
 
 export async function installProductApi(page: Page, state: ProductState): Promise<void> {
-  await page.route('https://rpc.mainnet.chain.robinhood.com/**', async (route) => {
+  await page.route(/https:\/\/rpc\.(?:mainnet|testnet)\.chain\.robinhood\.com\/.*/, async (route) => {
     const request = route.request().postDataJSON() as { id?: number; method?: string } | undefined
     const method = request?.method
     let result: unknown = null
-    if (method === 'eth_chainId') result = '0x1237'
+    if (method === 'eth_chainId') result = '0xb626'
     else if (method === 'eth_blockNumber') result = '0x65'
     else if (method === 'eth_getTransactionReceipt') {
       result = {
@@ -185,6 +189,17 @@ export async function installProductApi(page: Page, state: ProductState): Promis
     }
     const url = new URL(route.request().url())
     const path = url.pathname
+
+    if (path === '/health') {
+      return json(route, {
+        status: 'ok',
+        service: 'velostra-api',
+        environment: 'staging',
+        chainId: 46630,
+        publicTestnet: state.publicTestnet,
+        paidWrites: state.paidWrites,
+      })
+    }
 
     if (path === '/api/auth/me') {
       return json(route, {

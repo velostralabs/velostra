@@ -25,6 +25,8 @@ export const ROBINHOOD_EXPLORER_URL = import.meta.env.VITE_CHAIN_EXPLORER_URL ??
     ? 'https://explorer.testnet.chain.robinhood.com'
     : 'https://robinhoodchain.blockscout.com'
 )
+export const ROBINHOOD_FAUCET_URL = 'https://faucet.testnet.chain.robinhood.com/'
+
 for (const [name, value] of Object.entries({
   VITE_CHAIN_RPC_URL: ROBINHOOD_RPC_URL,
   VITE_CHAIN_EXPLORER_URL: ROBINHOOD_EXPLORER_URL,

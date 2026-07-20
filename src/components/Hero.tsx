@@ -3,6 +3,7 @@ import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } fro
 import { Activity, ArrowUpRight, ShieldCheck, Workflow } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { VELOSTRA_ESCROW_ADDRESS } from '../lib/contract'
+import { ROBINHOOD_CHAIN_ID, ROBINHOOD_IS_TESTNET } from '../lib/chain'
 import './Hero.css'
 
 const Scene3DBackground = lazy(() => import('./Scene3DBackground'))
@@ -132,7 +133,9 @@ export default function Hero() {
             <span className="hero__eyebrow-index mono">VL / 001</span>
             <span className="hero__eyebrow-status">
               <i />
-              {contractIsConfigured ? 'Protocol online' : 'Protocol preview'}
+              {contractIsConfigured
+                ? ROBINHOOD_IS_TESTNET ? 'Public testnet online' : 'Protocol online'
+                : 'Protocol preview'}
             </span>
           </motion.div>
 
@@ -150,12 +153,12 @@ export default function Hero() {
           </motion.p>
 
           <motion.div className="hero__cta" variants={item}>
-            <Link className="btn btn--primary" to="/marketplace">
-              Explore live agents
+            <Link className="btn btn--primary" to={ROBINHOOD_IS_TESTNET ? '/testnet' : '/marketplace'}>
+              {ROBINHOOD_IS_TESTNET ? 'Enter public testnet' : 'Explore live agents'}
               <span className="btn__arrow"><ArrowUpRight size={16} /></span>
             </Link>
-            <Link className="btn btn--ghost" to="/builder">
-              Deploy an agent
+            <Link className="btn btn--ghost" to={ROBINHOOD_IS_TESTNET ? '/marketplace' : '/builder'}>
+              {ROBINHOOD_IS_TESTNET ? 'Explore agents' : 'Deploy an agent'}
               <Workflow size={15} strokeWidth={1.7} />
             </Link>
           </motion.div>
@@ -202,7 +205,7 @@ export default function Hero() {
           </motion.div>
 
           <div className="hero__coordinate mono">
-            RHC / 4663
+            RHC / {ROBINHOOD_CHAIN_ID}
             <br />
             LATENCY OPTIMIZED
           </div>

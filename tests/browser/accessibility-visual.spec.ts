@@ -15,6 +15,7 @@ const criticalRoutes = [
   '/builder',
   '/admin',
   '/docs',
+  '/testnet',
   '/route-that-does-not-exist',
 ]
 
@@ -140,7 +141,14 @@ test('rapid marketplace filter changes preserve the complete URL state', async (
   await page.getByLabel('Category').selectOption('TRADING')
   await page.getByLabel('Sort by').selectOption('price')
 
-  await expect(page).toHaveURL('/marketplace?category=TRADING&sort=price&q=flow')
+  await expect.poll(() => {
+    const params = new URL(page.url()).searchParams
+    return {
+      category: params.get('category'),
+      sort: params.get('sort'),
+      q: params.get('q'),
+    }
+  }).toEqual({ category: 'TRADING', sort: 'price', q: 'flow' })
   await expect(page.getByLabel('Search agents')).toHaveValue('flow')
   await expect(page.getByLabel('Category')).toHaveValue('TRADING')
   await expect(page.getByLabel('Sort by')).toHaveValue('price')

@@ -25,6 +25,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Builder = lazy(() => import('./pages/Builder'))
 const Admin = lazy(() => import('./pages/Admin'))
 const Docs = lazy(() => import('./pages/Docs'))
+const Testnet = lazy(() => import('./pages/Testnet'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 const homeSectionTargets: Record<string, string> = {
@@ -117,6 +118,7 @@ export default function App() {
             <Route path="/builder" element={<PageTransition><Builder /></PageTransition>} />
             <Route path="/admin" element={<PageTransition><Admin /></PageTransition>} />
             <Route path="/docs" element={<PageTransition><Docs /></PageTransition>} />
+            <Route path="/testnet" element={<PageTransition><Testnet /></PageTransition>} />
             <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
           </Routes>
         </AnimatePresence>

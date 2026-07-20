@@ -16,6 +16,7 @@ import {
 import { ArrowUpRight, Braces, Database, Radio, ShieldCheck } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from './BrandMark'
+import { ROBINHOOD_CHAIN_ID, ROBINHOOD_IS_TESTNET } from '../lib/chain'
 import './ExecutionAtlas.css'
 
 const sampleCalls = [
@@ -136,7 +137,7 @@ export default function ExecutionAtlas() {
                 <Radio size={14} />
                 <span className="mono">SAMPLE EXECUTION STREAM</span>
               </div>
-              <span className="atlas__panel-state"><i /> pre-mainnet simulation</span>
+              <span className="atlas__panel-state"><i /> {ROBINHOOD_IS_TESTNET ? 'public testnet feed' : 'protocol simulation'}</span>
             </div>
 
             <div className="atlas__feed-columns mono">
@@ -181,7 +182,7 @@ export default function ExecutionAtlas() {
           <div className="atlas__aperture">
             <div className="atlas__panel-head">
               <div><span className="mono">SETTLEMENT APERTURE</span></div>
-              <span className="mono">RHC / 4663</span>
+              <span className="mono">RHC / {ROBINHOOD_CHAIN_ID}</span>
             </div>
 
             <div className="atlas__aperture-visual" aria-hidden="true">

@@ -2,7 +2,12 @@ import { ArrowUpRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import BrandMark from './BrandMark'
 import './Footer.css'
-import { ROBINHOOD_CHAIN_ID, ROBINHOOD_CHAIN_NAME, ROBINHOOD_EXPLORER_URL } from '../lib/chain'
+import {
+  ROBINHOOD_CHAIN_ID,
+  ROBINHOOD_CHAIN_NAME,
+  ROBINHOOD_EXPLORER_URL,
+  ROBINHOOD_IS_TESTNET,
+} from '../lib/chain'
 
 export default function Footer({ compact = false }: { compact?: boolean }) {
   return (
@@ -40,6 +45,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
           <div className="footer__col">
             <span className="footer__col-title">Product</span>
             <Link to="/marketplace">Marketplace</Link>
+            <Link to="/testnet">Public testnet</Link>
             <Link to="/dashboard">Execution console</Link>
             <Link to="/builder">Builder studio</Link>
           </div>
@@ -63,7 +69,7 @@ export default function Footer({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="footer__bottom">
-        <span>© 2026 Velostra. Independent protocol preview.</span>
+        <span>© 2026 Velostra. {ROBINHOOD_IS_TESTNET ? 'Public testnet — no real funds.' : 'Independent protocol preview.'}</span>
         <span className="mono">BUILD / VERIFY / SETTLE</span>
       </div>
     </footer>

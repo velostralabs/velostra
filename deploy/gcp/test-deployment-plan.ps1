@@ -102,6 +102,8 @@ $alertLifecycleDiagnosticText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\capture-staging-alert-lifecycle.mjs')
 $alertLifecycleRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'capture-alert-lifecycle.ps1')
+$controlReadinessText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'capture-control-readiness.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -220,6 +222,12 @@ Require-Match $alertLifecycleDiagnosticText "service_name = 'backup'" 'Alert res
 Require-Match $alertLifecycleRunnerText "Get-ManagedSecret 'database-url'" 'Alert evidence must load the managed database secret ephemerally'
 Require-Match $alertLifecycleRunnerText 'alert-lifecycle[.]json' 'Alert lifecycle must persist a redacted evidence artifact'
 Reject-Match $alertLifecycleRunnerText 'Write-Output.*(?:DATABASE_URL|DatabaseUrl)' 'Alert evidence wrapper must not print credentials'
+Require-Match $controlReadinessText 'check-testnet-authorities[.]ps1' 'Control readiness must refresh live Safe state'
+Require-Match $controlReadinessText "paidWritesDisabled = .*paidWritesMode -eq 'disabled'" 'Control readiness must remain fail-closed'
+Require-Match $controlReadinessText 'authorityRotationExecuted = [$]false' 'Control readiness must not fabricate a live authority mutation'
+Require-Match $controlReadinessText 'pauseUnpauseExecuted = [$]false' 'Control readiness must not mutate the deployed escrow'
+Require-Match $controlReadinessText 'requiresSeparateMultiOperatorApproval = [$]true' 'Custody mutations require separate operator approval'
+Reject-Match $controlReadinessText 'Write-Output.*(?:address|ProjectId|contractAddress)' 'Control readiness output must remain identity-redacted'
 Require-Match $stagingCanaryBindingText 'sha256:' 'Staging canary subject policy must use hashed identities'
 Require-Match $stagingCanaryBindingText 'chainId: 46630' 'Staging canary binding must remain on Robinhood testnet'
 Require-Match $stagingCanaryBindingText 'maxCalls: 1' 'Staging canary binding must permit one call only'

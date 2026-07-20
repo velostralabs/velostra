@@ -64,6 +64,7 @@ jobs:
             package-lock.json
             contracts/package-lock.json
       - run: npm ci
+      - run: npm run test:contract-lock
       - run: npm ci --prefix contracts
       - run: npm run test:phase3-release
 
@@ -136,6 +137,7 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: contracts/package-lock.json
+      - run: node ../scripts/check-contract-lock.mjs
       - run: npm ci
       - run: npm test
 
@@ -177,6 +179,7 @@ jobs:
           cache-dependency-path: |
             server/package-lock.json
             contracts/package-lock.json
+      - run: node scripts/check-contract-lock.mjs
       - run: npm ci --prefix server
       - run: npm ci --prefix contracts
       - run: npm --prefix server run db:migrate

@@ -86,6 +86,10 @@ $builderInitializerText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\initialize-staging-builder.mjs')
 $builderInitializerRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'initialize-staging-builder.ps1')
+$signerIntentDiagnosticText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\check-staging-signer-intent.mjs')
+$signerIntentRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'check-staging-signer-intent.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -204,6 +208,12 @@ Reject-Match $builderInitializerText 'console[.](?:info|error).*hash' 'Builder i
 Require-Match $builderInitializerRunnerText 'DPAPI-CurrentUser' 'Builder initializer must use the encrypted evidence wallet'
 Require-Match $builderInitializerRunnerText "paidWritesMode -ne 'disabled'" 'Builder initializer must fail closed unless paid writes are disabled'
 Reject-Match $builderInitializerRunnerText 'Write-Output.*(?:PRIVATE_KEY|WalletBytes|RpcUrl|DatabaseUrl)' 'Builder initializer must not print credentials'
+Require-Match $signerIntentDiagnosticText "PHASE3_PAID_WRITES_MODE.*disabled" 'Signer intent diagnostic must require disabled paid writes'
+Require-Match $signerIntentDiagnosticText "and sa.status = 'AMBIGUOUS'" 'Signer intent diagnostic must inspect only ambiguous canary attempts'
+Require-Match $signerIntentDiagnosticText 'recoverTransactionAddress' 'Signer intent diagnostic must verify signature recovery'
+Reject-Match $signerIntentDiagnosticText 'console[.](?:info|error).*rawTransaction' 'Signer diagnostic must not print raw transactions'
+Require-Match $signerIntentRunnerText "paidWritesMode -ne 'disabled'" 'Signer diagnostic runner must fail closed unless paid writes are disabled'
+Reject-Match $signerIntentRunnerText 'Write-Output.*(?:RpcUrl|DatabaseUrl|RedisUrl)' 'Signer diagnostic runner must not print managed secrets'
 Require-Match $telegramHelperText 'Add-Type -AssemblyName System[.]Net[.]Http' 'Telegram helper must load HttpClient in Windows PowerShell'
 Require-Match $telegramHelperText 'Read-Host .* -AsSecureString' 'Telegram helper must use a secure token prompt'
 Require-Match $telegramHelperText 'secure[.]Dispose[(][)]' 'Telegram helper must dispose the secure token prompt'

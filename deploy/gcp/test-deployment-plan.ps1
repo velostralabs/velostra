@@ -214,6 +214,7 @@ Require-Match $claimStatusDiagnosticText 'databaseMatchesChainEvent' 'Claim veri
 Require-Match $claimStatusRunnerText 'DPAPI-CurrentUser' 'Claim verifier wallet material must remain encrypted for the current operator'
 Require-Match $claimStatusRunnerText "Get-ManagedSecret 'database-url'" 'Claim verifier must load the managed database secret ephemerally'
 Reject-Match $claimStatusRunnerText 'Write-Output.*(?:PRIVATE_KEY|DATABASE_URL|RpcUrl|DatabaseUrl)' 'Claim verifier must not print credentials'
+Require-Match $claimStatusRunnerText 'claim-reconciliation-verification[.]json' 'Claim verifier must retain redacted exact-once evidence'
 Require-Match $alertLifecycleDiagnosticText "rule = 'backup_stale'" 'Alert evidence must target the injected backup-stale lifecycle'
 Require-Match $alertLifecycleDiagnosticText 'last_notified_at' 'Alert evidence must prove successful operator delivery'
 Require-Match $alertLifecycleDiagnosticText 'acknowledged_at' 'Alert evidence must prove operator acknowledgement'

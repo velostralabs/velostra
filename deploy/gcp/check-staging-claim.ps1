@@ -1,12 +1,21 @@
 param(
   [ValidatePattern('^[a-z][a-z0-9-]{4,28}[a-z0-9]$')]
-  [string]$ProjectId = 'velostra-production'
+  [string]$ProjectId = 'velostra-production',
+  [string]$EvidenceOutput = 'artifacts/staging/evidence/claim-reconciliation-verification.json'
 )
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Security
 $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+$ArtifactsRoot = [IO.Path]::GetFullPath((Join-Path $RepositoryRoot 'artifacts'))
+$EvidencePath = [IO.Path]::GetFullPath((Join-Path $RepositoryRoot $EvidenceOutput))
+if (-not $EvidencePath.StartsWith(
+  $ArtifactsRoot + [IO.Path]::DirectorySeparatorChar,
+  [StringComparison]::OrdinalIgnoreCase
+)) {
+  throw 'Claim evidence output must stay below artifacts/'
+}
 $RuntimePath = Join-Path $RepositoryRoot 'artifacts\staging\runtime.json'
 $DeploymentPath = Join-Path $RepositoryRoot 'artifacts\staging\robinhood-testnet-deployment.json'
 $WalletPath = Join-Path $RepositoryRoot 'artifacts\staging\evidence\private\reconciliation-wallet.dpapi.json'
@@ -100,6 +109,11 @@ try {
   } finally { Pop-Location }
   $json = @($output | Where-Object { [string]$_ -match '^\{' })[-1]
   if (-not $json) { throw 'Claim status diagnostic returned no bounded result' }
+  $EvidenceDirectory = Split-Path -Parent $EvidencePath
+  New-Item -ItemType Directory -Force -Path $EvidenceDirectory | Out-Null
+  $TemporaryPath = $EvidencePath + '.tmp'
+  Set-Content -LiteralPath $TemporaryPath -Value $json -Encoding utf8
+  Move-Item -Force -LiteralPath $TemporaryPath -Destination $EvidencePath
   Write-Output $json
   $result = $json | ConvertFrom-Json
   if ($result.passed -ne $true) { throw 'Claim status did not satisfy exact-once invariants' }

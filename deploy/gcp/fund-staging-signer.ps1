@@ -19,7 +19,13 @@ function Invoke-NativeChecked {
   $previous = $ErrorActionPreference
   try { $ErrorActionPreference = 'Continue'; $output = & $Command 2>&1; $exitCode = $LASTEXITCODE }
   finally { $ErrorActionPreference = $previous }
-  if ($exitCode -ne 0) { throw $FailureMessage }
+  if ($exitCode -ne 0) {
+    $diagnostic = @($output | Where-Object { [string]$_ -match '^\{.*\}$' } | Select-Object -Last 1)
+    if ($diagnostic.Count -eq 1) {
+      throw ($FailureMessage + ': ' + [string]$diagnostic[0])
+    }
+    throw $FailureMessage
+  }
   return @($output)
 }
 

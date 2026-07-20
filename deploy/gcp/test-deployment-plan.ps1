@@ -94,6 +94,10 @@ $signerFundingText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\fund-staging-signer.mjs')
 $signerFundingRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'fund-staging-signer.ps1')
+$claimStatusDiagnosticText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\check-staging-claim.mjs')
+$claimStatusRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'check-staging-claim.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -195,6 +199,15 @@ Require-Match $paidCanaryRunnerText "PHASE2_WALLET_CLAIM_ONLY = 'isolated-stagin
 Require-Match $paidCanaryRunnerText 'if [(][$]ClaimOnly[)]' 'Claim-only execution must be isolated from the paid-write branch'
 Require-Match $paidCanaryRunnerText 'claim-canary[.]json' 'Claim-only evidence must not overwrite the full paid-canary artifact'
 Reject-Match $paidCanaryRunnerText 'Write-Output.*(?:PRIVATE_KEY|PASSWORD|ExpectedAddress)' 'Paid canary runner must not print credentials or wallet identity'
+Require-Match $paidCanaryRunnerText 'velostra-reconciliation' 'Claim-only runner must execute managed reconciliation'
+Require-Match $paidCanaryRunnerText 'ClaimStatus -ProjectId' 'Claim-only runner must execute the exact-once verifier'
+Require-Match $paidCanaryRunnerText 'claimVerified = [[]bool[]][$]ClaimVerified' 'Claim evidence must report exact-once verification'
+Require-Match $claimStatusDiagnosticText 'exact_claim_count' 'Claim verifier must count the exact completed database claim'
+Require-Match $claimStatusDiagnosticText 'getTransactionReceipt' 'Claim verifier must bind the database transaction to a chain receipt'
+Require-Match $claimStatusDiagnosticText 'databaseMatchesChainEvent' 'Claim verifier must correlate the database row with the chain event'
+Require-Match $claimStatusRunnerText 'DPAPI-CurrentUser' 'Claim verifier wallet material must remain encrypted for the current operator'
+Require-Match $claimStatusRunnerText "Get-ManagedSecret 'database-url'" 'Claim verifier must load the managed database secret ephemerally'
+Reject-Match $claimStatusRunnerText 'Write-Output.*(?:PRIVATE_KEY|DATABASE_URL|RpcUrl|DatabaseUrl)' 'Claim verifier must not print credentials'
 Require-Match $stagingCanaryBindingText 'sha256:' 'Staging canary subject policy must use hashed identities'
 Require-Match $stagingCanaryBindingText 'chainId: 46630' 'Staging canary binding must remain on Robinhood testnet'
 Require-Match $stagingCanaryBindingText 'maxCalls: 1' 'Staging canary binding must permit one call only'

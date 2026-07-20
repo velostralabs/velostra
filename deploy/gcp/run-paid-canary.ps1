@@ -22,6 +22,7 @@ $VaultPath = Join-Path $PrivateRoot 'metamask-vault.dpapi.json'
 $ExtensionPath = Join-Path $PrivateRoot 'metamask-extension'
 $ProfilePath = Join-Path $PrivateRoot $ProfileName
 $CanaryControl = Join-Path $PSScriptRoot 'set-staging-paid-canary.ps1'
+$ClaimStatus = Join-Path $PSScriptRoot 'check-staging-claim.ps1'
 
 function Unprotect-Record([string]$Path, [string]$Purpose, [string]$EntropyText) {
   if (-not (Test-Path -LiteralPath $Path)) { throw ('Missing encrypted ' + $Purpose + ' record') }
@@ -100,6 +101,7 @@ if ($LASTEXITCODE -ne 0 -or $dirty) { throw 'Tracked worktree must be clean befo
 
 $WalletBytes = $null
 $VaultBytes = $null
+$ClaimVerified = $false
 $Opened = $false
 $Closed = $true
 $Passed = $false
@@ -144,6 +146,33 @@ try {
         & npm run test:wallet:metamask
       }
     } finally { Pop-Location }
+    $programFilesX86 = [Environment]::GetFolderPath('ProgramFilesX86')
+    $gcloud = @(
+      (Join-Path $env:LOCALAPPDATA 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
+      (Join-Path $env:ProgramFiles 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd'),
+      (Join-Path $programFilesX86 'Google\Cloud SDK\google-cloud-sdk\bin\gcloud.cmd')
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+    if (-not $gcloud) { throw 'Google Cloud CLI is required for claim reconciliation' }
+
+    $claimRecoveryFailure = $null
+    foreach ($attempt in 1..3) {
+      try {
+        $null = Invoke-NativeChecked -FailureMessage 'Managed claim reconciliation failed' -Command {
+          & $gcloud 'run' 'jobs' 'execute' 'velostra-reconciliation' '--region=us-east4' `
+            ('--project=' + $ProjectId) '--wait' '--quiet'
+        }
+        $null = & $ClaimStatus -ProjectId $ProjectId
+        if ($LASTEXITCODE -ne 0) { throw 'Claim exact-once verification failed' }
+        $ClaimVerified = $true
+        break
+      } catch {
+        $claimRecoveryFailure = $_.Exception.Message
+        if ($attempt -lt 3) { Start-Sleep -Seconds 15 }
+      }
+    }
+    if (-not $ClaimVerified) {
+      throw ('Claim reconciliation did not converge: ' + $claimRecoveryFailure)
+    }
   } elseif (-not $PreflightOnly) {
     $Closed = $false
     & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
@@ -195,6 +224,7 @@ try {
     claimGross = '1.00'
     preflightOnly = [bool]$PreflightOnly
     claimOnly = [bool]$ClaimOnly
+    claimVerified = [bool]$ClaimVerified
     paidWritesClosed = [bool]$Closed
     passed = [bool]$Passed
     completedAt = [DateTime]::UtcNow.ToString('o')

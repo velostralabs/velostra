@@ -329,12 +329,15 @@ test('real MetaMask isolated-staging money journey', async () => {
 
     if (claimOnly) {
       await page.goto(new URL('/builder', staging).toString())
-      await page.getByLabel('Amount (USDG)').fill(String(claim))
-      await triggerWalletRequest(page.getByRole('button', { name: 'Claim to wallet' }))
+      const claimInput = page.getByLabel('Amount (USDG)')
+      const claimButton = page.getByRole('button', { name: 'Claim to wallet' })
+      await claimInput.fill(String(claim))
+      await triggerWalletRequest(claimButton)
       await requireMetaMaskAction(context, ['Confirm'])
-      await expect(page.getByRole('button', { name: 'Claim to wallet' })).toBeEnabled({
-        timeout: 90_000,
-      })
+      await Promise.any([
+        expect(claimButton).toHaveText(/Confirming claim|Syncing earnings/, { timeout: 30_000 }),
+        expect(claimInput).toHaveValue('', { timeout: 30_000 }),
+      ])
       await context.clearCookies()
       await page.reload()
       await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()

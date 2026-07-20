@@ -69,7 +69,8 @@
     "staging:canary-binding": "tsx src/scripts/create-staging-canary-binding.ts",
     "staging:canary-status": "node scripts/check-staging-canary.mjs",
     "staging:initialize-builder": "node scripts/initialize-staging-builder.mjs",
-    "staging:signer-intent": "node scripts/check-staging-signer-intent.mjs"
+    "staging:signer-intent": "node scripts/check-staging-signer-intent.mjs",
+    "staging:claim-status": "node scripts/check-staging-claim.mjs"
   },
   "dependencies": {
     "@paralleldrive/cuid2": "^3.3.0",

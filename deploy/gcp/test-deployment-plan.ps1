@@ -94,6 +94,10 @@ $signerFundingText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\fund-staging-signer.mjs')
 $signerFundingRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'fund-staging-signer.ps1')
+$faucetRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'fund-staging-wallet.ps1')
+$faucetBrowserText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'scripts\run-testnet-faucet.mjs')
 $claimStatusDiagnosticText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\check-staging-claim.mjs')
 $claimStatusRunnerText = Get-Content -Raw -LiteralPath (
@@ -262,6 +266,11 @@ Reject-Match $signerFundingText 'console[.](?:info|error).*hash' 'Signer funding
 Require-Match $signerFundingRunnerText 'DPAPI-CurrentUser' 'Signer funding must use encrypted testnet sources'
 Require-Match $signerFundingRunnerText "paidWritesMode -ne 'disabled'" 'Signer funding runner must fail closed unless paid writes are disabled'
 Reject-Match $signerFundingRunnerText 'Write-Output.*(?:PRIVATE_KEY|Bytes|RpcUrl)' 'Signer funding runner must not print credentials'
+Require-Match $faucetRunnerText "ValidateSet\('EvidenceWallet', 'SettlementSigner'\)" 'Faucet helper must support a separately selected signer recipient'
+Require-Match $faucetRunnerText 'FAUCET_RECIPIENT_ADDRESS' 'Faucet helper must pass the selected recipient ephemerally'
+Require-Match $faucetBrowserText 'connectedAccount !== expectedAddress' 'Faucet requester identity must remain pinned to the isolated wallet'
+Require-Match $faucetBrowserText 'recipientAddress' 'Faucet delivery must support a role-specific recipient'
+Reject-Match ($faucetRunnerText + $faucetBrowserText) 'Write-Output.*(?:recipientAddress|expectedAddress)' 'Faucet helper must not print staging identities'
 Require-Match $telegramHelperText 'Add-Type -AssemblyName System[.]Net[.]Http' 'Telegram helper must load HttpClient in Windows PowerShell'
 Require-Match $telegramHelperText 'Read-Host .* -AsSecureString' 'Telegram helper must use a secure token prompt'
 Require-Match $telegramHelperText 'secure[.]Dispose[(][)]' 'Telegram helper must dispose the secure token prompt'

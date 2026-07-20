@@ -1,4 +1,5 @@
 import { chromium } from '@playwright/test'
+import { getAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import path from 'node:path'
 
@@ -19,6 +20,9 @@ if (!extensionPath || !profilePath || !vaultPassword || !privateKey) {
 }
 
 const expectedAddress = privateKeyToAccount(privateKey).address.toLowerCase()
+const recipientAddress = process.env.FAUCET_RECIPIENT_ADDRESS
+  ? getAddress(process.env.FAUCET_RECIPIENT_ADDRESS).toLowerCase()
+  : expectedAddress
 const context = await chromium.launchPersistentContext(path.resolve(profilePath), {
   headless: false,
   channel: 'chromium',
@@ -178,10 +182,9 @@ try {
     return Array.isArray(accounts) ? String(accounts[0] ?? '').toLowerCase() : ''
   })
   if (connectedAccount !== expectedAddress) {
-    console.info('Dedicated staging faucet requester verified; evidence recipient remains pinned.')
-  } else {
-    console.info('Official faucet wallet connection verified.')
+    throw new Error('The official faucet connected an unexpected staging requester')
   }
+  console.info('Official faucet wallet connection verified.')
 
   const addressInput = page.locator('input').first()
   const formReady = await addressInput
@@ -217,10 +220,10 @@ try {
     throw new Error('The official faucet did not expose its token request form')
   }
   const currentValue = (await addressInput.inputValue()).toLowerCase()
-  if (currentValue !== expectedAddress) await addressInput.fill(expectedAddress)
+  if (currentValue !== recipientAddress) await addressInput.fill(recipientAddress)
   const pinnedRecipient = (await addressInput.inputValue()).toLowerCase()
-  if (pinnedRecipient !== expectedAddress) {
-    throw new Error('The official faucet recipient could not be pinned to the evidence wallet')
+  if (pinnedRecipient !== recipientAddress) {
+    throw new Error('The official faucet recipient could not be pinned to the selected staging role')
   }
 
   const sendButton = page.getByRole('button', { name: /send tokens/i })
@@ -233,7 +236,7 @@ try {
     state: 'visible',
     timeout: 60_000,
   })
-  console.info('Official testnet faucet delivery verified for the isolated staging wallet.')
+  console.info('Official testnet faucet delivery verified for the selected isolated staging role.')
 } finally {
   await context.close()
 }

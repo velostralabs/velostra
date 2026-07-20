@@ -1,9 +1,12 @@
 # Local quickstart
 
-> Last verified against package scripts, env templates, and managed staging: 2026-07-19.
+> Last verified against package scripts, env templates, and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
+> Redacted managed results and the remaining gates are indexed in
+> [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Never point destructive local tests at
+> the managed staging database.
 
 ## Prerequisites
 

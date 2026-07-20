@@ -1,10 +1,13 @@
 # Velostra threat model
 
-> Last verified against the workspace and managed staging: 2026-07-19.
+> Last verified against the workspace and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
 > Scope: Phase 1-2 foundation, Phase 3 release controls, and Phase 4 platform/integration controls.
+> The 2026-07-20 wallet/recovery, RPC fallback, private-alert, timed-outage, PITR, and
+> read-only control results are recorded in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
+> They do not replace destructive fault testing, custody approval, or independent review.
 
 ## Security objective
 

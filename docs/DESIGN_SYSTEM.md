@@ -1,8 +1,10 @@
 # Design system
 
-> Last verified against frontend source and public rendering: 2026-07-18.
+> Last verified against frontend source and public rendering: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation has passed internal engineering/CI
 > audit. The visual system remains current while mainnet execution stays gated.
+> The current browser gate passes 17 checks with one intentionally guarded external
+> MetaMask skip, and the production bundle remains within committed performance budgets.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display

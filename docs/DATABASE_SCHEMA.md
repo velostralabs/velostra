@@ -1,9 +1,12 @@
 # Database schema and recovery
 
-> Last verified against server/src/db/schema.ts, server/drizzle, and managed staging: 2026-07-19.
+> Last verified against server/src/db/schema.ts, server/drizzle, and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
 > Managed database status: Neon Postgres is live in the approved US region with all
 > nine migrations applied; the separate public Netlify preview has no database connection.
+> Provider-native PITR restored a past point into a disposable branch and matched all
+> 30 tables, nine migrations, row counts, financial aggregates, constraints, and
+> indexes before deletion. See [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 Velostra uses PostgreSQL, Drizzle ORM, CUID2 application IDs, and nine reviewed SQL
 migrations. Financial columns are numeric(20,6). Server decisions convert canonical

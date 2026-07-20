@@ -1,6 +1,6 @@
 # Smart contract - VelostraEscrow
 
-> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-19.
+> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -10,6 +10,9 @@
 > audited and is not deployed to mainnet.
 > The public Netlify frontend contains no escrow/token deployment addresses; only the
 > separate isolated staging web image is bound to the testnet deployment.
+> Bounded wallet/claim reconciliation and read-only authority/solvency evidence passed
+> on 2026-07-20; no custody mutation or mainnet authorization is implied. See
+> [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Build
 

@@ -1,6 +1,6 @@
 # Server test quick reference
 
-> Last verified: 2026-07-18. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
+> Last verified: 2026-07-20. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
 > Evidence state: Phase 0-4 repository automation is complete; controlled mainnet
 > execution and managed external evidence remain gated. The public Netlify preview
 > is static and provides no server test target.

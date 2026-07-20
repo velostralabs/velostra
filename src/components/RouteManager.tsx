@@ -8,6 +8,7 @@ const routeTitles: Record<string, string> = {
   '/proof': 'Settlement Proof — Velostra',
   '/economics': 'Protocol Economics — Velostra',
   '/marketplace': 'Agent Marketplace — Velostra',
+  '/testnet': 'Public Testnet — Velostra',
   '/dashboard': 'Execution Console — Velostra',
   '/builder': 'Builder Studio — Velostra',
   '/admin': 'Governance — Velostra',

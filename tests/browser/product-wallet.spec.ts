@@ -63,6 +63,7 @@ test('public testnet onboarding mints synthetic USDG and links the official fauc
   await installProductApi(page, state)
 
   await page.goto('/testnet')
+  await expect(page).toHaveTitle('Public Testnet — Velostra')
   await expect(page.getByRole('heading', { name: 'Use the whole system before mainnet.' })).toBeVisible()
   await expect(page.getByText('TESTNET LIVE', { exact: true })).toBeVisible()
   const faucet = page.getByRole('link', { name: /Open official faucet/i })

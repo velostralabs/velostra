@@ -1,6 +1,6 @@
 # Velostra roadmap
 
-> Updated after managed US staging verification: 2026-07-19.
+> Updated after managed US staging verification: 2026-07-20.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
@@ -33,6 +33,10 @@ skipped-report reconciliation repair with the report endpoint intentionally omit
 The public preview still has no staging API/escrow/token build values and closes no
 Phase 2/3/4 activation or evidence gate. No closed beta,
 mainnet contract, or real-value flow is live.
+
+The redacted 2026-07-20 wallet/recovery, RPC fallback, private-alert, timed
+reconciliation-outage, provider-native PITR, and read-only control results are in
+[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The waived 72-hour soak is NOT RUN.
 
 ## Phase 0 - Recoverable product foundation (DONE)
 
@@ -170,8 +174,9 @@ and must never be inferred from local tests.
   Safes plus synthetic token and VelostraEscrow, deploy immutable Cloud Run
   signer/API/web workloads and scheduled jobs, bind the web origin, execute migration,
   and pass deep readiness while paid writes remain disabled.
-- [ ] Prove the complete runtime alert acknowledgement/resolution lifecycle and attach
-  provider-native backup/recovery evidence.
+- [x] Prove a real critical backup-stale lifecycle through private Telegram delivery,
+  named acknowledgement, healthy heartbeat, and automatic resolution; retain the
+  provider-native Neon PITR integrity artifact separately.
 - [ ] Attach provider configuration, backup status, health output, and cost ownership
   to the hashed release packet.
 
@@ -212,8 +217,9 @@ and must never be inferred from local tests.
 - [x] Provision one idempotent approved USDG 1.20 synthetic agent behind a bounded,
   stateless, secretless US-staging Cloud Run service; exhaust only its dedicated
   test-wallet free tier while keeping API paid writes disabled.
-- [ ] Run the MetaMask harness with the dedicated extension profile and provisioned
-  synthetic staging value, then hash its evidence.
+- [x] Run the bounded MetaMask harness with synthetic staging value and retain the
+  superseding exact chain/database reconciliation verifier when the browser terminal
+  assertion times out; paid writes close in cleanup.
 - [ ] Capture performance baselines against the frozen managed-staging release.
 
 ### 2.5 Load, failure, and recovery drills
@@ -233,10 +239,13 @@ and must never be inferred from local tests.
 - [x] Capture managed skipped-report recovery evidence with a direct synthetic-token
   escrow deposit, missing Postgres precondition, worker backfill, safe cursor advance,
   Scheduler cleanup, and paid writes disabled.
-- [ ] Hold API/worker down for a real hour in managed staging, inject DB/Redis/RPC
-  failures and restart mid-settlement, then prove catch-up within the candidate SLO.
-- [ ] Restore a provider-native managed PITR point into a clean environment and meet
-  the recorded RPO/RTO objectives.
+- [x] Pause the managed reconciliation schedule for one full hour, run normal catch-up,
+  and prove safe-head coverage, zero duplicate money, zero pending events/outbox, zero
+  unexplained drift, and Scheduler resume.
+- [ ] Run the separate destructive API/DB/Redis/restart-mid-settlement fault matrix;
+  the completed RPC-fallback and reconciliation-outage proofs do not imply this step.
+- [x] Restore a provider-native Neon past point into a disposable branch and prove exact
+  tables, migrations, row counts, financial aggregates, constraints, and indexes.
 - [ ] Calibrate/freeze the candidate latency, error, catch-up, outbox-age, and restore
   SLOs from managed-staging measurements.
 
@@ -251,6 +260,8 @@ and must never be inferred from local tests.
 - [x] Prove the evidence validator accepts a complete packet and rejects tampering.
 - [ ] Run the frozen candidate continuously for at least 72 hours with at least one
   verified worker restart and three daily reconciliation checkpoints.
+  Owner decision on 2026-07-20: **NOT RUN / WAIVED FOR THIS CHECKPOINT**. This is not
+  a pass and cannot support mainnet authorization.
 - [ ] Maintain zero unexplained drift, zero stale recoverable outbox row, zero
   unresolved High/Critical finding, and zero unowned alert for the entire run.
 - [ ] Sign and approve the final evidence manifest as the accountable operator.
@@ -397,15 +408,12 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 ### Staging/evidence lane (active external next)
 
 1. retain the verified public preview and the deployed write-disabled US testnet stack;
-2. run the real MetaMask journey for auth, top-up, paid call, builder credit, and claim;
-   retain its frozen staging performance evidence (the synthetic skipped-report repair
-   is already complete);
-3. exercise alert failure, acknowledgement, and resolution plus secret/authority,
-   pause/unpause, signer-rotation, and compromise-response drills;
-4. run one-hour outage/provider faults, provider-native PITR, and minimum 72-hour soak
-   without claiming completion early;
-5. calibrate SLOs, close independent review, and retain all outputs under ignored
-   artifacts until the final signed evidence packet.
+2. freeze managed performance and hash/sign the retained redacted evidence packet;
+3. resolve signer-gas and remaining alert/destructive-fault coverage;
+4. execute secret/authority/pause/compromise mutations only with separate named
+   multi-operator approval and retained audit logs;
+5. complete independent review and accountable release approval;
+6. keep the owner-waived 72-hour soak marked NOT RUN, never PASS.
 
 ### Repository/product lane
 

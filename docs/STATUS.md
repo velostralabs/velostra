@@ -1,6 +1,6 @@
 # Velostra status
 
-> Last verified against the workspace and managed staging: 2026-07-19.
+> Last verified against the workspace and managed staging: 2026-07-20.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
 > verified. Controlled mainnet execution remains explicitly gated.
 > No mainnet deployment or real-value authorization is recorded.
@@ -8,18 +8,17 @@
 > and separate from staging. The US-only chain-46630 Safe authorities, token, escrow,
 > private signer, API, isolated web, migration, workers, and Scheduler triggers are
 > deployed; deep readiness passes and paid writes remain disabled.
-> On 2026-07-19, managed staging also passed a synthetic skipped-report
-> reconciliation repair: a direct testnet escrow deposit was recovered into Postgres
-> without calling the top-up report endpoint.
-> A stateless, secretless synthetic agent service and exactly one approved $1.20
-> staging agent are now provisioned for the pending real-MetaMask money journey.
+> Managed staging now retains direct skipped-report repair, a bounded real-MetaMask
+> synthetic money path with exact reconciled claim verification, private Telegram
+> alert acknowledgement/resolution, provider-native Neon PITR, and live read-only
+> operator-control readiness evidence.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
-The isolated staging web bundle is now explicitly chain-aware: the managed build is
-bound to Robinhood testnet chain 46630 and its testnet RPC/explorer values, while the
-public Netlify preview remains intentionally chain-neutral. The disposable MetaMask
-popup probe did not produce a stable wallet UI, so no key was imported, no provider
-was connected, and no paid canary was opened. This remains a documented external gate.
+The managed web remains chain-46630-only and separate from the public preview. The
+bounded wallet path used synthetic value; reconciliation repaired the chain-confirmed
+terminal state and a read-only chain/database verifier proved exact-once claim totals.
+Paid writes closed afterward. Raw identifiers stay ignored; see
+[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Executive status
 
@@ -37,9 +36,9 @@ settlement transitions use database ownership/conditional updates.
 
 Repository implementation and local verification for Phase 0-4 are **CLEAR / PASS**.
 This is not activation or mainnet authorization. No mainnet deployment or real-value
-authorization is recorded. Independent review, the remaining real-wallet/alert/drill
-evidence, a real one-hour outage/PITR/72-hour soak, low-value canary, and accountable
-closed-beta approval remain external gates.
+authorization is recorded. Independent review, multi-operator custody mutations,
+signed release approval, and accountable closed-beta approval remain external gates.
+The owner-waived 72-hour soak was not run and is not represented as passing evidence.
 
 The static protocol preview is publicly deployed through the Velostra Netlify team
 and Git-linked `velostralabs/velostra` `main` branch. The canonical TLS origin is
@@ -77,16 +76,16 @@ signer rejection pass. Paid writes remain disabled.
 
 | Area | Repository state | External state |
 |---|---|---|
-| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values, real MetaMask, and managed-staging performance evidence pending |
+| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values intentionally absent; bounded real-MetaMask evidence passed; managed-performance freeze pending |
 | Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
-| Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | managed synthetic skipped-report backfill passed; timed managed one-hour outage evidence pending |
-| Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native managed PITR/RPO/RTO evidence pending |
+| Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | direct skipped-report and bounded wallet/claim reconciliation evidence passed; timed outage result is recorded in the managed evidence packet |
+| Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native Neon PITR matched every table, migration, aggregate, constraint, and index |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
 | Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | verified testnet authorities/escrow plus immutable signer/API/web/jobs/schedules live; readiness green and paid writes disabled |
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime and all twelve scoped values live; audit logs, rotations, and drills pending |
-| Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness and manual worker/monitor runs pass; full failure/acknowledgement/resolution evidence pending |
-| Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | managed fault injection pending |
+| Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness, heartbeats, and a real private backup-stale create/deliver/ack/heal/resolve lifecycle pass; remaining injected-alert coverage pending |
+| Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | primary-RPC fallback, timed reconciliation outage, and provider-native PITR pass; destructive API/DB/Redis/restart faults and formal SLO calibration pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
 
 ## Managed skipped-report reconciliation evidence
@@ -106,8 +105,10 @@ Run the same evidence check only against the managed US testnet with:
 
 The run writes only ignored evidence under `artifacts/staging`; it does not enable
 paid writes, touch the public Netlify preview, or publish wallet addresses, hashes,
-provider identifiers, or credentials. Real MetaMask paid-call/claim evidence and the
-operator alert/drill packet remain separate gates.
+provider identifiers, or credentials. The bounded wallet/claim, alert lifecycle,
+RPC fallback, timed-outage, PITR, and control-readiness results are summarized in
+[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md); independent review and approved custody
+mutations remain separate gates.
 
 ## Managed synthetic agent staging
 
@@ -317,17 +318,16 @@ prerequisites rather than unfinished local code.
 These items do not reopen the completed Phase 0-4 repository scope and do not block
 continued non-mainnet development. They block only real-value/mainnet authorization.
 
-1. Provision the isolated managed topology and attach configuration/backup evidence.
+1. Managed topology/configuration and provider-native PITR integrity evidence: PASS.
 2. Execute managed secret, signer, settler, pause, and compromise-response drills.
-3. Deliver every required injected alert to a real operator and record acknowledgement.
-4. Run the guarded real-MetaMask auth/top-up/paid-call/earnings/claim journey and
-   capture frozen-staging web vitals.
-5. Hold API/worker down for one real hour; inject DB, Redis, RPC, restart, and broadcast
-   failures; meet the candidate catch-up/error/outbox SLOs with zero drift.
-6. Restore provider-native managed PITR and meet RPO/RTO.
-7. Run the frozen candidate for at least 72 hours with synthetic traffic, one verified
-   worker restart, three daily reconciliations, zero unexplained drift, zero stale
-   recoverable row, zero unresolved High/Critical finding, and zero unowned alert.
+3. Backup-stale delivery/ack/resolution: PASS; repeat coverage for remaining required alerts.
+4. Bounded real-MetaMask synthetic path plus exact reconciled claim: PASS; freeze
+   managed web vitals and sign the evidence packet.
+5. Timed reconciliation-schedule outage and RPC fallback: PASS; destructive API/DB/
+   Redis/restart-mid-settlement faults remain separate.
+6. Provider-native PITR integrity: PASS; formal restore-SLO calibration remains.
+7. Minimum 72-hour soak: owner-waived and **NOT RUN**. It is not passing evidence and
+   cannot authorize mainnet unless the release authority explicitly changes the gate.
 8. Hash every artifact, obtain operator approval, and pass `npm run phase2:evidence`.
 9. Complete independent contract and focused backend review before mainnet release.
 
@@ -341,9 +341,10 @@ the cursor, and event/outbox uniqueness makes replay idempotent.
 
 If every RPC is throttled or unavailable, recovery pauses safely rather than skipping
 blocks. Once an endpoint recovers, the worker resumes from the same cursor. The local
-27-block drill proves the invariant, but it does **not** prove the real one-hour SLO;
-provider limits, block density, and managed DB throughput must be measured by the
-pending staging outage artifact.
+27-block drill proves dense local correctness. Managed staging now also proves a
+3,610,626 ms reconciliation-schedule outage recovered to safe head in 7,225 ms with
+zero duplicate money, pending events/outbox, skipped range, or drift; Scheduler is
+ENABLED. A destructive API/Postgres/Redis outage remains a separate test.
 
 ## Next action
 
@@ -351,9 +352,9 @@ The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). Managed US sta
 with a verified Robinhood testnet escrow is online and deep-readiness green while
 paid writes remain disabled.
 
-Keep the public preview separate and the deployed staging stack write-disabled. The
-next checkpoint is retained real MetaMask auth/top-up/paid-call/claim evidence;
-the managed synthetic skipped-report repair is already passed. Follow it with the alert lifecycle,
-secret/authority/pause/compromise drills, one-hour outage, provider-native PITR, and
-minimum 72-hour soak. No external gate may be marked complete from a local plan or
-read-only preflight. Do not use mainnet value.
+Keep the public preview separate and the deployed staging stack write-disabled.
+Wallet/reconciliation, alert lifecycle, PITR, RPC fallback, and read-only control
+evidence are retained in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Next work is
+the signed evidence packet, independent review, signer-gas warning disposition, and
+separately approved multi-operator custody drills. The 72-hour soak is explicitly
+owner-waived and NOT RUN; it cannot be cited as PASS. Do not use mainnet value.

@@ -1,6 +1,6 @@
 # Velostra journey
 
-> Reconstructed from Git history and verified deployment evidence through 2026-07-19.
+> Reconstructed from Git history and verified deployment evidence through 2026-07-20.
 > This is the chronological handoff. [STATUS.md](./STATUS.md) remains the authority
 > for current truth; [ROADMAP.md](./ROADMAP.md) remains the authority for phase gates.
 
@@ -14,8 +14,8 @@
 | Escrow | Safe authorities, synthetic token, and escrow verified on chain 46630; no mainnet deployment |
 | Financial activation | Paid writes disabled; no real-value authorization |
 | Independent review | Not yet performed |
-| Active external next | Real-wallet, alert/drill, outage, PITR, and soak evidence |
-| Latest staging verification | Managed web bundle bound to testnet 46630; paid canary still closed |
+| Active external next | Signed evidence packet, independent review, signer-gas disposition, and separately approved custody drills |
+| Latest staging verification | Wallet/recovery, alert, one-hour outage, PITR, RPC fallback, and read-only control evidence retained; paid writes disabled |
 | Active repository next | Freeze Phase 5 scope before implementation |
 
 ## Journey timeline
@@ -243,6 +243,30 @@ Checkpoint: staging web binding is **PASS**; real MetaMask money-loop evidence i
 still **PENDING**. The next execution must use a deterministic dedicated extension
 popup/profile before any separately approved paid-canary window is considered.
 
+### 2026-07-20 - Managed operational evidence closed
+
+- retained the real private-Telegram backup-stale create/deliver/acknowledge/heal/
+  resolve lifecycle without tracking the channel or operator identity;
+- executed a bounded synthetic MetaMask money path; preserved the browser terminal
+  timeout as failure evidence and retained a separate exact chain/database claim
+  reconciliation PASS with paid writes disabled afterward;
+- forced primary RPC failure, observed fallback, and restored normal reconciliation;
+- paused reconciliation scheduling beyond one hour, caught up to the recorded safe
+  head in 7,225 ms with zero duplicates, pending events/outbox, skipped ranges, or
+  unexplained drift, and independently confirmed Scheduler returned ENABLED;
+- created a provider-native Neon past-point branch, verified 30 tables, nine
+  migrations, row counts, financial aggregates, constraints, and indexes, then
+  deleted the disposable branch;
+- refreshed read-only Safe/escrow/operator-control readiness with every check green;
+  custody rotation, pause/unpause, and compromise mutations remain unexecuted and
+  require separate multi-operator approval;
+- recorded the minimum 72-hour soak as owner-waived and NOT RUN, not PASS.
+
+Checkpoint: managed wallet/recovery, alert, RPC fallback, timed reconciliation outage,
+PITR, and control-readiness evidence are retained. Mainnet, real value, public paid
+writes, closed beta, independent audit, and custody mutation remain gated.
+
+
 ## What is complete
 
 ### Product and identity
@@ -283,14 +307,14 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 1. The public frontend remains intentionally separate and has no staging API, escrow,
    or settlement-token build values.
-2. The real MetaMask staging money loop (auth, top-up, paid call, correlated earnings,
-   and claim) and its frozen browser-performance baseline have not yet been retained.
-3. Managed secret/authority rotations, pause/unpause and compromise drills, KMS audit
-   logs, and signed ownership evidence are pending.
-4. Runtime alert failure/acknowledgement/resolution plus production error-tracking
-   redaction evidence are pending; direct Telegram and monitor delivery are verified.
-5. Managed performance baselines, one-hour outage, provider fault injection,
-   provider-native PITR, calibrated SLOs, and minimum 72-hour soak evidence are pending.
+2. Frozen managed-performance baselines and a hash-bound signed wallet packet remain pending.
+3. Managed secret/authority rotations, pause/unpause, compromise drills, KMS audit
+   logs, and signed ownership evidence require separate multi-operator approval.
+4. Production error-tracking redaction and injected-alert coverage beyond the retained
+   real backup-stale lifecycle remain pending.
+5. Destructive API/DB/Redis/restart-mid-settlement faults and formal SLO calibration
+   remain beyond the completed RPC fallback, timed reconciliation outage, and PITR.
+   The owner-waived 72-hour soak is NOT RUN and is not passing evidence.
 6. Independent smart-contract and focused backend security review are pending.
 7. Nothing is deployed on mainnet; no broadcast-approved mainnet manifest, low-value
    canary, closed beta, public paid writes, or real-value authorization exists.
@@ -302,15 +326,11 @@ These are real external/runtime gates, not hidden repository TODOs:
 
 1. Keep the deployed US testnet runtime and the public preview separate; retain paid
    writes disabled.
-2. Run the real MetaMask auth/top-up/paid-call/earnings/claim journey against managed
-   staging and retain its frozen performance evidence. The agent target and synthetic
-   skipped-report reconciliation proof are ready; the bounded paid-canary window and
-   dedicated extension-profile execution remain pending.
-3. Prove alert failure/acknowledgement/resolution, then execute managed secret and
-   authority rotation, pause/unpause, compromise response, audit-log ownership,
-   error-tracking, and redaction drills.
-4. Run bounded load/fault tests, the real one-hour outage, provider-native PITR, and
-   the minimum 72-hour soak; calibrate SLOs, then hash and sign the evidence packet.
+2. Freeze managed performance and hash/sign the retained redacted evidence packet.
+3. Resolve the signer-gas warning and repeat remaining alert/fault coverage.
+4. Execute custody mutations only under separate named multi-operator approval;
+   retain audit logs and signed ownership evidence.
+5. Keep the owner-waived 72-hour soak marked NOT RUN.
 
 ### Lane B - Independent review and controlled release
 
@@ -339,11 +359,11 @@ The managed-US-staging-online checkpoint is complete: identities/secrets, verifi
 chain authorities and escrow, immutable runtimes, migration, exact origin binding,
 and deep readiness are live with paid writes disabled.
 
-The next honest milestone is **managed real-wallet and operator evidence complete**.
-It requires the exact staging origin to complete auth, top-up, paid call, correlated
-builder credit, and claim; the synthetic skipped-report reconciliation repair is
-already retained. The alert failure/acknowledgement/resolution lifecycle must also
-be retained without publishing personal data, provider identifiers, or raw credentials.
+The managed real-wallet/recovery and operator-evidence checkpoint is now complete
+within the redacted scope in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The next
+honest milestone is a frozen, signed evidence packet plus independent review and
+separately approved custody operations, without publishing personal data, provider
+identifiers, or credentials.
 
 That checkpoint does not authorize mainnet, public paid writes, or closed beta.
 

@@ -1,6 +1,6 @@
 # Velostra documentation
 
-> Last verified against the workspace and managed staging: 2026-07-19.
+> Last verified against the workspace and managed staging: 2026-07-20.
 
 Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
 [ROADMAP.md](./ROADMAP.md), and
@@ -16,6 +16,7 @@ real-value flow is live.
 | Document | Purpose |
 |---|---|
 | [JOURNEY.md](./JOURNEY.md) | Chronological delivery record, completed work, open gates, and ordered handoff. |
+| [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md) | Redacted 2026-07-20 wallet, recovery, alert, outage, PITR, control, and regression truth. |
 | [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md) | Historical Phase 1 baseline, evidence, and original Phase 2 entry rules. |
 | [STATUS.md](./STATUS.md) | Current truth, internal-audit clearance, and mainnet prerequisites. |
 | [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md) | Frozen versioning, lifecycle, integration, trust/privacy, and exit contract. |
@@ -64,6 +65,9 @@ also live. Three verified Safe authorities, a synthetic token and escrow, immuta
 signer/API/web services, migration, scheduled jobs, scoped secrets, and private
 Telegram delivery are active; deep readiness passes and paid writes remain disabled.
 This is not an independent audit, closed-beta approval, mainnet deployment, or
-real-value authorization. Real-wallet/repair evidence, full alert lifecycle,
-rotation/pause/compromise drills, load/outage/PITR, and 72-hour soak remain pending.
+real-value authorization. Managed wallet/reconciliation, RPC fallback, private alert
+lifecycle, provider-native PITR, and read-only control-readiness evidence are retained
+in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Custody mutations, independent
+review, signed release approval, and mainnet activation remain gated. The explicitly
+waived 72-hour soak was not run and is not reported as PASS.
 Local completion never overrides activation gates.

@@ -30,6 +30,7 @@ import {
 } from '../lib/gateway/onchain.js'
 import { compareMoney, money, moneyToNumber } from '../lib/money.js'
 import { enqueueBuilderWebhook } from '../lib/platform/webhooks.js'
+import { checkSensitiveActionRateLimit } from '../lib/gateway/ratelimit.js'
 
 export const builderRouter = Router()
 
@@ -322,6 +323,9 @@ builderRouter.post('/claim', requireAuth, requireBuilder, async (req, res) => {
   const parsed = claimSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ error: 'amount and a valid transaction hash are required', code: 'INVALID_CLAIM_INPUT' })
+  }
+  if (!(await checkSensitiveActionRateLimit(req.auth!.id, 'claim'))) {
+    return res.status(429).json({ error: 'Too many claim checks; try again shortly', code: 'CLAIM_RATE_LIMITED' })
   }
 
   const [builder] = await db.select().from(builders).where(eq(builders.user_id, req.auth!.id)).limit(1)

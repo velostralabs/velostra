@@ -22,6 +22,7 @@ import { metricsHandler, readinessHandler, requestObservability } from './lib/ob
 import { logger } from './lib/observability/logger.js'
 import { apiV1Headers, legacyApiHeaders } from './lib/platform/http.js'
 import { durableIdempotency } from './lib/platform/idempotency.js'
+import { phase3PaidWriteMode } from './lib/phase3-canary.js'
 
 export function createApp(): express.Express {
   assertProductionConfiguration()
@@ -41,7 +42,7 @@ export function createApp(): express.Express {
     res.setHeader('X-Frame-Options', 'DENY')
     res.setHeader('Referrer-Policy', 'no-referrer')
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
-    res.setHeader('Cross-Origin-Resource-Policy', 'same-site')
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
     if (isProduction()) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
     }
@@ -63,13 +64,17 @@ export function createApp(): express.Express {
   app.use(attachAuth)
 
   app.get('/health', (_req, res) => {
+    const environment = process.env.VELOSTRA_ENVIRONMENT ?? 'local'
+    const mode = phase3PaidWriteMode(environment)
     res.json({
       status: 'ok',
       service: 'velostra-api',
-      environment: process.env.VELOSTRA_ENVIRONMENT ?? 'local',
+      environment,
       release: process.env.VELOSTRA_RELEASE ?? 'development',
       chain: 'Robinhood Chain',
       chainId: Number(process.env.ROBINHOOD_CHAIN_ID ?? 4663),
+      publicTestnet: environment === 'staging' && mode === 'public',
+      paidWrites: mode === 'public' ? 'enabled' : mode === 'canary' ? 'bounded' : 'disabled',
     })
   })
   app.get('/ready', readinessHandler)

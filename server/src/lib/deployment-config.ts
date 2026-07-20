@@ -188,6 +188,18 @@ function assertApi(environment: string, origins: string[]): void {
   assertChain(environment, true)
   secret('METRICS_AUTH_TOKEN')
   positiveInteger('OBSERVABILITY_INTERVAL_MS', '15000')
+  if (environment === 'staging' && process.env.PHASE3_PAID_WRITES_MODE === 'public') {
+    positiveInteger('PUBLIC_TESTNET_PAID_CALLS_PER_WALLET_DAY', '10')
+    positiveInteger('PUBLIC_TESTNET_PAID_CALLS_GLOBAL_DAY', '1000')
+    positiveInteger('SENSITIVE_ACTION_RATE_LIMIT_PER_MINUTE', '10')
+    if (!/^[1-9]\d*$/.test(process.env.PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR ?? '5000000')) {
+      throw new Error('Production PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR must be a positive minor-unit integer')
+    }
+    const maxTopup = Number(process.env.PUBLIC_TESTNET_MAX_TOPUP_USD ?? '100')
+    if (!Number.isFinite(maxTopup) || maxTopup <= 0 || maxTopup > 1000) {
+      throw new Error('Production PUBLIC_TESTNET_MAX_TOPUP_USD must be between 0 and 1000')
+    }
+  }
   positiveInteger('READINESS_WORKER_MAX_AGE_MS', '90000')
   positiveInteger('READINESS_WEBHOOK_WORKER_MAX_AGE_MS', '90000')
   if (process.env.READINESS_REQUIRE_WORKER !== 'true') {

@@ -33,6 +33,7 @@ async function main(): Promise<void> {
     assert(healthBody.chainId === 46630, 'health reports the configured staging chain')
     assert(health.headers.get('x-content-type-options') === 'nosniff', 'nosniff header is present')
     assert(health.headers.get('x-frame-options') === 'DENY', 'frame embedding is denied')
+    assert(health.headers.get('cross-origin-resource-policy') === 'cross-origin', 'allowlisted public web origins may consume API responses')
     assert(Boolean(health.headers.get('x-request-id')), 'request correlation ID is returned')
     assert(health.headers.get('access-control-allow-origin') === 'https://app.velostra.test', 'CORS echoes only the allowlisted origin')
     assert(health.headers.get('x-powered-by') === null, 'Express fingerprint header is disabled')

@@ -13,6 +13,8 @@ import {
   verifyDepositTransaction,
 } from '../lib/gateway/onchain.js'
 import { compareMoney, money, moneyToNumber } from '../lib/money.js'
+import { phase3PaidWriteMode } from '../lib/phase3-canary.js'
+import { checkSensitiveActionRateLimit } from '../lib/gateway/ratelimit.js'
 
 export const dashboardRouter = Router()
 
@@ -75,7 +77,22 @@ dashboardRouter.post('/topup', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}`, code: 'INVALID_TOPUP_AMOUNT' })
 
   const userId = req.auth!.id
+  if (!(await checkSensitiveActionRateLimit(userId, 'topup'))) {
+    return res.status(429).json({ error: 'Too many top-up checks; try again shortly', code: 'TOPUP_RATE_LIMITED' })
+  }
+
   const amount = money(parsed.data.amount_usd)
+  const publicTestnetTopupCap = money(process.env.PUBLIC_TESTNET_MAX_TOPUP_USD ?? '100')
+  if (
+    process.env.VELOSTRA_ENVIRONMENT === 'staging' &&
+    phase3PaidWriteMode('staging') === 'public' &&
+    compareMoney(amount, publicTestnetTopupCap) > 0
+  ) {
+    return res.status(400).json({
+      error: `Public testnet top-ups are capped at ${moneyToNumber(publicTestnetTopupCap)} synthetic USDG per transaction`,
+      code: 'PUBLIC_TESTNET_TOPUP_CAP',
+    })
+  }
   if (compareMoney(amount, MIN_TOPUP_USD) < 0) {
     return res.status(400).json({ error: `Minimum top-up is $${MIN_TOPUP_USD}`, code: 'INVALID_TOPUP_AMOUNT' })
   }

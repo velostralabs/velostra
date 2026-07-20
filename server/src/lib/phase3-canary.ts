@@ -419,13 +419,18 @@ export function assertPhase3RuntimeConfiguration(
 ): void {
   const mode = phase3PaidWriteMode(environment)
   const stagingCanary = environment === 'staging' && mode === 'canary'
-  if (!mainnetLike(environment) && !stagingCanary) return
+  const stagingPublic = environment === 'staging' && mode === 'public'
+  if (!mainnetLike(environment) && !stagingCanary && !stagingPublic) return
   if (mainnetLike(environment)) {
     if (process.env.PHASE3_MAINNET_STARTUP_APPROVAL !== 'explicitly-approved') {
       throw new Error('Phase 3 blocks production/mainnet startup without explicit release approval')
     }
-  } else if (process.env.PHASE2_STAGING_CANARY_APPROVAL !== 'isolated-staging-paid-canary') {
-    throw new Error('Staging paid canary requires its isolated approval sentinel')
+  } else if (stagingCanary) {
+    if (process.env.PHASE2_STAGING_CANARY_APPROVAL !== 'isolated-staging-paid-canary') {
+      throw new Error('Staging paid canary requires its isolated approval sentinel')
+    }
+  } else if (process.env.PUBLIC_TESTNET_APPROVAL !== 'owner-approved-public-testnet') {
+    throw new Error('Public testnet paid writes require explicit owner approval')
   }
   const manifest = loadPhase3ReleaseBinding(role, environment, release)
   if (!manifest) throw new Error('Production Phase 3 release manifest is required')
@@ -435,7 +440,7 @@ export function assertPhase3RuntimeConfiguration(
     const { policy } = loadCanaryPolicy(manifest)
     assertCanaryWindow(policy)
   }
-  if (mode === 'public') assertCanaryExit(manifest)
+  if (mode === 'public' && mainnetLike(environment)) assertCanaryExit(manifest)
 }
 
 export function resolvePhase3PaidCallAdmission(input: {
@@ -453,7 +458,22 @@ export function resolvePhase3PaidCallAdmission(input: {
       503
     )
   }
-  if (mode === 'public') return { mode: 'public' }
+  if (mode === 'public') {
+    if (environment === 'staging') {
+      const maxGrossMinor = asPositiveMinor(
+        process.env.PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR ?? '5000000',
+        'PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR'
+      )
+      if (moneyToMinor(input.gross) > maxGrossMinor) {
+        throw new Phase3AdmissionError(
+          'PUBLIC_TESTNET_PER_CALL_CAP',
+          'This paid call exceeds the public testnet per-call cap',
+          429
+        )
+      }
+    }
+    return { mode: 'public' }
+  }
 
   try {
     const release = required('VELOSTRA_RELEASE')

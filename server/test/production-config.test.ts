@@ -70,6 +70,12 @@ const managedKeys = new Set([
   'PHASE3_CANARY_EXIT_APPROVAL',
   'PHASE3_CANARY_EXIT_EVIDENCE',
   'PHASE3_CANARY_EXIT_EVIDENCE_SHA256',
+  'PUBLIC_TESTNET_APPROVAL',
+  'PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR',
+  'PUBLIC_TESTNET_PAID_CALLS_PER_WALLET_DAY',
+  'PUBLIC_TESTNET_PAID_CALLS_GLOBAL_DAY',
+  'PUBLIC_TESTNET_MAX_TOPUP_USD',
+  'SENSITIVE_ACTION_RATE_LIMIT_PER_MINUTE',
 ])
 const original = new Map<string, string | undefined>()
 for (const key of managedKeys) original.set(key, process.env[key])
@@ -201,6 +207,7 @@ try {
   rejects({ VELOSTRA_ENVIRONMENT: 'mainnet' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_ENVIRONMENT: 'robinhood-mainnet' }, /Phase 3 blocks production\/mainnet/)
   rejects({ VELOSTRA_PROCESS_ROLE: 'unknown' }, /VELOSTRA_PROCESS_ROLE/)
+
 
   configure({
     VELOSTRA_PROCESS_ROLE: 'webhook-worker',

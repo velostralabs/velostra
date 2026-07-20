@@ -37,6 +37,8 @@ const managed = [
   'PHASE3_CANARY_POLICY_B64',
   'PHASE3_CANARY_POLICY_SHA256',
   'PHASE3_CANARY_STARTED_AT',
+  'PUBLIC_TESTNET_APPROVAL',
+  'PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR',
 ] as const
 const original = new Map(managed.map((key) => [key, process.env[key]]))
 
@@ -167,6 +169,33 @@ try {
     /isolated approval sentinel/
   )
   console.log('PASS: managed staging defaults disabled and requires a distinct approval')
+
+  process.env.PHASE3_PAID_WRITES_MODE = 'public'
+  delete process.env.PUBLIC_TESTNET_APPROVAL
+  assert.throws(
+    () => assertPhase3RuntimeConfiguration('api', 'staging', release),
+    /explicit owner approval/
+  )
+  process.env.PUBLIC_TESTNET_APPROVAL = 'owner-approved-public-testnet'
+  process.env.PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR = '5000000'
+  assert.doesNotThrow(() => assertPhase3RuntimeConfiguration('api', 'staging', release))
+  assert.equal(resolvePhase3PaidCallAdmission({
+    walletAddress: wallet,
+    agentId: agent,
+    builderAddress: builder,
+    gross: '5.000000',
+  }).mode, 'public')
+  assert.throws(
+    () => resolvePhase3PaidCallAdmission({
+      walletAddress: wallet,
+      agentId: agent,
+      builderAddress: builder,
+      gross: '5.000001',
+    }),
+    (error) => error instanceof Phase3AdmissionError &&
+      error.code === 'PUBLIC_TESTNET_PER_CALL_CAP'
+  )
+  console.log('PASS: public testnet requires owner approval and enforces a per-call cap')
 
   process.env.VELOSTRA_ENVIRONMENT = 'robinhood-mainnet'
   process.env.PHASE3_MAINNET_STARTUP_APPROVAL = 'explicitly-approved'

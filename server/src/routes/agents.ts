@@ -19,7 +19,12 @@ import { requireAuth } from '../middleware/auth.js'
 import { buildGatewayHeaders } from '../lib/gateway/hmac.js'
 import { AgentEndpointError, safeFetchAgent } from '../lib/gateway/ssrf.js'
 import { decryptAgentSecret, omitAgentSecret } from '../lib/gateway/secrets.js'
-import { checkRateLimit, checkAgentRateLimit, checkGlobalRateLimit } from '../lib/gateway/ratelimit.js'
+import {
+  checkRateLimit,
+  checkAgentRateLimit,
+  checkGlobalRateLimit,
+  checkPublicTestnetPaidCallLimit,
+} from '../lib/gateway/ratelimit.js'
 import { hasFreeTierRemaining, incrementFreeTier } from '../lib/gateway/quota.js'
 import { PLATFORM_FEE_BPS } from '../lib/constants.js'
 import {
@@ -198,6 +203,19 @@ agentsRouter.post('/:slug/run', requireAuth, async (req, res) => {
         return res.status(error.statusCode).json({ error: error.message, code: error.code })
       }
       throw error
+    }
+
+    const publicTestnetLimit = await checkPublicTestnetPaidCallLimit(userId)
+    if (!publicTestnetLimit.allowed) {
+      const walletLimited = publicTestnetLimit.reason === 'wallet'
+      return res.status(429).json({
+        error: walletLimited
+          ? 'This wallet has reached its public testnet paid-call allowance for today'
+          : 'The public testnet has reached its paid-call allowance for today',
+        code: walletLimited
+          ? 'PUBLIC_TESTNET_WALLET_DAILY_LIMIT'
+          : 'PUBLIC_TESTNET_GLOBAL_DAILY_LIMIT',
+      })
     }
   }
   const body = JSON.stringify({ input: parsed.data.input, user_id: userId, call_id: callId })

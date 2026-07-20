@@ -113,14 +113,15 @@ test('critical desktop layouts have no viewport overflow or known text collision
 })
 
 test('home and marketplace retain approved desktop visual baselines', async ({ page }) => {
+  const platformSuffix = process.platform === 'linux' ? '-linux' : ''
   await page.goto('/')
   await disableNondeterministicMotion(page)
-  await expect(page).toHaveScreenshot('home-desktop.png', { fullPage: false })
+  await expect(page).toHaveScreenshot('home-desktop' + platformSuffix + '.png', { fullPage: false })
 
   await page.goto('/marketplace')
   await expect(page.getByRole('heading', { name: 'Flowbook Trader' })).toBeVisible()
   await disableNondeterministicMotion(page)
-  await expect(page).toHaveScreenshot('marketplace-desktop.png', { fullPage: false })
+  await expect(page).toHaveScreenshot('marketplace-desktop' + platformSuffix + '.png', { fullPage: false })
 })
 
 test('canonical routes survive direct refresh and browser history', async ({ page }) => {

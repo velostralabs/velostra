@@ -90,6 +90,10 @@ $signerIntentDiagnosticText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\check-staging-signer-intent.mjs')
 $signerIntentRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'check-staging-signer-intent.ps1')
+$signerFundingText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\fund-staging-signer.mjs')
+$signerFundingRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'fund-staging-signer.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -214,6 +218,13 @@ Require-Match $signerIntentDiagnosticText 'recoverTransactionAddress' 'Signer in
 Reject-Match $signerIntentDiagnosticText 'console[.](?:info|error).*rawTransaction' 'Signer diagnostic must not print raw transactions'
 Require-Match $signerIntentRunnerText "paidWritesMode -ne 'disabled'" 'Signer diagnostic runner must fail closed unless paid writes are disabled'
 Reject-Match $signerIntentRunnerText 'Write-Output.*(?:RpcUrl|DatabaseUrl|RedisUrl)' 'Signer diagnostic runner must not print managed secrets'
+Require-Match $signerFundingText "PHASE3_PAID_WRITES_MODE.*disabled" 'Signer funding must require disabled paid writes'
+Require-Match $signerFundingText "TARGET_BALANCE = parseEther[(]'0[.]01'[)]" 'Signer funding target must remain bounded'
+Require-Match $signerFundingText "SOURCE_RESERVE = parseEther[(]'0[.]001'[)]" 'Signer funding must preserve source reserves'
+Reject-Match $signerFundingText 'console[.](?:info|error).*hash' 'Signer funding must not print transaction hashes'
+Require-Match $signerFundingRunnerText 'DPAPI-CurrentUser' 'Signer funding must use encrypted testnet sources'
+Require-Match $signerFundingRunnerText "paidWritesMode -ne 'disabled'" 'Signer funding runner must fail closed unless paid writes are disabled'
+Reject-Match $signerFundingRunnerText 'Write-Output.*(?:PRIVATE_KEY|Bytes|RpcUrl)' 'Signer funding runner must not print credentials'
 Require-Match $telegramHelperText 'Add-Type -AssemblyName System[.]Net[.]Http' 'Telegram helper must load HttpClient in Windows PowerShell'
 Require-Match $telegramHelperText 'Read-Host .* -AsSecureString' 'Telegram helper must use a secure token prompt'
 Require-Match $telegramHelperText 'secure[.]Dispose[(][)]' 'Telegram helper must dispose the secure token prompt'

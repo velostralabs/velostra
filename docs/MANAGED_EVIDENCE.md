@@ -106,4 +106,3 @@ and live read-only checks.
 - keep mainnet deployment, real value, closed beta, and public paid writes disabled
   until those gates close;
 - the owner-waived 72-hour soak remains NOT RUN and cannot be cited as evidence.
-

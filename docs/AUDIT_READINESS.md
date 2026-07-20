@@ -1,6 +1,6 @@
 # External audit readiness packet
 
-> Prepared: 2026-07-19.
+> Prepared: 2026-07-20.
 > Status: internal engineering/CI audit passed and the repository is clear for
 > continued development; independent third-party review has not yet been performed
 > and remains a mainnet release prerequisite.
@@ -29,6 +29,12 @@
 > authorities, synthetic token, and escrow. It is deep-ready with paid writes disabled.
 > Reviewers should treat both the public browser supply chain and the isolated managed
 > runtime as in-scope surfaces, not as mainnet or real-value activation.
+>
+> Managed evidence note: redacted wallet/reconciliation, RPC fallback, private-alert
+> lifecycle, provider-native PITR, and read-only control-readiness proof now exist in
+> [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Live custody mutations, a signed
+> release packet, and independent review remain open. The owner-waived 72-hour soak
+> was not run and is not audit evidence.
 
 ## Review objective
 
@@ -117,8 +123,9 @@ fail-closed configuration.
 - AI model correctness or builder output quality;
 - frontend visual design;
 - vendor-managed cloud internals not present in this repository;
-- the truthfulness of future operator/PITR/wallet/soak evidence until that evidence
-  is produced and hash-bound to the frozen release;
+- provider-console internals beyond the retained redacted wallet, alert, PITR, outage,
+  and readiness facts; future custody/soak evidence remains out of scope until
+  produced and hash-bound to the frozen release;
 
 ## Reproducible evidence
 

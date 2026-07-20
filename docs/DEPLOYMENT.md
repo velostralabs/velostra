@@ -1,6 +1,6 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts and managed staging: 2026-07-19.
+> Last verified against build/deploy scripts and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -17,8 +17,9 @@ Phase 0-4 repository preparation is complete and has passed internal engineering
 audit. This is not deployment authorization. Independent contract/backend review,
 the managed-staging evidence packet, an immutable approved release manifest, and an
 explicit operator broadcast remain mainnet release gates. Provision only isolated
-non-mainnet-value staging, execute the real-wallet/alert/outage/PITR/72-hour drills,
-and pass every signed validator. Do not deploy mainnet value until all gates close.
+non-mainnet-value staging and retain the wallet/recovery, alert, outage, PITR, and
+control packet in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The 72-hour run is
+owner-waived and NOT RUN. Do not deploy mainnet value until all gates close.
 
 ## Current US-only staging target
 
@@ -297,5 +298,7 @@ Contract incidents use pause, settler revoke/rotation, and successor procedure f
 Correctness is safe because failed ranges do not advance the cursor. Default 2,000
 block chunks, retry/backoff, adaptive splitting, and ordered multi-RPC failover let the
 worker resume a large gap without skipping. The local 27-block drill passed with zero
-drift; sustained failure across every provider can still delay recovery. Freeze no
-one-hour SLO until the managed-staging outage artifact passes.
+drift; sustained failure across every provider can still delay recovery. The managed
+reconciliation schedule recovered from a 3,610,626 ms pause in 7,225 ms with zero
+duplicate money, pending work, skipped range, or drift, and Scheduler returned ENABLED.
+Destructive API/Postgres/Redis outage testing remains separate.

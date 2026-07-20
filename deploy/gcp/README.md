@@ -4,7 +4,7 @@ This directory is the executable deployment policy for the low-cost Velostra
 staging stack. It is isolated from Robinhood mainnet and rejects every non-US
 region.
 
-Deployment truth as of 2026-07-19: the separate static protocol preview remains live
+Deployment truth as of 2026-07-20: the separate static protocol preview remains live
 on Netlify at `velostra.xyz` and is not connected to staging. The US foundation,
 managed Neon/Upstash/Alchemy data plane, twelve scoped secrets, HSM settler, and
 private-Telegram transport are active. Three disjoint canonical Safe 1.4.1 2-of-3
@@ -218,19 +218,20 @@ and that API readiness, reconciliation, webhook, and monitor jobs are healthy.
 
 ## 9. Evidence gates
 
-The stack is not considered staging-ready until all of these are captured:
+Current retained evidence:
 
-- contract deployment verification passes;
-- API health and readiness pass;
-- a real wallet can authenticate on Robinhood testnet;
-- top-up, paid call, builder credit, and claim complete on testnet;
-- reconciliation repairs intentionally skipped database reports (managed synthetic
-  direct-deposit proof passed on 2026-07-19; rerun with the guarded command below);
-- webhook retry and dead-letter behavior is observed;
-- alert delivery is observed;
-- a Neon point-in-time recovery drill succeeds;
-- a 72-hour soak shows bounded drift, no stuck outbox, and acceptable RPC
-  catch-up.
+- contract deployment, API health/deep readiness, roles, and solvency pass;
+- bounded real-wallet synthetic money execution plus exact reconciled claim pass;
+- skipped-report direct-deposit repair and RPC fallback pass;
+- private Telegram backup-stale delivery, acknowledgement, heartbeat, and resolution pass;
+- managed reconciliation recovers from a 3,610,626 ms scheduling pause in 7,225 ms
+  with zero duplicates, pending work, skipped range, or drift; Scheduler is ENABLED;
+- provider-native Neon PITR matches all 30 tables, nine migrations, row counts,
+  financial aggregates, constraints, and indexes;
+- read-only Safe/escrow/operator-control readiness passes;
+- the minimum 72-hour soak is owner-waived and **NOT RUN**, not PASS.
+
+Webhook dead-letter runtime evidence and destructive API/DB/Redis faults remain separate.
 
 Repository tests prove the implementation and deployment policy. They do not
 substitute for these external runtime evidence gates.
@@ -244,14 +245,18 @@ API deep readiness passes and all scheduled worker entrypoints have completed at
 one manual verification run. The public Netlify preview remains intentionally
 separate and paid writes remain disabled.
 
-Remaining gates are external evidence rather than missing deployment: real MetaMask
-money-loop, alert failure/acknowledgement/resolution, secret/authority/pause/compromise
-drills, one-hour outage catch-up, provider-native PITR, minimum 72-hour soak,
-independent review, and accountable release approval.
+Remaining gates are external evidence rather than missing deployment: frozen managed
+performance, signed evidence packaging, remaining alert/fault coverage, signer-gas
+warning disposition, separately approved secret/authority/pause/compromise mutations,
+independent review, and accountable release approval. The waived soak remains NOT RUN.
 
 To reproduce the managed skipped-report proof without enabling paid writes:
 
     powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply
+    powershell -NoProfile -File deploy/gcp/check-staging-claim.ps1
+    powershell -NoProfile -File deploy/gcp/capture-alert-lifecycle.ps1
+    powershell -NoProfile -File deploy/gcp/run-one-hour-outage.ps1 -Apply
+    npm run staging:control-readiness
 
 The runner uses only synthetic chain value, pauses Scheduler during the deliberate
 missing-report window, validates the backfill and safe cursor, and resumes Scheduler

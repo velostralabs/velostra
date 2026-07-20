@@ -1,6 +1,6 @@
 # Operations and incident runbook
 
-> Last verified against the workspace and managed staging: 2026-07-19.
+> Last verified against the workspace and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -86,9 +86,10 @@ authorities plus the synthetic token and escrow are deployed and verified. Immut
 Cloud Run signer/API/web services, migration, reconciliation/webhook/monitor jobs,
 and Scheduler triggers are live. The web origin is bound, all deep-readiness checks
 pass, the signer is private, and paid writes are disabled. Manual executions have
-verified each scheduled worker entrypoint. Do not mark wallet, repair, rotation,
-alert-lifecycle, outage, PITR, or soak evidence complete until its specific managed
-drill produces a retained artifact.
+verified each scheduled worker entrypoint. Wallet/reconciliation, backup-stale alert
+lifecycle, timed reconciliation outage, PITR, RPC fallback, and read-only controls
+now have retained redacted evidence. Custody mutations and the owner-waived soak do not;
+see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Reconciliation commands
 
@@ -137,9 +138,11 @@ A one-hour API/worker outage does not lose confirmed events. On restart:
 At an illustrative 100 ms block interval, one hour is about 36,000 blocks or 18
 default chunks. A 429 is not recursively split; viem first fails over through the
 configured `ROBINHOOD_RPC_FALLBACK_URLS`, then iteration-level retry/backoff applies. If every
-endpoint remains unavailable, the watch loop resumes from the unchanged cursor. Local
-load/reorg evidence proves correctness, but only the pending managed-staging one-hour
-drill may freeze the catch-up SLO.
+endpoint remains unavailable, the watch loop resumes from the unchanged cursor. The
+managed Scheduler was paused for 3,610,626 ms, then caught up to the recorded safe
+head in 7,225 ms with zero skipped ranges, duplicates, pending events/outbox, or drift;
+Scheduler was independently confirmed ENABLED. This is a reconciliation-schedule
+outage proof, not a destructive API/Postgres/Redis outage.
 
 ## Webhook delivery and recovery
 
@@ -290,8 +293,10 @@ SOURCE_DATABASE_URL=... RESTORED_DATABASE_URL=... npm --prefix server run restor
 `restore:verify` compares all 30 public tables, at least nine migrations, exact transaction/
 claim/credit/earnings/call/outbox aggregates, critical constraints, and indexes. When
 `RESTORE_DRILL_STARTED_AT`, `BACKUP_CAPTURED_AT`, and `RESTORE_EVIDENCE_PATH` are set,
-it writes a redacted RPO/RTO evidence artifact. The disposable timed drill passed; the
-provider-native managed PITR drill remains an external mainnet release prerequisite.
+it writes a redacted RPO/RTO evidence artifact. Provider-native Neon PITR now also
+passes for 30 tables, nine migrations, exact row counts/financial aggregates,
+constraints, and indexes. The disposable provider branch was deleted after the
+redacted evidence was retained.
 
 ## Secret rotation
 
@@ -320,9 +325,17 @@ runs an idempotent Cloud Run seed job:
 
     powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
 
-This step does not enable the API paid path. A separately guarded MetaMask canary
-window is still required for top-up, paid-call, correlated earnings, and claim
-evidence.
+This step does not enable the API paid path. The bounded MetaMask path has run; use the
+exact read-only verifier as the recovery authority and keep the original browser
+timeout artifacts unchanged.
+
+    powershell -NoProfile -File deploy/gcp/check-staging-claim.ps1
+    powershell -NoProfile -File deploy/gcp/capture-alert-lifecycle.ps1
+    powershell -NoProfile -File deploy/gcp/run-one-hour-outage.ps1 -Apply
+    npm run staging:control-readiness
+
+Each command writes only redacted ignored evidence. The one-hour runner always resumes
+Scheduler in `finally`; still verify provider state is `ENABLED` before handoff.
 
 ```bash
 # measured paid-call load; writes artifacts/phase2/load-*.json

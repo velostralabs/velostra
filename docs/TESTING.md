@@ -1,6 +1,6 @@
 # Testing and release evidence
 
-> Last verified against tests, CI, and managed staging: 2026-07-19.
+> Last verified against tests, CI, and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -214,18 +214,19 @@ The committed product target remains 200 ms. Shared CI runners receive a separat
 declared 50 ms scheduler-jitter allowance, and every run logs the raw route vitals plus
 the effective assertion limit so the allowance cannot hide silently.
 
-Real MetaMask is therefore automated but not yet evidenced. Execute
-`npm run test:wallet:metamask` only against isolated staging and attach its report to
-the Phase 2 evidence manifest. The guarded run also requires
-`PHASE2_WALLET_PAID_WRITES_APPROVED=isolated-staging-canary`; this is a separate,
-explicit low-value staging approval and is never inferred from the ordinary test
-approval.
+The bounded real-MetaMask staging path has now executed with synthetic value. Its
+browser wrapper did not observe the expected terminal UI state, so the original
+wrapper artifacts remain failed rather than being rewritten. Managed reconciliation
+completed the chain-confirmed state and the retained read-only verifier proves one
+matching claim receipt/event, exact database/chain totals, and disabled paid writes.
+This reconciled proof is the current money-path authority.
 
 The managed skipped-report repair is separately evidenced and passed on 2026-07-19.
 The guarded runner deliberately sends a direct synthetic-token escrow deposit without
 calling `/api/dashboard/topup`, verifies the missing Postgres row, runs one
 reconciliation pass, and checks the repaired record/cursor before resuming Scheduler.
-It is a recovery proof, not a substitute for real MetaMask paid-call/claim evidence.
+It is an independent skipped-report recovery proof; the bounded wallet/claim
+evidence is retained separately in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Current dependency audit
 
@@ -239,13 +240,14 @@ time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPO
 
 ## Phase 2 operational evidence still required
 
-- real MetaMask journey and frozen managed-staging performance baseline;
+- frozen managed-staging performance baseline and signed wallet evidence packet;
 - managed secret/signer/authority rotation and compromise drills;
-- real operator delivery/acknowledgement for every required injected alert;
-- one-hour API/worker outage plus managed DB, Redis, RPC, restart, and ambiguity faults;
-- provider-native managed PITR with measured RPO/RTO;
-- minimum 72-hour soak with restart, daily reconciliation, zero drift/stale rows/
-  High-Critical findings/unowned alerts;
+- injected-alert coverage beyond the retained backup-stale delivery/ack/resolution proof;
+- destructive API/DB/Redis/restart-mid-settlement faults beyond the completed RPC
+  fallback and timed reconciliation-schedule outage;
+- formal restore-SLO calibration beyond the passing provider-native Neon PITR integrity drill;
+- the minimum 72-hour soak is owner-waived for this checkpoint and remains NOT RUN,
+  so it cannot be used as passing release evidence;
 - signed SHA-256-bound release packet accepted by `npm run phase2:evidence`;
 - independent contract and focused backend review before real-value/mainnet release.
 

@@ -1,6 +1,6 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace and managed staging: 2026-07-19.
+> Last verified against the workspace and managed staging: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -29,7 +29,7 @@ Frontend, API, reconciliation worker, webhook worker, Postgres, Redis, RPC, and
 contract are separate failure domains. Backend roles use the same immutable build but
 run as separate supervised processes.
 
-Current deployment overlay (2026-07-19): the Vite/React protocol preview remains
+Current deployment overlay (2026-07-20): the Vite/React protocol preview remains
 public on Netlify at `velostra.xyz` with no staging build values. A separate isolated
 Cloud Run web origin is bound to the managed API. The API, private signer,
 reconciliation/webhook/monitor jobs, Scheduler triggers, Neon Postgres, Upstash Redis,
@@ -236,8 +236,10 @@ The worker resumes from its cursor, so a one-hour outage is a backlog, not data
 loss. Default 2,000-block chunks, per-RPC timeout, ordered endpoint failover,
 exponential retry, adaptive splitting, and range-level cursor commits bound each step.
 Sustained failure across every endpoint can extend catch-up indefinitely; it cannot
-skip failed work. Local catch-up/failover invariants pass; the timed managed-staging
-one-hour SLO remains an external gate.
+skip failed work. Local catch-up/failover invariants pass. The managed reconciliation
+schedule was paused beyond one hour and caught up to its recorded safe head in 7,225
+ms with zero duplicates, pending work, skipped range, or drift. This validates worker
+recovery, not a destructive API/Postgres/Redis outage.
 
 The cost-bounded staging cadence can add up to 15 minutes before a scheduled repair
 starts, so readiness and stale-worker alerts use a 20-minute maximum age. Once a job

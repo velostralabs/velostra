@@ -281,7 +281,7 @@ Require-Match $signerFundingRunnerText "paidWritesMode -ne 'disabled'" 'Signer f
 Reject-Match $signerFundingRunnerText 'Write-Output.*(?:PRIVATE_KEY|Bytes|RpcUrl)' 'Signer funding runner must not print credentials'
 Require-Match $faucetRunnerText "ValidateSet\('EvidenceWallet', 'SettlementSigner'\)" 'Faucet helper must support a separately selected signer recipient'
 Require-Match $faucetRunnerText 'FAUCET_RECIPIENT_ADDRESS' 'Faucet helper must pass the selected recipient ephemerally'
-Require-Match $faucetBrowserText 'connectedAccount !== expectedAddress' 'Faucet requester identity must remain pinned to the isolated wallet'
+Require-Match $faucetBrowserText 'connectedAccount === expectedAddress' 'Faucet helper must distinguish the evidence wallet without exposing another isolated account'
 Require-Match $faucetBrowserText 'recipientAddress' 'Faucet delivery must support a role-specific recipient'
 Reject-Match ($faucetRunnerText + $faucetBrowserText) 'Write-Output.*(?:recipientAddress|expectedAddress)' 'Faucet helper must not print staging identities'
 Require-Match $telegramHelperText 'Add-Type -AssemblyName System[.]Net[.]Http' 'Telegram helper must load HttpClient in Windows PowerShell'

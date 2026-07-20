@@ -4,6 +4,7 @@ param(
   [ValidatePattern('^(?:metamask-canary-profile|metamask-dedicated-profile-v[2-9][0-9]*)$')]
   [string]$ProfileName = 'metamask-dedicated-profile-v6',
   [switch]$PreflightOnly,
+  [switch]$ClaimOnly,
   [switch]$Apply
 )
 
@@ -14,7 +15,7 @@ $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $ArtifactsRoot = Join-Path $RepositoryRoot 'artifacts\staging'
 $RuntimePath = Join-Path $ArtifactsRoot 'runtime.json'
 $ReadinessPath = Join-Path $ArtifactsRoot 'evidence\canary-wallet-readiness.json'
-$EvidencePath = Join-Path $ArtifactsRoot 'evidence\paid-canary.json'
+$EvidencePath = Join-Path $ArtifactsRoot ('evidence\' + $(if ($ClaimOnly) { 'claim-canary.json' } else { 'paid-canary.json' }))
 $PrivateRoot = Join-Path $ArtifactsRoot 'evidence\private'
 $WalletPath = Join-Path $PrivateRoot 'reconciliation-wallet.dpapi.json'
 $VaultPath = Join-Path $PrivateRoot 'metamask-vault.dpapi.json'
@@ -59,11 +60,18 @@ function Invoke-NativeChecked {
   if ($code -ne 0) { throw $FailureMessage }
 }
 
+if ($PreflightOnly -and $ClaimOnly) { throw 'PreflightOnly and ClaimOnly are mutually exclusive' }
+
 if (-not $Apply) {
-  Write-Output 'PLAN open one hashed-subject USDG 1.20 staging canary'
-  Write-Output 'PLAN run one MetaMask top-up, one synthetic paid call, and one USDG 1.00 claim'
-  Write-Output 'PLAN close paid writes in finally and persist only a redacted pass/fail artifact'
-  Write-Output 'No paid action sent. Pass -Apply after explicit approval.'
+  if ($ClaimOnly) {
+    Write-Output 'PLAN keep paid writes disabled and run one isolated MetaMask USDG 1.00 builder claim'
+    Write-Output 'PLAN persist only a redacted pass/fail claim artifact'
+  } else {
+    Write-Output 'PLAN open one hashed-subject USDG 1.20 staging canary'
+    Write-Output 'PLAN run one MetaMask top-up, one synthetic paid call, and one USDG 1.00 claim'
+    Write-Output 'PLAN close paid writes in finally and persist only a redacted pass/fail artifact'
+  }
+  Write-Output 'No chain action sent. Pass -Apply after explicit approval.'
   exit 0
 }
 
@@ -128,27 +136,35 @@ try {
   } finally { Pop-Location }
   Remove-Item Env:PHASE2_WALLET_PREFLIGHT -ErrorAction SilentlyContinue
 
-  if (-not $PreflightOnly) {
+  if ($ClaimOnly) {
+    $env:PHASE2_WALLET_CLAIM_ONLY = 'isolated-staging-claim-only'
+    Push-Location $RepositoryRoot
+    try {
+      Invoke-NativeChecked -FailureMessage 'Isolated MetaMask claim canary failed' -Command {
+        & npm run test:wallet:metamask
+      }
+    } finally { Pop-Location }
+  } elseif (-not $PreflightOnly) {
     $Closed = $false
-  & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
-  if ($LASTEXITCODE -ne 0) { throw 'Unable to open the bounded staging canary' }
-  $Opened = $true
-  $env:PHASE2_WALLET_PAID_WRITES_APPROVED = 'isolated-staging-canary'
+    & $CanaryControl -Action Open -ProjectId $ProjectId -Apply
+    if ($LASTEXITCODE -ne 0) { throw 'Unable to open the bounded staging canary' }
+    $Opened = $true
+    $env:PHASE2_WALLET_PAID_WRITES_APPROVED = 'isolated-staging-canary'
 
-  Push-Location $RepositoryRoot
-  try {
-    Invoke-NativeChecked -FailureMessage 'Bounded MetaMask paid canary failed' -Command {
-      & npm run test:wallet:metamask
+    Push-Location $RepositoryRoot
+    try {
+      Invoke-NativeChecked -FailureMessage 'Bounded MetaMask paid canary failed' -Command {
+        & npm run test:wallet:metamask
+      }
+    } finally { Pop-Location }
     }
-  } finally { Pop-Location }
-  }
   $Passed = $true
 } catch {
   $Failure = $_.Exception.Message
 } finally {
   foreach ($name in @(
     'EVIDENCE_WALLET_PRIVATE_KEY','PHASE2_WALLET_E2E_APPROVED',
-    'PHASE2_WALLET_PREFLIGHT',
+    'PHASE2_WALLET_PREFLIGHT','PHASE2_WALLET_CLAIM_ONLY',
     'PHASE2_WALLET_PAID_WRITES_APPROVED','PHASE2_WALLET_EXPECTED_ADDRESS',
     'PHASE2_WALLET_TOPUP_AMOUNT','PHASE2_WALLET_CLAIM_AMOUNT',
     'PHASE2_WALLET_AGENT_SLUG','METAMASK_VAULT_PASSWORD',
@@ -170,14 +186,15 @@ try {
   }
   $evidence = [ordered]@{
     schemaVersion = 1
-    kind = 'velostra-staging-paid-canary'
+    kind = $(if ($ClaimOnly) { 'velostra-staging-claim-canary' } else { 'velostra-staging-paid-canary' })
     environment = 'staging'
     region = 'us-east4'
     chainId = 46630
-    topupGross = '2.00'
-    paidCallGross = '1.20'
+    topupGross = $(if ($ClaimOnly) { '0.00' } else { '2.00' })
+    paidCallGross = $(if ($ClaimOnly) { '0.00' } else { '1.20' })
     claimGross = '1.00'
     preflightOnly = [bool]$PreflightOnly
+    claimOnly = [bool]$ClaimOnly
     paidWritesClosed = [bool]$Closed
     passed = [bool]$Passed
     completedAt = [DateTime]::UtcNow.ToString('o')
@@ -192,6 +209,8 @@ try {
 if (-not $Passed) { throw $Failure }
 if ($PreflightOnly) {
   Write-Output 'PASS isolated MetaMask staging preflight completed with paid writes disabled'
+} elseif ($ClaimOnly) {
+  Write-Output 'PASS one isolated MetaMask builder claim completed with paid writes disabled'
 } else {
   Write-Output 'PASS one bounded MetaMask paid canary completed and paid writes are disabled'
 }

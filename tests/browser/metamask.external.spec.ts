@@ -3,6 +3,7 @@ import path from 'node:path'
 
 const approved = process.env.PHASE2_WALLET_E2E_APPROVED === 'isolated-staging-only'
 const preflightOnly = process.env.PHASE2_WALLET_PREFLIGHT === 'isolated-staging-preflight'
+const claimOnly = process.env.PHASE2_WALLET_CLAIM_ONLY === 'isolated-staging-claim-only'
 const paidCanaryApproved = process.env.PHASE2_WALLET_PAID_WRITES_APPROVED === 'isolated-staging-canary'
 const extensionPath = process.env.METAMASK_EXTENSION_PATH
 const profilePath = process.env.METAMASK_USER_DATA_DIR
@@ -10,8 +11,8 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL
 const apiURL = process.env.PHASE2_WALLET_API_URL
 
 test.skip(
-  !approved || (!paidCanaryApproved && !preflightOnly) || !extensionPath || !profilePath || !baseURL || !apiURL,
-  'Real MetaMask evidence requires isolated staging approval, explicit web/API origins, a preflight or paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
+  !approved || (!paidCanaryApproved && !preflightOnly && !claimOnly) || !extensionPath || !profilePath || !baseURL || !apiURL,
+  'Real MetaMask evidence requires isolated staging approval, explicit web/API origins, a preflight, claim-only, or paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
 )
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -320,6 +321,20 @@ test('real MetaMask isolated-staging money journey', async () => {
     }, api.toString())
     expect(freeTierRemaining).toBe(0)
     if (preflightOnly) {
+      await context.clearCookies()
+      await page.reload()
+      await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()
+      return
+    }
+
+    if (claimOnly) {
+      await page.goto(new URL('/builder', staging).toString())
+      await page.getByLabel('Amount (USDG)').fill(String(claim))
+      await triggerWalletRequest(page.getByRole('button', { name: 'Claim to wallet' }))
+      await requireMetaMaskAction(context, ['Confirm'])
+      await expect(page.getByRole('button', { name: 'Claim to wallet' })).toBeEnabled({
+        timeout: 90_000,
+      })
       await context.clearCookies()
       await page.reload()
       await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()

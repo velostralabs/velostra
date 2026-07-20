@@ -77,6 +77,8 @@ $syntheticSeedText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\scripts\provision-staging-agent.ts')
 $stagingCanaryScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'set-staging-paid-canary.ps1')
+$publicTestnetControlText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'set-public-testnet.ps1')
 $paidCanaryRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'run-paid-canary.ps1')
 $stagingCanaryBindingText = Get-Content -Raw -LiteralPath (
@@ -199,6 +201,17 @@ Require-Match $stagingCanaryScriptText 'PHASE3_CANARY_POLICY_B64' 'Staging canar
 Require-Match $stagingCanaryScriptText 'maxGrossMinor -ne ''1200000''' 'Staging canary must cap the exact synthetic USDG 1.20 gross'
 Require-Match $stagingCanaryScriptText 'Wait-ApiHealth' 'Staging canary must verify the expected immutable API after mutation'
 Reject-Match $stagingCanaryScriptText 'Write-Output.*(?:databaseUrl|policyB64|manifestB64)' 'Staging canary control must not print database or policy credentials'
+Require-Match $publicTestnetControlText "ValidateSet\('Plan', 'Open', 'Close', 'Status'\)" 'Public testnet control must expose explicit lifecycle actions'
+Require-Match $publicTestnetControlText "PUBLIC_TESTNET_APPROVAL = 'owner-approved-public-testnet'" 'Public testnet opening must carry the explicit owner approval sentinel'
+Require-Match $publicTestnetControlText 'if \(\$head -ne \$Release\)' 'Public testnet must bind the exact deployed release'
+Require-Match $publicTestnetControlText 'Assert-FreshSignerEvidence' 'Public testnet must require fresh signer gas evidence'
+Require-Match $publicTestnetControlText 'Wait-ApiReady' 'Public testnet must verify dependency readiness before opening'
+Require-Match $publicTestnetControlText "PUBLIC_TESTNET_MAX_GROSS_PER_CALL_MINOR = '5000000'" 'Public testnet must cap every paid call'
+Require-Match $publicTestnetControlText "PUBLIC_TESTNET_PAID_CALLS_PER_WALLET_DAY = '10'" 'Public testnet must cap daily wallet calls'
+Require-Match $publicTestnetControlText "PUBLIC_TESTNET_PAID_CALLS_GLOBAL_DAY = '1000'" 'Public testnet must cap global daily calls'
+Require-Match $publicTestnetControlText "PHASE3_PAID_WRITES_MODE = 'disabled'" 'Public testnet rollback must fail closed'
+Require-Match $publicTestnetControlText 'automatic close also failed' 'Public testnet opening must attempt an automatic close on failure'
+Reject-Match $publicTestnetControlText 'Write-Output.*(?:databaseUrl|manifestB64|ApiUrl|ProjectId)' 'Public testnet control must not print credentials or provider identity'
 Require-Match $paidCanaryRunnerText 'finally' 'Paid canary runner must protect cleanup with finally'
 Require-Match $paidCanaryRunnerText 'CanaryControl -Action Close' 'Paid canary runner must close the paid-write window'
 Require-Match $paidCanaryRunnerText "PHASE2_WALLET_TOPUP_AMOUNT = '2[.]00'" 'Paid canary runner must cap the top-up'

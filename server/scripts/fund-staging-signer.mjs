@@ -75,9 +75,6 @@ async function main() {
     const hash = await wallet.sendTransaction({
       to: getAddress(signerAddress),
       value: amount,
-      gas: 21_000n,
-      maxFeePerGas: fees.maxFeePerGas,
-      maxPriorityFeePerGas: fees.maxPriorityFeePerGas,
     })
     const receipt = await publicClient.waitForTransactionReceipt({ hash, confirmations: 1 })
     if (receipt.status !== 'success') throw new Error('Signer gas funding reverted')
@@ -106,7 +103,27 @@ async function main() {
   console.info('STAGING_SIGNER_GAS_READINESS_PASSED')
 }
 
-main().catch(() => {
-  console.error('STAGING_SIGNER_GAS_READINESS_FAILED')
+main().catch((error) => {
+  const message = error instanceof Error ? error.message : ''
+  console.error(JSON.stringify({
+    signerFundingFailed: true,
+    insufficientSources: message.includes('cannot reach the bounded signer gas target'),
+    fundingReverted: message.includes('funding reverted'),
+    chainMismatch: message.includes('chain mismatch'),
+    rpcFailure: /rpc|http|network|fetch|timeout|socket/i.test(message),
+    insufficientFunds: /insufficient funds|exceeds the balance|insufficient balance/i.test(message),
+    nonceFailure: /nonce/i.test(message),
+    feeFailure: /fee|underpriced|base fee/i.test(message),
+    transactionTypeFailure: /transaction type|eip-1559|eip1559/i.test(message),
+    unknownFailure:
+      !message.includes('cannot reach the bounded signer gas target') &&
+      !message.includes('funding reverted') &&
+      !message.includes('chain mismatch') &&
+      !/rpc|http|network|fetch|timeout|socket/i.test(message) &&
+      !/insufficient funds|exceeds the balance|insufficient balance/i.test(message) &&
+      !/nonce/i.test(message) &&
+      !/fee|underpriced|base fee/i.test(message) &&
+      !/transaction type|eip-1559|eip1559/i.test(message),
+  }))
   process.exitCode = 1
 })

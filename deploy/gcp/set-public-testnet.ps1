@@ -138,6 +138,7 @@ function Assert-FreshSignerEvidence {
     [bool]$evidence.paidWritesDisabled -ne $true -or
     [bool]$evidence.signerGasReady -ne $true -or
     [bool]$evidence.passed -ne $true -or
+    [DateTimeOffset]::UtcNow.Subtract($capturedAt).TotalMinutes -lt -5 -or
     [DateTimeOffset]::UtcNow.Subtract($capturedAt).TotalHours -gt 2
   ) { throw 'Signer gas readiness evidence is invalid or stale' }
 }
@@ -220,6 +221,9 @@ if ($Action -eq 'Close') {
   } -Remove $removePublic -Failure 'Failed to close public testnet paid writes'
   Wait-ApiState $ApiUrl $Release 'disabled'
   $Runtime.paidWritesMode = 'disabled'
+  if ($Runtime.PSObject.Properties.Name -contains 'publicTestnetOpenedAt') {
+    $Runtime.PSObject.Properties.Remove('publicTestnetOpenedAt')
+  }
   [IO.File]::WriteAllText($RuntimePath, ($Runtime | ConvertTo-Json -Depth 8) + [Environment]::NewLine, [Text.UTF8Encoding]::new($false))
   Write-Output 'PASS public paid writes are disabled; claims, indexing, and reconciliation remain active'
   exit 0

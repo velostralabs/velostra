@@ -98,6 +98,10 @@ $claimStatusDiagnosticText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\scripts\check-staging-claim.mjs')
 $claimStatusRunnerText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'check-staging-claim.ps1')
+$alertLifecycleDiagnosticText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\scripts\capture-staging-alert-lifecycle.mjs')
+$alertLifecycleRunnerText = Get-Content -Raw -LiteralPath (
+  Join-Path $PSScriptRoot 'capture-alert-lifecycle.ps1')
 function Require-Match {
   param([string]$Text, [string]$Pattern, [string]$Message)
   if ($Text -notmatch $Pattern) { throw $Message }
@@ -208,6 +212,14 @@ Require-Match $claimStatusDiagnosticText 'databaseMatchesChainEvent' 'Claim veri
 Require-Match $claimStatusRunnerText 'DPAPI-CurrentUser' 'Claim verifier wallet material must remain encrypted for the current operator'
 Require-Match $claimStatusRunnerText "Get-ManagedSecret 'database-url'" 'Claim verifier must load the managed database secret ephemerally'
 Reject-Match $claimStatusRunnerText 'Write-Output.*(?:PRIVATE_KEY|DATABASE_URL|RpcUrl|DatabaseUrl)' 'Claim verifier must not print credentials'
+Require-Match $alertLifecycleDiagnosticText "rule = 'backup_stale'" 'Alert evidence must target the injected backup-stale lifecycle'
+Require-Match $alertLifecycleDiagnosticText 'last_notified_at' 'Alert evidence must prove successful operator delivery'
+Require-Match $alertLifecycleDiagnosticText 'acknowledged_at' 'Alert evidence must prove operator acknowledgement'
+Require-Match $alertLifecycleDiagnosticText 'resolved_at' 'Alert evidence must prove monitor resolution'
+Require-Match $alertLifecycleDiagnosticText "service_name = 'backup'" 'Alert resolution must be bound to the backup heartbeat'
+Require-Match $alertLifecycleRunnerText "Get-ManagedSecret 'database-url'" 'Alert evidence must load the managed database secret ephemerally'
+Require-Match $alertLifecycleRunnerText 'alert-lifecycle[.]json' 'Alert lifecycle must persist a redacted evidence artifact'
+Reject-Match $alertLifecycleRunnerText 'Write-Output.*(?:DATABASE_URL|DatabaseUrl)' 'Alert evidence wrapper must not print credentials'
 Require-Match $stagingCanaryBindingText 'sha256:' 'Staging canary subject policy must use hashed identities'
 Require-Match $stagingCanaryBindingText 'chainId: 46630' 'Staging canary binding must remain on Robinhood testnet'
 Require-Match $stagingCanaryBindingText 'maxCalls: 1' 'Staging canary binding must permit one call only'

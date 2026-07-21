@@ -1,6 +1,7 @@
 # Testing and release evidence
 
-> Last verified against tests, CI, and public testnet: 2026-07-20.
+> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -14,13 +15,13 @@
 | Netlify production build | `netlify build --context production` | linked Netlify project | tracked Node 22 build command and `dist/` publish contract |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
 | Social assets | `npm run test:social-assets` | none | X/OG dimensions, metadata hygiene, and link-preview tags |
-| Browser gate | `npm run test:browser` | Playwright Chromium | wallet journey, axe, keyboard, layout, visual, URL, and performance budgets |
+| Browser gate | `npm run test:browser` | Playwright Chromium | wallet/account/chain binding, synchronized auth gates, no-resubmit paid-call recovery, deep-runtime truth, bounded deposit/claim proof, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
 | Phase 3 release | npm run test:phase3-release | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
 | Phase 3 aggregate | `npm run test:phase3` | root/server/contract installs | release gates, server compile/config, canary guard, migration consistency |
 | Phase 4 SDK | npm run test:phase4-sdk | Node + Python 3 | JS/Python client behavior and exact shared HMAC fixtures |
 | Phase 4 unit | npm run test:phase4-unit | root/server/Python installs | SDKs, cursors, idempotency policy, permissions, privacy/telemetry policy |
-| Phase 4 DB E2E | npm run test:phase4-db | migrated disposable Postgres | v1/idempotency/revision/webhook/moderation/privacy races and zero drift |
+| Phase 4 DB E2E | npm run test:phase4-db | migrated disposable Postgres | v1/idempotency/revision/webhook/moderation/privacy races, owner-scoped call recovery isolation, and zero drift |
 | API build | `npm --prefix server run build` | none | strict server compile |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
@@ -92,6 +93,34 @@ The canonical testnet at `https://velostra.xyz/testnet` was verified on 2026-07-
 
 The smoke uses only public identifiers. It does not expose credentials, signer
 identity, wallet addresses, provider IDs, or real value.
+
+## Final testnet product-completion regression
+
+The 2026-07-21 local release candidate adds and verifies the final browser/API safety
+contract before publication:
+
+1. one ambiguous paid request yields one POST, one idempotency key, one correlated
+   call, automatic owner-scoped polling, and one final debit/builder credit;
+2. a wallet account change immediately removes the prior wallet's protected values,
+   and a wrong chain cannot verify or invoke protected actions;
+3. one successful verification refreshes every protected gate on the same page;
+4. `TESTNET LIVE` requires both matching staging health and deep readiness; readiness
+   failure renders `RUNTIME DEGRADED` and never claims recovery availability;
+5. public top-up and claim bounds fail before wallet submission, while successful
+   deposit, claim, and settlement states retain explorer proof;
+6. the call-status endpoint passes owner/foreign-wallet/invalid-ID cases against a
+   freshly migrated disposable PostgreSQL 16 database.
+
+The complete local release gate then passed: 22 deterministic Chromium checks plus
+one intentionally guarded real-extension skip, all Phase 3/4 unit and database suites,
+contract E2E, migration/observability/canary races, the Redis-backed full money loop,
+privacy/social checks, US staging policy, Netlify production build, and server/web
+production dependency audits. The contract production dependency tree is empty;
+Ganache remains an isolated dev-only toolchain with its documented advisories.
+
+This is workspace evidence for the unpushed commit set, not a claim that the public
+CDN already serves that revision. Publication and post-deploy smoke remain the
+handoff after owner approval.
 
 ## Money-loop coverage
 
@@ -168,7 +197,7 @@ npm --prefix server run test:money-unit
 npm audit --prefix server --omit=dev --audit-level=high
 
 npm test --prefix contracts
-npm audit --prefix contracts --omit=dev --audit-level=high
+npm ls --prefix contracts --omit=dev --depth=0
 
 # disposable migrated Postgres
 npm --prefix server run db:migrate
@@ -188,19 +217,21 @@ The isolated PostgreSQL suite proves:
 3. conflicting and expired-indeterminate keys fail closed;
 4. concurrent revision publish has one winner and published history is immutable;
 5. concurrent webhook workers claim once, sign exact bytes, and record one attempt;
-6. builder analytics match exact persisted calls/earnings/claims;
-7. invalid report evidence is rejected and valid evidence enters the queue;
-8. bounded retries dead-letter, audited replay preserves history, and replay races once;
-9. moderation races permit one valid transition;
-10. cursor pagination is stable and tampering/filter reuse fails;
-11. export/delete workflows anonymize personal data while retaining financial evidence;
-12. prohibited telemetry fails closed;
-13. final financial aggregate, webhook delivery, and duplicate counts have zero drift.
+6. call recovery returns terminal output only to the owning wallet and makes foreign
+   and missing calls indistinguishable;
+7. builder analytics match exact persisted calls/earnings/claims;
+8. invalid report evidence is rejected and valid evidence enters the queue;
+9. bounded retries dead-letter, audited replay preserves history, and replay races once;
+10. moderation races permit one valid transition;
+11. cursor pagination is stable and tampering/filter reuse fails;
+12. export/delete workflows anonymize personal data while retaining financial evidence;
+13. prohibited telemetry fails closed;
+14. final financial aggregate, webhook delivery, and duplicate counts have zero drift.
 
 ## Browser, wallet, and performance evidence
 
-`npm run test:browser` builds a deterministic production fixture and runs 18 Chromium
-tests with one worker so performance observations are isolated. Seventeen pass locally;
+`npm run test:browser` builds a deterministic production fixture and runs 23 Chromium
+tests with one worker so performance observations are isolated. Twenty-two pass locally;
 the guarded real-MetaMask isolated-staging test is skipped unless its explicit approval,
 extension path, dedicated profile, base URL, and low-value inputs are supplied. The
 passing suite includes eight serious/critical axe scans, keyboard focus containment/
@@ -229,13 +260,20 @@ evidence is retained separately in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Current dependency audit
 
-`npm audit --omit=dev --audit-level=high` reports no High/Critical production finding.
-The web tree reports six Moderate entries propagated from one transitive `uuid`
-advisory in the MetaMask connector tree, with no supported upstream fix. The two
-installed reviewed call sites use `uuid.v4()` without a caller-supplied buffer, so the
-advisory's v3/v5/v6 buffer condition is not reachable through the current application
-path. `npm run audit:metamask` fails if that assumption changes. The decision is
-time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPOSITION.md).
+`npm audit --omit=dev --audit-level=high` reports no High/Critical web production
+finding, and the server production audit reports zero vulnerabilities. The web tree
+reports six Moderate entries propagated from one transitive `uuid` advisory in the
+MetaMask connector tree, with no supported upstream fix. The two installed reviewed
+call sites use `uuid.v4()` without a caller-supplied buffer, so the advisory's
+v3/v5/v6 buffer condition is not reachable through the current application path.
+`npm run audit:metamask` fails if that assumption changes. The decision is time-bound
+in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPOSITION.md).
+
+The contract package has no production dependency tree (`npm ls --prefix contracts
+--omit=dev --depth=0` is empty). A full dev audit still reports advisories inside
+Ganache's bundled local-EVM toolchain; those packages are neither installed nor
+shipped in a production-only contract artifact. They remain an explicit mainnet
+review/tooling-replacement item rather than a hidden passing audit.
 
 ## Mainnet operational evidence still required
 

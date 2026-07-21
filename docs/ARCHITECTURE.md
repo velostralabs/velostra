@@ -1,6 +1,7 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace and public testnet: 2026-07-20.
+> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -125,6 +126,30 @@ settlements; only liquidity above all outstanding liabilities can migrate.
 - Webhook secrets are one-time plaintext; exact bodies are HMAC signed and delivery
   attempts are durable.
 - Moderation/privacy/telemetry actions are classified, permissioned, and audited.
+
+## Browser session and recovery boundary
+
+Protected React surfaces derive authorization from both the server session and the
+currently connected wallet. A session is rendered only when its normalized
+`wallet_address` matches the active account and the account is on the configured
+Robinhood chain. Account/chain events therefore replace protected content with a
+verification/network gate before another wallet can observe it. One successful login
+broadcasts a local auth-change signal so every gate on the same page refreshes from
+the authoritative httpOnly session.
+
+A paid-call request creates one idempotency key. If the API returns
+`reconciliation_pending`, the browser retains the supplied `call_id` and optional
+transaction hash; it never sends the work again. It polls
+`GET /api/v1/dashboard/calls/:callId`, whose database predicate includes both call
+ID and authenticated user ID. Non-owners receive the same 404 as a missing call.
+Only a terminal SUCCESS response exposes output. PROCESSING remains pending, while a
+definitive FAILED state permits a new user decision. Dashboard history refreshes
+while any owned call is PROCESSING.
+
+Public runtime truth is two-level: `/health` proves expected staging/chain/public
+mode, while `/ready` proves dependency and worker freshness. The browser displays
+`TESTNET LIVE` only when both pass; otherwise it reports read-only, degraded, or
+unavailable without implying recovery is active.
 
 ## Paid-call lifecycle
 

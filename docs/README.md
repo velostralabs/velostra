@@ -1,6 +1,7 @@
 # Velostra documentation
 
-> Last verified against the workspace and public testnet: 2026-07-20.
+> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 
 Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
 [ROADMAP.md](./ROADMAP.md), and
@@ -63,6 +64,12 @@ migrations, scheduled reconciliation/webhook/monitor jobs, scoped secrets, and
 private Telegram delivery are active. Deep readiness is 8/8; bounded public paid
 writes and user onboarding are enabled; signer funding passes; and the post-open
 worker sweep reports zero unexplained drift.
+
+The 2026-07-21 workspace release candidate completes the remaining product hardening:
+active-wallet/chain session binding, synchronized auth gates, owner-scoped paid-call
+recovery without resubmission, deep-readiness UI truth, bounded transaction inputs,
+and explorer-linked proofs. These additions become public deployment evidence only
+after owner-approved publication and post-deploy smoke.
 
 This is not an independent audit, mainnet deployment, or real-value authorization.
 The 72-hour item is recorded as `PASS_BY_OWNER_WAIVER` with execution `NOT_RUN`; no

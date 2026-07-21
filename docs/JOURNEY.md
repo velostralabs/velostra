@@ -1,6 +1,7 @@
 # Velostra journey
 
-> Reconstructed from Git history and verified deployment evidence through 2026-07-20.
+> Reconstructed from Git history through the 2026-07-21 workspace release candidate
+> and verified managed deployment evidence through 2026-07-20.
 > This is the chronological handoff. [STATUS.md](./STATUS.md) remains the authority
 > for current truth; [ROADMAP.md](./ROADMAP.md) remains the authority for phase gates.
 
@@ -283,6 +284,30 @@ writes, closed beta, independent audit, and custody mutation remain gated.
 
 Checkpoint: public testnet **PASS** and available to users. Remaining release work is
 mainnet migration only; no mainnet or real-value authority is implied.
+
+### 2026-07-21 - Final user-recovery and runtime-truth hardening
+
+- added an authenticated owner-scoped call-status endpoint that reveals no cross-wallet
+  call existence and returns terminal output only to the owning session;
+- changed ambiguous paid-call UX from manual resubmission to automatic polling of the
+  original `call_id`, preserving one idempotency key and one paid execution;
+- bound authenticated rendering to the active wallet and configured chain, synchronized
+  one verification across every protected surface, and regression-tested account
+  switching so the previous wallet's data disappears immediately;
+- made the public live badge depend on both `/health` and deep `/ready`, added
+  automatic/manual refresh, and exposed a degraded state instead of a false live claim;
+- mirrored public top-up and available-earnings claim limits before wallet submission,
+  linked confirmed deposit/claim/settlement transactions to the explorer, and refreshed
+  PROCESSING dashboard calls until repaired;
+- passed the complete local release matrix: Netlify/frontend/server builds, 22 browser
+  checks plus one guarded real-extension skip, Phase 2/3/4 gates, contract E2E,
+  security/privacy/resilience suites, migrations, database races, and the Redis-backed
+  full money loop against disposable PostgreSQL 16.
+
+Checkpoint: every defined public-testnet product, recovery, safety, and operational
+truth implementation task is closed. Testnet remains user-usable and bounded. After
+owner-approved publication and post-deploy smoke of this local release candidate, the
+only uncompleted release work is the separately governed mainnet migration lane.
 
 ## What is complete
 

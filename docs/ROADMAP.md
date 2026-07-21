@@ -1,6 +1,7 @@
 # Velostra roadmap
 
-> Updated after public testnet completion: 2026-07-20.
+> Workspace updated after final public-testnet product hardening: 2026-07-21.
+> Latest managed public evidence remains the 2026-07-20 checkpoint until publication.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
@@ -30,7 +31,12 @@ staggered Scheduler triggers. Deep readiness is 8/8, signer funding passes, boun
 public synthetic paid writes are enabled, and a post-open worker sweep completed with
 zero unexplained drift. Users can connect MetaMask/EIP-6963 wallets, obtain official
 faucet test ETH, mint bounded synthetic USDG, and exercise the paid execution path.
-No mainnet contract or real-value flow is live.
+No mainnet contract or real-value flow is live. The public browser binds each session
+to the currently connected wallet and configured chain, requires deep readiness
+before displaying `TESTNET LIVE`, tracks ambiguous paid calls by their original
+owner-scoped `call_id` without resubmission, refreshes pending history, validates
+bounded top-up/claim amounts before wallet confirmation, and exposes confirmed
+transaction proof.
 
 The redacted wallet/recovery, RPC fallback, private-alert, timed reconciliation
 outage, provider-native PITR, control, and public-opening results are summarized in
@@ -45,7 +51,10 @@ Delivered:
   MetaMask + EIP-6963/injected provider picker;
 - public Netlify testnet experience with canonical `velostra.xyz`, TLS, SPA fallback,
   reproducible Vite build/publish configuration, and privacy-safe Velostra identity;
-- wallet auth, marketplace, builder/admin/dashboard product surfaces;
+- wallet auth bound to active account/chain, synchronized protected surfaces,
+  owner-scoped call recovery, and live/degraded runtime truth;
+- marketplace, builder/admin/dashboard product surfaces with bounded inputs and
+  explorer-linked transaction proof;
 - escrow top-up, paid 90/10 call, claim, platform withdrawal;
 - `bytes32 callId` correlation, four-event indexer, missed-report backfill, drift,
   retroactive scan, and conditional race safety.
@@ -407,6 +416,10 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 
 ### Public testnet maintenance
 
+The public-testnet implementation and activation scope is closed. Publishing the final
+hardening commit set and repeating post-deploy smoke are the owner handoff. The items
+below are recurring operations only; none is an unimplemented testnet deliverable.
+
 1. keep `https://velostra.xyz/testnet` available with its bounded synthetic limits;
 2. keep readiness, reconciliation, webhook, monitor, privacy, wallet, and financial
    regression gates green;
@@ -415,7 +428,7 @@ This ordered flow is mirrored with milestone context and checkpoint definitions 
 4. keep all evidence redacted and never publish provider IDs, wallet addresses,
    credentials, or operator identity.
 
-### Mainnet migration lane (next)
+### Mainnet migration lane (only remaining release work)
 
 1. complete independent contract and focused backend review;
 2. freeze the reviewed commit, image digests, policies, constructor, production

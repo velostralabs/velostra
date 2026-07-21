@@ -1,6 +1,7 @@
 # Velostra status
 
-> Last verified against the workspace and public testnet: 2026-07-20.
+> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
 > verified. The public Robinhood Chain testnet checkpoint is **PASS**.
 > No mainnet deployment or real-value authorization is recorded.
@@ -47,6 +48,16 @@ Its production testnet configuration binds the browser to the managed API, verif
 escrow, and synthetic settlement token. `/testnet` provides wallet connection,
 official faucet guidance, bounded synthetic minting, and the execution entry point.
 Server-side auth, receipt, quota, pricing, and settlement checks remain authoritative.
+The browser now refuses to reuse an authenticated session after the active wallet
+changes, blocks protected surfaces on the wrong chain, synchronizes one successful
+wallet verification across every gate on the page, and continuously refreshes
+PROCESSING call history. An ambiguous paid-call response is never submitted again:
+the UI retains the original `call_id`, polls the owner-scoped recovery endpoint,
+surfaces settlement proof when available, and waits for the worker/live path to reach
+one terminal state. The public status badge requires both shallow health and deep
+readiness; a failed worker/dependency check is labeled degraded instead of live.
+Top-up and claim forms mirror the bounded testnet limits before wallet submission and
+link confirmed transactions to the explorer.
 
 The low-cost US-only backend staging path is now deployed: Robinhood testnet chain
 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP us-east4; bounded Cloud Run
@@ -75,7 +86,7 @@ writes are enabled.
 
 | Area | Repository state | External state |
 |---|---|---|
-| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | public `/testnet` live with managed API/contract values, wallet onboarding, and bounded synthetic paid calls |
+| Product frontend | lint/build plus browser, visual, a11y, routing, wallet/session binding, deep-readiness status, no-resubmit call recovery, transaction proof, performance budgets, tracked Netlify config | public `/testnet` live with managed API/contract values, wallet onboarding, and bounded synthetic paid calls |
 | Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | direct skipped-report and bounded wallet/claim reconciliation evidence passed; timed outage result is recorded in the managed evidence packet |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native Neon PITR matched every table, migration, aggregate, constraint, and index |
@@ -85,7 +96,7 @@ writes are enabled.
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime, all twelve scoped values, and the operational gas floor are healthy; mainnet custody drills remain pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness, heartbeats, and a real private backup-stale create/deliver/ack/heal/resolve lifecycle pass; remaining injected-alert coverage pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | primary-RPC fallback, timed reconciliation outage, and provider-native PITR pass; destructive API/DB/Redis/restart faults and formal SLO calibration pending |
-| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
+| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates; 2026-07-21 local release candidate passed the complete matrix including 22 browser checks plus one guarded external-wallet skip and disposable Postgres/Redis money loop | latest published evidence remains [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) on `6e83a04` until this commit set is published |
 
 ## Managed skipped-report reconciliation evidence
 
@@ -348,8 +359,11 @@ ENABLED. A destructive API/Postgres/Redis outage remains a separate test.
 ## Next action
 
 The public testnet checkpoint is complete and remains available to users at
-`https://velostra.xyz/testnet`. Keep Phase 0-4 regression, privacy, financial,
-worker, and readiness gates green while preserving bounded testnet limits.
+`https://velostra.xyz/testnet`. The final hardening release candidate has no open
+implementation task; owner-approved publication plus post-deploy smoke are its only
+handoff. Ongoing health checks are operational maintenance, not unfinished scope.
+Keep Phase 0-4 regression, privacy, financial, worker, and readiness gates green
+while preserving bounded testnet limits.
 
 The only release lane now is mainnet migration preparation: complete independent
 contract/backend review, freeze the reviewed commit and image digests, bind

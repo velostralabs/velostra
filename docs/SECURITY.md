@@ -1,6 +1,7 @@
 # Security posture
 
-> Last verified against the workspace and public testnet: 2026-07-20.
+> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -42,7 +43,10 @@ real-value authority.
 
 The frontend can discover MetaMask and EIP-6963/injected wallets, but a provider is
 only transport. Server signature/receipt/contract checks remain authoritative.
-Velostra never requests or stores a wallet private key or seed phrase.
+Protected rendering additionally requires the server session wallet to equal the
+currently connected account on the configured chain. Account and chain changes hide
+prior protected data immediately; a page-local auth event refreshes every gate after
+login/logout. Velostra never requests or stores a wallet private key or seed phrase.
 
 ### Builder egress and HMAC
 
@@ -91,6 +95,8 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
 - no long SQL transaction around builder/RPC waits;
 - correlated onchain call ID and replay guard;
 - conditional exactly-once finalization shared by live path and worker;
+- ambiguous paid requests retain one idempotency key and recover through an
+  authenticated owner-scoped call-status read instead of resubmitting work;
 - persistent event cursor, confirmation delay, adaptive RPC range handling,
   ordered primary/fallback RPC transport, pending retries, drift comparison, and
   safe retroactive cursor policy;
@@ -177,7 +183,7 @@ Run dependency audits before release:
 ```bash
 npm audit --omit=dev --audit-level=high
 npm audit --prefix server --omit=dev --audit-level=high
-npm audit --prefix contracts --omit=dev --audit-level=high
+npm ls --prefix contracts --omit=dev --depth=0
 ```
 
 ## Incident policy

@@ -1,6 +1,7 @@
 # Local quickstart
 
-> Last verified against package scripts, env templates, and managed staging: 2026-07-20.
+> Workspace instructions refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -88,7 +89,11 @@ Open `http://localhost:5173`. The canonical public testnet is [https://velostra.
 
 `Connect Wallet` opens an explicit provider picker. MetaMask has a first-class
 connector; Rainbow, Coinbase, and other wallets may appear through EIP-6963/
-injected discovery. The app never asks for seed phrases or private keys.
+injected discovery. Protected content is shown only when the httpOnly session matches
+the active account on the configured chain. If a paid request becomes ambiguous, keep
+the original page open: the client polls its owner-scoped call status and must not
+submit the work again under a new idempotency key. The app never asks for seed phrases
+or private keys.
 
 ## Local contract
 

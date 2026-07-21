@@ -1,6 +1,7 @@
 # Operations and incident runbook
 
-> Last verified against the workspace and public testnet: 2026-07-20.
+> Workspace operations contract refreshed 2026-07-21; latest managed public-testnet
+> evidence remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase 0-4 repository preparation and the public testnet checkpoint are complete.
 > The canonical `https://velostra.xyz/testnet` frontend is connected to the US-only
 > chain-46630 managed runtime. Deep readiness is 8/8 and bounded public synthetic paid
@@ -29,8 +30,11 @@ After every frontend deployment, verify:
 
 Then confirm production HTML references hashed `/assets/*.js` and `/assets/*.css`,
 those assets return 200 with JavaScript/CSS MIME types, and a real browser renders
-navigation plus the landing heading. Roll back with Netlify deploy history only to a
-known Git-linked build; do not rewrite Git history.
+navigation plus the landing heading. On `/testnet`, verify shallow health and deep
+readiness agree before the live badge appears; verify account/chain switching hides
+protected state and an ambiguous paid call resumes by its original `call_id` without
+a second POST. Roll back with Netlify deploy history only to a known Git-linked build;
+do not rewrite Git history.
 
 The Netlify environment contains only public testnet API/escrow/token build values.
 A healthy browser smoke is still not sufficient: require managed `/health`, deep

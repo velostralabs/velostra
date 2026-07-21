@@ -33,7 +33,11 @@ The production frontend is bound to the managed US testnet API, verified synthet
 settlement token, and VelostraEscrow on chain 46630. Users can connect MetaMask or a
 compatible EIP-6963 wallet, obtain test ETH from the official faucet, mint bounded
 synthetic USDG, explore approved agents, execute paid test calls, inspect receipts,
-and exercise claims. No real funds or mainnet value are used.
+and exercise claims. Protected views are bound to the active wallet and chain;
+ambiguous paid calls recover by polling the original owner-scoped call instead of
+submitting a second charge. The live badge requires deep dependency/worker readiness,
+and confirmed settlement actions retain explorer proof. No real funds or mainnet
+value are used.
 
 ## Execution should leave evidence
 

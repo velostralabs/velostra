@@ -1,9 +1,10 @@
 # Design system
 
-> Last verified against frontend source and public rendering: 2026-07-20.
+> Workspace interaction system refreshed 2026-07-21; latest managed public rendering
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation has passed internal engineering/CI
 > audit. The visual system remains current while mainnet execution stays gated.
-> The current browser gate passes 17 checks with one intentionally guarded external
+> The current browser gate passes 22 checks with one intentionally guarded external
 > MetaMask skip, and the production bundle remains within committed performance budgets.
 
 Velostra memakai visual language dark institutional/financial: graphite surfaces,
@@ -153,9 +154,14 @@ error state, menutup lewat Escape/outside click, dan mempertahankan provider cho
 sebagai aksi eksplisit user. UI tidak pernah meminta, membaca, atau menyimpan seed
 phrase/private key.
 
-Picker/browser smoke membuktikan rendering dan state interaction. Real extension
-permission, account access, signature rejection, wrong-chain switch, serta onchain
-transaction tetap harus dibuktikan oleh browser-wallet E2E sebelum release.
+Picker/browser smoke membuktikan rendering dan state interaction. Protected surfaces
+mengikat httpOnly session ke active account dan configured chain; account switching
+langsung menyembunyikan data wallet sebelumnya, dan satu successful verification
+menyinkronkan seluruh gate pada halaman. Ambiguous paid-call state memakai panel
+recovery yang mempertahankan `call_id`, tidak mengirim ulang intent, dan memberi link
+ke dashboard/explorer. Real extension permission dan wallet transaction tetap menjadi
+manual post-deploy smoke; deterministic regression mengunci reject/reconnect,
+wrong-chain recovery, session switching, dan recovery polling.
 
 ## Motion system
 

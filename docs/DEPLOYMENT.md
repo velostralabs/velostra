@@ -1,6 +1,7 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts and public testnet: 2026-07-20.
+> Workspace deployment contract refreshed 2026-07-21; latest managed public-testnet
+> evidence remains the 2026-07-20 checkpoint until this commit set is published.
 > Phase 0-4 repository preparation and the public testnet checkpoint are complete.
 > `https://velostra.xyz/testnet` is connected to the US-only Robinhood Chain testnet
 > API, private signer, verified synthetic token/escrow, workers, and Scheduler. Deep
@@ -231,6 +232,13 @@ therefore referenced `/src/main.tsx`. Commit `0b686e5` introduced the reproducib
 publish contract. The corrected deployment was verified with valid TLS, 200 responses
 for hashed JS/CSS assets, and a real-browser render smoke. Future changes must retain
 that contract and must never publish the repository root.
+
+Before publishing the 2026-07-21 release candidate, the repository gate must prove
+active-wallet/chain session binding, synchronized verification gates, one-request
+paid-call recovery, deep-readiness status, bounded top-up/claim inputs, and explorer
+proof. After publication, repeat `/`, `/testnet`, deep readiness, wallet switch,
+ambiguous call recovery, and asset-response smoke before treating the new revision as
+managed public evidence.
 
 ```bash
 npm ci

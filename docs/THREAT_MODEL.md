@@ -1,6 +1,7 @@
 # Velostra threat model
 
-> Last verified against the workspace and managed staging: 2026-07-20.
+> Workspace threat review refreshed 2026-07-21; latest managed public-testnet evidence
+> remains the 2026-07-20 checkpoint until this local commit set is published.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -101,6 +102,8 @@ to its call.
 - Challenges bind wallet, domain, URI, chain ID, nonce, issue time, and expiry.
 - Redis consumes a challenge atomically; concurrent instances produce one winner.
 - Production rejects memory nonce storage and Redis fail-open mode.
+- Protected browser state requires the server session wallet to match the active
+  account on the configured chain; account/chain drift hides prior wallet data.
 - Agent HMAC secrets use AES-256-GCM envelopes with key IDs and rotation overlap.
 - Production startup rejects plaintext secret rows.
 - Admin actions require database RBAC and produce append-only audit entries.
@@ -120,6 +123,8 @@ to its call.
 | SSRF / DNS rebinding | pinned resolved address, blocked ranges, redirect revalidation, port/scheme policy, caps | infrastructure egress firewall still required |
 | Large/slow builder response | absolute deadline, socket timeout, and byte cap | builder availability remains external |
 | Auth replay / multi-instance race | Redis atomic compare-and-delete | Redis outage fails closed in production |
+| Stale session after wallet/chain switch | active-wallet/chain binding, immediate protected-state gate, synchronized auth refresh | a compromised browser/session remains an endpoint-security concern |
+| Ambiguous paid-call browser retry | one idempotency key plus owner-scoped status polling; no automatic resubmission | user must keep wallet/session access to observe private recovery state |
 | Admin privilege abuse | granular roles, audit log, last-admin guard | approval quorum is not implemented |
 | Secret disclosure in DB | authenticated encryption, response omission, managed-injection startup guard | actual managed custody/rotation evidence pending |
 | Event reorg | confirmation-depth policy and canonical replacement drill | no rollback engine beyond confirmed window; managed-chain policy must be approved |

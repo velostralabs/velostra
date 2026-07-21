@@ -1,7 +1,8 @@
 # API reference
 
-> Last verified against server routes, middleware, and deployment status: 2026-07-20.
-> Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
+> Workspace API contract refreshed 2026-07-21; latest managed public-testnet
+> evidence remains the 2026-07-20 checkpoint until this local commit set is published.
+> Phase state: Phase 0-4 and public testnet are complete; mainnet activation remains gated.
 > Local base URL: http://localhost:8787.
 > Managed public-testnet API: live behind the canonical `velostra.xyz/testnet` surface, deep-ready 8/8, and bounded for synthetic paid writes. Server auth, quotas, receipts, and settlement remain authoritative; see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 

@@ -202,7 +202,7 @@
 
 .atlas__route {
   position: absolute;
-  top: 45%;
+  bottom: 58px;
   left: clamp(34px, 5vw, 72px);
   z-index: 5;
   width: min(450px, 38%);
@@ -211,7 +211,7 @@
 
 .atlas__route-step {
   position: relative;
-  min-height: 54px;
+  min-height: 48px;
   display: grid;
   grid-template-columns: 34px 1fr 8px;
   align-items: center;
@@ -413,7 +413,7 @@
   .atlas__landscape-image { inset: -2% -50%; width: 180%; height: 104%; }
   .atlas__field-copy { top: 38px; width: calc(100% - 64px); }
   .atlas__field-copy strong { font-size: 40px; }
-  .atlas__route { top: 34%; width: calc(100% - 64px); }
+  .atlas__route { top: 34%; bottom: auto; width: calc(100% - 64px); }
   .atlas__trace-card { right: 24px; bottom: 130px; left: 24px; width: auto; }
   .atlas__field-dock { grid-template-columns: 1fr; gap: 8px; padding: 14px 18px; }
   .atlas__field-dock span:nth-child(2),

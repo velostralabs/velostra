@@ -52,7 +52,13 @@ export default defineConfig({
     : undefined,
   projects: [
     {
+      name: 'chromium-performance',
+      testMatch: /performance\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'chromium',
+      testIgnore: /performance\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
   ],

@@ -116,6 +116,71 @@ test('critical desktop layouts have no viewport overflow or known text collision
   }
 })
 
+test('homepage chapter rail remains readable and scrolls the current route', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1080 })
+  await page.goto('/')
+
+  const rail = page.getByRole('navigation', { name: 'Homepage chapter index' })
+  await expect(rail).toBeVisible()
+
+  const fontSizes = await rail.locator('.home-index__title, .home-index__item span, .home-index__item b')
+    .evaluateAll((elements) => elements.map((element) => Number.parseFloat(getComputedStyle(element).fontSize)))
+  expect(Math.min(...fontSizes)).toBeGreaterThanOrEqual(9)
+
+  const persistentLinkHeights = await page.locator('.nav__links a, .footer__col a')
+    .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height))
+  expect(Math.min(...persistentLinkHeights)).toBeGreaterThanOrEqual(24)
+
+  await page.evaluate(() => window.scrollTo({ top: 2500, behavior: 'instant' }))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(2000)
+  await rail.getByRole('button', { name: /00\s*Intro/i }).click()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(20)
+})
+
+test('homepage execution and settlement controls update their correlated evidence', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+
+  const executionTabs = page.getByRole('tab')
+  const executionStates = [
+    ['Publish specialized intelligence', '< 5 min'],
+    ['Every request becomes a receipt', '1 : 1'],
+    ['Value moves by deterministic rule', '90 / 10'],
+    ['Claim without platform friction', '24 / 7'],
+  ]
+
+  for (const [index, state] of executionStates.entries()) {
+    await executionTabs.nth(index).focus()
+    await page.keyboard.press('Enter')
+    await page.waitForTimeout(650)
+    await expect(executionTabs.nth(index)).toHaveAttribute('aria-selected', 'true')
+    await expect(page.getByRole('heading', { name: state[0], exact: true })).toBeVisible()
+    await expect(page.locator('.flow-console__body')).toHaveCount(1)
+    await expect(page.locator('.flow-console__footer strong')).toHaveText(state[1])
+  }
+
+  const revenueRoute = page.locator('.proof__trace').getByRole('button', { name: /Revenue routed/i })
+  await revenueRoute.focus()
+  await page.keyboard.press('Enter')
+  await expect(revenueRoute).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.locator('.proof__readouts strong')).toHaveText(['$4.00', '+$3.60', '+$0.40'])
+})
+
+test('public internal links stay on canonical clean routes', async ({ page }) => {
+  const allowedRoute = /^\/(?:$|index$|system$|proof$|economics$|marketplace(?:\?.*)?$|agents\/[^/?#]+$|dashboard$|builder$|admin$|docs$|testnet$)/
+
+  for (const route of criticalRoutes) {
+    await page.goto(route)
+    const internalLinks = await page.locator('a[href^="/"]').evaluateAll((links) =>
+      links.map((link) => link.getAttribute('href')).filter((href): href is string => Boolean(href))
+    )
+
+    for (const href of internalLinks) {
+      expect(href, route + ' exposes an invalid internal destination').not.toContain('#')
+      expect(href, route + ' exposes an unknown internal destination').toMatch(allowedRoute)
+    }
+  }
+})
 test('hero WebGL surface renders above CSS resolution', async ({ page }) => {
   await page.goto('/')
   const canvas = page.locator('.scene3d canvas')

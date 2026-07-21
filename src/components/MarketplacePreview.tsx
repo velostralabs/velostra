@@ -58,8 +58,8 @@ export default function MarketplacePreview() {
   const pointerY = useMotionValue(0)
   const glareX = useMotionValue(-600)
   const glareY = useMotionValue(-600)
-  const waferRotateXTarget = useTransform(pointerY, [-1, 1], [63, 51])
-  const waferRotateZTarget = useTransform(pointerX, [-1, 1], [-25, -15])
+  const waferRotateXTarget = useTransform(pointerY, [-1, 1], [5, -5])
+  const waferRotateZTarget = useTransform(pointerX, [-1, 1], [-2.5, 2.5])
   const waferXTarget = useTransform(pointerX, [-1, 1], [-15, 15])
   const waferYTarget = useTransform(pointerY, [-1, 1], [-8, 8])
   const waferRotateX = useSpring(waferRotateXTarget, { stiffness: 84, damping: 24, mass: 0.55 })
@@ -183,6 +183,7 @@ export default function MarketplacePreview() {
             return (
               <motion.div
                 className="mkt__agent"
+                data-index={'0' + (index + 2)}
                 key={agent.name}
                 initial={{ opacity: 0, y: 22 }}
                 whileInView={{ opacity: 1, y: 0 }}

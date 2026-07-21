@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import './HomeIndexRail.css'
 
 const chapters = [
@@ -12,6 +12,7 @@ const chapters = [
 ]
 
 export default function HomeIndexRail() {
+  const location = useLocation()
   const navigate = useNavigate()
   const [active, setActive] = useState('top')
 
@@ -35,7 +36,7 @@ export default function HomeIndexRail() {
   }, [])
 
   const openChapter = (chapter: (typeof chapters)[number]) => {
-    if (chapter.path) {
+    if (location.pathname !== chapter.path) {
       navigate(chapter.path)
       return
     }

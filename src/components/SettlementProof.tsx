@@ -39,6 +39,8 @@ export default function SettlementProof() {
   const reducedMotion = useReducedMotion()
   const [activeStep, setActiveStep] = useState(0)
   const [interactionHeld, setInteractionHeld] = useState(false)
+  const [manuallySelected, setManuallySelected] = useState(false)
+  const manualSelectionRef = useRef(false)
 
   const pointerX = useMotionValue(0)
   const pointerY = useMotionValue(0)
@@ -56,10 +58,12 @@ export default function SettlementProof() {
   const glareYSmooth = useSpring(glareY, { stiffness: 110, damping: 27, mass: 0.36 })
 
   useEffect(() => {
-    if (!isInView || reducedMotion || interactionHeld) return
-    const timer = window.setInterval(() => setActiveStep((step) => (step + 1) % trace.length), 2400)
+    if (!isInView || reducedMotion || interactionHeld || manuallySelected) return
+    const timer = window.setInterval(() => {
+      if (!manualSelectionRef.current) setActiveStep((step) => (step + 1) % trace.length)
+    }, 2400)
     return () => window.clearInterval(timer)
-  }, [interactionHeld, isInView, reducedMotion])
+  }, [interactionHeld, isInView, manuallySelected, reducedMotion])
 
   const selectStep = (index: number) => {
     setInteractionHeld(true)
@@ -127,11 +131,11 @@ export default function SettlementProof() {
                   type="button"
                   className={`proof__receipt${isActive ? ' proof__receipt--active' : ''}${isComplete ? ' proof__receipt--complete' : ''}`}
                   key={item.index}
-                  onMouseEnter={() => selectStep(index)}
+                  onMouseEnter={() => setInteractionHeld(true)}
                   onMouseLeave={() => setInteractionHeld(false)}
                   onFocus={() => selectStep(index)}
                   onBlur={() => setInteractionHeld(false)}
-                  onClick={() => selectStep(index)}
+                  onClick={() => { manualSelectionRef.current = true; setManuallySelected(true); selectStep(index) }}
                   animate={{ x: isActive ? 15 : index * 3, z: isActive ? 26 : 0 }}
                   transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
                   aria-pressed={isActive}
@@ -189,11 +193,11 @@ export default function SettlementProof() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.55, delay: index * 0.09 }}
-                  onMouseEnter={() => selectStep(index)}
+                  onMouseEnter={() => setInteractionHeld(true)}
                   onMouseLeave={() => setInteractionHeld(false)}
                   onFocus={() => selectStep(index)}
                   onBlur={() => setInteractionHeld(false)}
-                  onClick={() => selectStep(index)}
+                  onClick={() => { manualSelectionRef.current = true; setManuallySelected(true); selectStep(index) }}
                   aria-pressed={isActive}
                 >
                   <span className="proof__trace-icon"><Icon size={16} strokeWidth={1.6} /></span>

@@ -58,13 +58,17 @@ export default function HowItWorks() {
   const reducedMotion = useReducedMotion()
   const [active, setActive] = useState(0)
   const [interactionHeld, setInteractionHeld] = useState(false)
+  const [manuallySelected, setManuallySelected] = useState(false)
+  const manualSelectionRef = useRef(false)
   const current = steps[active]
 
   useEffect(() => {
-    if (!isInView || reducedMotion || interactionHeld) return
-    const timer = window.setInterval(() => setActive((step) => (step + 1) % steps.length), 3200)
+    if (!isInView || reducedMotion || interactionHeld || manuallySelected) return
+    const timer = window.setInterval(() => {
+      if (!manualSelectionRef.current) setActive((step) => (step + 1) % steps.length)
+    }, 3200)
     return () => window.clearInterval(timer)
-  }, [interactionHeld, isInView, reducedMotion])
+  }, [interactionHeld, isInView, manuallySelected, reducedMotion])
 
   return (
     <section className="how" id="system" ref={sectionRef}>
@@ -87,11 +91,11 @@ export default function HowItWorks() {
                 type="button"
                 className={'how__step' + (isActive ? ' how__step--active' : '')}
                 key={step.index}
-                onMouseEnter={() => { setInteractionHeld(true); setActive(index) }}
+                onMouseEnter={() => setInteractionHeld(true)}
                 onMouseLeave={() => setInteractionHeld(false)}
                 onFocus={() => { setInteractionHeld(true); setActive(index) }}
                 onBlur={() => setInteractionHeld(false)}
-                onClick={() => { setInteractionHeld(true); setActive(index) }}
+                onClick={() => { manualSelectionRef.current = true; setInteractionHeld(true); setManuallySelected(true); setActive(index) }}
                 role="tab"
                 aria-selected={isActive}
               >
@@ -117,13 +121,13 @@ export default function HowItWorks() {
           <span className="flow-console__status"><i /> synchronized</span>
         </div>
 
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence mode="sync" initial={false}>
           <motion.div
           className="flow-console__body"
           key={current.index}
-          initial={{ opacity: 0, y: 16, filter: 'blur(5px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={{ opacity: 0, y: -10, filter: 'blur(4px)' }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.56, ease: [0.16, 1, 0.3, 1] }}
         >
           <div className="flow-console__meta">

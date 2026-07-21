@@ -1,6 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
 export const TEST_WALLET = '0x1234567890abcdef1234567890abcdef12345678'
+export const SECOND_TEST_WALLET = '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd'
 const TX_HASHES = [
   '0x' + '11'.repeat(32),
   '0x' + '22'.repeat(32),
@@ -12,6 +13,11 @@ export interface ProductState {
   authenticated: boolean
   rejectedConnections: number
   runAttempts: number
+  runIdempotencyKeys: string[]
+  callStatusChecks: number
+  callSettled: boolean
+  sessionWallet: string | null
+  ready: boolean
   balance: number
   availableEarnings: number
   totalClaimed: number
@@ -24,6 +30,11 @@ export function createProductState(): ProductState {
     authenticated: false,
     rejectedConnections: 0,
     runAttempts: 0,
+    runIdempotencyKeys: [],
+    callStatusChecks: 0,
+    callSettled: false,
+    sessionWallet: null,
+    ready: true,
     balance: 12.5,
     availableEarnings: 4.75,
     totalClaimed: 1.25,
@@ -39,6 +50,7 @@ export async function installInjectedWallet(
   await page.addInitScript(
     ({ account, initialChainId, rejectFirstConnection, hashes }) => {
       let chainId = initialChainId
+      let currentAccount = localStorage.getItem('velostra-e2e-wallet-account') ?? account
       let connected = localStorage.getItem('velostra-e2e-wallet-connected') === 'true'
       let rejectionPending = rejectFirstConnection
       let hashIndex = 0
@@ -71,10 +83,10 @@ export async function installInjectedWallet(
             }
             connected = true
             localStorage.setItem('velostra-e2e-wallet-connected', 'true')
-            emit('accountsChanged', [account])
-            return [account]
+            emit('accountsChanged', [currentAccount])
+            return [currentAccount]
           }
-          if (method === 'eth_accounts') return connected ? [account] : []
+          if (method === 'eth_accounts') return connected ? [currentAccount] : []
           if (method === 'eth_chainId') return '0x' + chainId.toString(16)
           if (method === 'wallet_switchEthereumChain') {
             const requested = Number.parseInt(
@@ -89,6 +101,13 @@ export async function installInjectedWallet(
           if (method === 'velostra_setChainId') {
             chainId = Number.parseInt(String(params[0] ?? '0x0'), 16)
             emit('chainChanged', '0x' + chainId.toString(16))
+            return null
+          }
+          if (method === 'velostra_setAccount') {
+            currentAccount = String(params[0] ?? account)
+            localStorage.setItem('velostra-e2e-wallet-account', currentAccount)
+            connected = true
+            emit('accountsChanged', [currentAccount])
             return null
           }
           if (method === 'personal_sign' || method === 'eth_sign') {
@@ -182,7 +201,7 @@ export async function installProductApi(page: Page, state: ProductState): Promis
         headers: {
           'access-control-allow-origin': 'http://127.0.0.1:4173',
           'access-control-allow-credentials': 'true',
-          'access-control-allow-headers': 'content-type',
+          'access-control-allow-headers': 'content-type,idempotency-key',
           'access-control-allow-methods': 'GET,POST,OPTIONS',
         },
       })
@@ -201,12 +220,31 @@ export async function installProductApi(page: Page, state: ProductState): Promis
       })
     }
 
+    if (path === '/ready') {
+      const checks = {
+        database: true,
+        chain_rpc: state.ready,
+        escrow_contract: state.ready,
+        settlement_token: state.ready,
+        signer_funded: state.ready,
+        chain_sync: state.ready,
+      }
+      return json(route, {
+        status: state.ready ? 'ready' : 'not_ready',
+        environment: 'staging',
+        release: 'testnet',
+        ready: state.ready,
+        checks,
+        capturedAt: new Date().toISOString(),
+      }, state.ready ? 200 : 503)
+    }
+
     if (path === '/api/auth/me') {
       return json(route, {
         auth: state.authenticated
           ? {
               id: 'user-e2e',
-              wallet_address: TEST_WALLET,
+              wallet_address: state.sessionWallet ?? TEST_WALLET,
               display_name: 'Phase 2 Operator',
               is_builder: true,
               is_admin: true,
@@ -218,12 +256,14 @@ export async function installProductApi(page: Page, state: ProductState): Promis
       return json(route, { nonce: 'phase2-nonce', message: 'Verify Velostra Phase 2 browser session' })
     }
     if (path === '/api/auth/login') {
+      const body = route.request().postDataJSON() as { walletAddress: string }
       state.authenticated = true
+      state.sessionWallet = body.walletAddress
       return json(route, {
         token: 'browser-session',
         user: {
           id: 'user-e2e',
-          wallet_address: TEST_WALLET,
+          wallet_address: state.sessionWallet,
           display_name: 'Phase 2 Operator',
           is_builder: true,
           is_admin: true,
@@ -232,6 +272,7 @@ export async function installProductApi(page: Page, state: ProductState): Promis
     }
     if (path === '/api/auth/logout') {
       state.authenticated = false
+      state.sessionWallet = null
       return json(route, { ok: true })
     }
     if (path === '/api/agents' && route.request().method() === 'GET') {
@@ -272,19 +313,42 @@ export async function installProductApi(page: Page, state: ProductState): Promis
       path === '/api/agents/flowbook-trader/run' ||
       path === '/api/v1/agents/flowbook-trader/run'
     ) {
-      const versioned = path.startsWith('/api/v1/')
       state.runAttempts += 1
-      if (state.runAttempts === 1) {
-        return json(route, { error: 'Settlement status is ambiguous; reconciliation is tracking it.' }, 503)
-      }
-      state.balance -= 0.3
-      state.availableEarnings += 0.27
-      const result = {
+      const idempotencyKey = route.request().headers()['idempotency-key']
+      if (idempotencyKey) state.runIdempotencyKeys.push(idempotencyKey)
+      return json(route, {
+        error: 'Settlement status is ambiguous; reconciliation is tracking it.',
+        code: 'SETTLEMENT_AMBIGUOUS',
         call_id: 'call-browser-fixture',
-        output: { verdict: 'execution verified', receipt: 'VL-E2E' },
         settlement_tx_hash: TX_HASHES[2],
+        reconciliation_pending: true,
+      }, 503)
+    }
+    if (path === '/api/v1/dashboard/calls/call-browser-fixture') {
+      state.callStatusChecks += 1
+      const settled = state.callStatusChecks >= 2
+      if (settled && !state.callSettled) {
+        state.callSettled = true
+        state.balance -= 0.3
+        state.availableEarnings += 0.27
       }
-      return json(route, versioned ? { data: result } : result)
+      return json(route, {
+        data: {
+          call: {
+            id: 'call-browser-fixture',
+            status: settled ? 'SUCCESS' : 'PROCESSING',
+            output: settled ? { verdict: 'execution verified', receipt: 'VL-E2E' } : null,
+            is_free_tier: false,
+            price_charged: 0.3,
+            settlement: {
+              status: settled ? 'CONFIRMED' : 'AMBIGUOUS',
+              tx_hash: TX_HASHES[2],
+              block_number: settled ? '100' : null,
+              updated_at: new Date().toISOString(),
+            },
+          },
+        },
+      })
     }
     if (path === '/api/dashboard' && route.request().method() === 'GET') {
       return json(route, {

@@ -289,6 +289,16 @@ try {
      values ($1,$2,$3,'AGENT_CALL','4.000000',$4,$5,4663,$6,'EarningsCredited','CONFIRMED',now())`,
     [ids.transaction, ids.balance, ids.callSuccess, `0x${'a'.repeat(58)}${suffix.slice(-6)}`, wallets.user, '0x4000000000000000000000000000000000000004']
   )
+  const ownedCallStatus = await request(userToken, `/api/v1/dashboard/calls/${ids.callSuccess}`)
+  assert.equal(ownedCallStatus.status, 200)
+  assert.equal(ownedCallStatus.body.data.call.id, ids.callSuccess)
+  assert.equal(ownedCallStatus.body.data.call.status, 'SUCCESS')
+  assert.deepEqual(ownedCallStatus.body.data.call.output, { secretResult: true })
+  const foreignCallStatus = await request(builderToken, `/api/v1/dashboard/calls/${ids.callSuccess}`)
+  assert.equal(foreignCallStatus.status, 404)
+  const invalidCallStatus = await request(userToken, '/api/v1/dashboard/calls/not%20safe')
+  assert.equal(invalidCallStatus.status, 400)
+  pass('call recovery status is owner-scoped and exposes completed output without cross-wallet leakage')
   await pool.query(
     `insert into earnings_claims (id,builder_id,amount,status,tx_hash,wallet_address,chain_id,completed_at)
      values ($1,$2,'1.200000','COMPLETED',$3,$4,4663,now())`,

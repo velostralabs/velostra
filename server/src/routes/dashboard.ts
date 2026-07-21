@@ -1,8 +1,14 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import { db } from '../db/client.js'
-import { creditBalances, agentCalls, agents, transactions } from '../db/schema.js'
+import {
+  creditBalances,
+  agentCalls,
+  agents,
+  settlementAttempts,
+  transactions,
+} from '../db/schema.js'
 import { requireAuth } from '../middleware/auth.js'
 import { getFreeTierStatus } from '../lib/gateway/quota.js'
 import { MIN_TOPUP_USD } from '../lib/constants.js'
@@ -55,6 +61,75 @@ dashboardRouter.get('/', async (req, res) => {
       price_charged: moneyToNumber(c.price_charged),
       agent: { name: c.agent_name, slug: c.agent_slug, logo_url: c.agent_logo_url },
     })),
+  })
+})
+
+// GET /api/dashboard/calls/:callId - owned execution/reconciliation status
+
+const callIdSchema = z.string().min(8).max(128).regex(/^[A-Za-z0-9_-]+$/)
+
+dashboardRouter.get('/calls/:callId', async (req, res) => {
+  const parsed = callIdSchema.safeParse(req.params.callId)
+  if (!parsed.success) {
+    return res.status(400).json({ error: 'Invalid call identifier', code: 'INVALID_CALL_ID' })
+  }
+
+  const [call] = await db
+    .select({
+      id: agentCalls.id,
+      status: agentCalls.status,
+      output: agentCalls.output,
+      is_free_tier: agentCalls.is_free_tier,
+      price_charged: agentCalls.price_charged,
+      created_at: agentCalls.created_at,
+      completed_at: agentCalls.completed_at,
+      agent_name: agents.name,
+      agent_slug: agents.slug,
+    })
+    .from(agentCalls)
+    .innerJoin(agents, eq(agentCalls.agent_id, agents.id))
+    .where(
+      and(
+        eq(agentCalls.id, parsed.data),
+        eq(agentCalls.user_id, req.auth!.id)
+      )
+    )
+    .limit(1)
+
+  if (!call) {
+    return res.status(404).json({ error: 'Call not found', code: 'CALL_NOT_FOUND' })
+  }
+
+  const [settlement] = await db
+    .select({
+      status: settlementAttempts.status,
+      tx_hash: settlementAttempts.tx_hash,
+      block_number: settlementAttempts.block_number,
+      updated_at: settlementAttempts.updated_at,
+    })
+    .from(settlementAttempts)
+    .where(eq(settlementAttempts.agent_call_id, call.id))
+    .limit(1)
+
+  return res.json({
+    call: {
+      id: call.id,
+      status: call.status,
+      output: call.status === 'SUCCESS' ? call.output : null,
+      is_free_tier: call.is_free_tier,
+      price_charged: moneyToNumber(call.price_charged),
+      created_at: call.created_at,
+      completed_at: call.completed_at,
+      agent: { name: call.agent_name, slug: call.agent_slug },
+      settlement: settlement
+        ? {
+            status: settlement.status,
+            tx_hash: settlement.tx_hash,
+            block_number: settlement.block_number?.toString() ?? null,
+            updated_at: settlement.updated_at,
+          }
+        : null,
+    },
   })
 })
 

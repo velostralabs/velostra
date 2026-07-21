@@ -67,10 +67,15 @@ AUTH_REQUIRED.
 | GET | /api/v1/agents/:slug | detail, builder, tags, latest reviews |
 | POST | /api/v1/agents/:slug/run | authenticated free/paid execution |
 | POST | /api/v1/agents/:slug/review | upsert rating 1..5 and optional comment |
+| GET | /api/v1/dashboard/calls/:callId | owner-scoped call and settlement recovery status |
 
 Paid execution first commits PROCESSING call, reservation, and PREPARED settlement
 attempt. A recovery response can include call_id, settlement_tx_hash when known, and
 reconciliation_pending. Never rerun user work merely because receipt polling timed out.
+Use the returned call_id with the owner-scoped dashboard call-status endpoint until the
+call becomes SUCCESS or a verified definitive failure. PROCESSING plus a settlement
+attempt in PREPARED, READY, SUBMITTED, AMBIGUOUS, or CONFIRMED remains a recovery state,
+not permission to submit the agent work again.
 
 Important codes include INSUFFICIENT_CREDITS, AGENT_ENDPOINT_FAILED,
 SETTLEMENT_REVERTED, SETTLEMENT_AMBIGUOUS, RECONCILIATION_PENDING, and the

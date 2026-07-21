@@ -69,7 +69,9 @@ model chooses an equivalent scheduler. The low-cost US staging target intentiona
 uses one-shot Cloud Run Jobs every 15 minutes, staggered at minute 0, 2, and 5.
 Each job has one task, a bounded timeout, at most one retry, and a 20-minute
 heartbeat/readiness age. Unique constraints make overlap idempotent; the private
-signer remains a single bounded nonce writer.
+signer remains a single bounded nonce writer. Deep operational-state sampling is
+serialized so the API cannot fan out nine readiness reads across its five-connection
+pool while scheduled jobs are completing.
 
 ## US-only staging operations
 

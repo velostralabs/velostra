@@ -272,6 +272,11 @@ starts, so readiness and stale-worker alerts use a 20-minute maximum age. Once a
 starts, it still catches up through bounded contiguous ranges. This cadence is a
 staging cost choice, not the future production recovery SLO.
 
+The API samples outbox, cursor, event, webhook, and heartbeat state sequentially.
+This deliberately keeps each observability sweep at one database read at a time,
+matching the small production pool and preventing the readiness probe from creating
+its own connection-pressure failure during worker completion.
+
 ## Phase 3 release control plane
 
 ```mermaid

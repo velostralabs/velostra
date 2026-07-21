@@ -1,7 +1,7 @@
 # Velostra journey
 
 > Reconstructed from Git history through the 2026-07-21 workspace release candidate
-> and verified managed deployment evidence through 2026-07-20.
+> and verified managed deployment evidence through 2026-07-21.
 > This is the chronological handoff. [STATUS.md](./STATUS.md) remains the authority
 > for current truth; [ROADMAP.md](./ROADMAP.md) remains the authority for phase gates.
 
@@ -302,12 +302,19 @@ mainnet migration only; no mainnet or real-value authority is implied.
 - passed the complete local release matrix: Netlify/frontend/server builds, 22 browser
   checks plus one guarded real-extension skip, Phase 2/3/4 gates, contract E2E,
   security/privacy/resilience suites, migrations, database races, and the Redis-backed
-  full money loop against disposable PostgreSQL 16.
+  full money loop against disposable PostgreSQL 16;
+- published the matching frontend/backend release, then caught a transient readiness
+  flap immediately after scheduled-job completion: nine concurrent operational reads
+  were competing inside a five-connection API pool even though Postgres and every job
+  remained healthy;
+- serialized those reads, locked single-concurrency behavior with a regression test,
+  and required another immutable rollout plus an automatic reconciliation/webhook/
+  monitor cycle before closing the checkpoint.
 
 Checkpoint: every defined public-testnet product, recovery, safety, and operational
-truth implementation task is closed. Testnet remains user-usable and bounded. After
-owner-approved publication and post-deploy smoke of this local release candidate, the
-only uncompleted release work is the separately governed mainnet migration lane.
+truth implementation task is closed. The canonical release is user-usable, bounded,
+and post-deploy verified. The only uncompleted release work is the separately governed
+mainnet migration lane.
 
 ## What is complete
 

@@ -26,7 +26,7 @@
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
 | Resilience policy | `npm --prefix server run test:resilience` | local HTTP | RPC 429 failover and confirmation/range policy |
-| Observability | `npm --prefix server run test:observability` | none | alert rules, metrics, readiness policy |
+| Observability | `npm --prefix server run test:observability` | none | alert rules, metrics, readiness policy, and single-concurrency operational reads |
 | Observability DB | `npm --prefix server run test:observability-db` | disposable Postgres | heartbeat and alert lifecycle persistence |
 | Auth | `npm --prefix server run test:auth` | none | bound challenge, Redis-style atomic multi-instance replay defense |
 | SSRF | `npm --prefix server run test:ssrf` | local sockets/DNS doubles | blocked ranges, redirect/DNS/size/timeout boundary |

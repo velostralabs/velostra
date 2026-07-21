@@ -69,7 +69,8 @@ VelostraEscrow are deployed and live-verified. The private signer, public API,
 isolated web, stateless synthetic-agent service, reconciliation/webhook/monitor jobs,
 migrations, and Scheduler triggers are live. Origin binding, deep readiness, solvency,
 worker heartbeats, and anonymous signer rejection pass; bounded public synthetic paid
-writes are enabled.
+writes are enabled. Operational-state reads are serialized against the small API
+pool, eliminating a post-worker readiness flap caused by observability query fan-out.
 
 ## Audit decision
 

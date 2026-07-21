@@ -159,6 +159,12 @@
   transition: color 180ms ease;
 }
 
+.footer__col a {
+  min-height: 26px;
+  display: inline-flex;
+  align-items: center;
+}
+
 .footer__col a:hover {
   color: var(--signal);
 }

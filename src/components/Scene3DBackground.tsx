@@ -366,7 +366,7 @@ export default function Scene3DBackground() {
       input.current.y = -((event.clientY / window.innerHeight) * 2 - 1)
     }
     const handleInteraction = () => {
-      pauseUntil.current = performance.now() + 120
+      pauseUntil.current = performance.now() + 420
     }
     const handleScroll = () => {
       if (!intersecting) return

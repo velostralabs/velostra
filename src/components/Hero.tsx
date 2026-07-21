@@ -179,8 +179,8 @@ export default function Hero() {
 
         <motion.div
           className="hero__stage"
-          initial={{ opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1.18, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
           style={{ x: stageX, y: stageY, rotateX: stageRotateX, rotateY: stageRotateY }}
         >

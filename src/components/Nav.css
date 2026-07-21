@@ -82,6 +82,9 @@
 
 .nav__links a {
   position: relative;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
   color: var(--text-1);
   font-size: 12px;
   font-weight: 600;
@@ -92,7 +95,7 @@
   content: '';
   position: absolute;
   right: 0;
-  bottom: -9px;
+  bottom: 0;
   left: 0;
   height: 1px;
   background: var(--signal);

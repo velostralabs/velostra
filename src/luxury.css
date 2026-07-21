@@ -4,14 +4,19 @@
   --ease-luxury: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
   --shadow-lift: 0 30px 80px rgba(0, 0, 0, 0.34);
-  --type-label: clamp(9px, 0.68vw, 10px);
-  --type-body: clamp(14px, 1.02vw, 16px);
+  --type-nano: 9px;
+  --type-label: clamp(9.5px, 0.68vw, 10.5px);
+  --type-small: clamp(12.5px, 0.86vw, 13.5px);
+  --type-body: clamp(14.5px, 1.02vw, 16px);
 }
 
 body {
   font-size: 15px;
   line-height: 1.6;
   letter-spacing: -0.008em;
+  font-synthesis: none;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
 }
 
 body::after {
@@ -42,6 +47,7 @@ p {
 
 .mono {
   letter-spacing: 0.045em;
+  font-variant-numeric: tabular-nums slashed-zero;
 }
 
 /* Lightweight global motion */
@@ -138,9 +144,9 @@ p {
 }
 
 .page-sub {
-  max-width: 700px;
+  max-width: 680px;
   color: #aeb6b0;
-  font-size: clamp(14px, 1.05vw, 15.5px);
+  font-size: clamp(14.5px, 1.05vw, 16px);
   line-height: 1.78;
 }
 
@@ -178,7 +184,7 @@ p {
 
 .hero__stat-index,
 .hero__stat small {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .hero__stat div span {
@@ -205,19 +211,20 @@ p {
 .field-row label,
 .table th,
 .badge {
-  font-size: 9px;
+  font-size: var(--type-label);
+  line-height: 1.4;
 }
 
 .field-row input,
 .field-row select,
 .field-row textarea {
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.55;
 }
 
 .table td {
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .how__step-index {
@@ -225,7 +232,7 @@ p {
 }
 
 .how__step-copy small {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .how__step-copy strong {
@@ -252,7 +259,7 @@ p {
 .flow-node span,
 .flow-console__footer span,
 .flow-console__rail {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .flow-node strong {
@@ -263,7 +270,7 @@ p {
 .econ__ledger-head div span,
 .econ__ledger-columns,
 .econ__live {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .econ__big-copy span {
@@ -284,7 +291,7 @@ p {
 .econ__receipt-row div span,
 .econ__tiers-intro > span,
 .econ__tier-index {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .econ__receipt-row div strong {
@@ -317,7 +324,7 @@ p {
 .mkt__feature-stats span,
 .mkt__agent-bottom div span,
 .mkt__agent-bottom > span {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .mkt__run,
@@ -334,20 +341,20 @@ p {
 
 .page .mkt__cat {
   color: #8f9892;
-  font-size: 11px;
-  line-height: 1.65;
+  font-size: 12.5px;
+  line-height: 1.68;
 }
 
 .footer__identity p,
 .footer__col a,
 .footer__col > span:not(.footer__col-title) {
-  font-size: 11px;
-  line-height: 1.55;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .footer__col-title,
 .footer__identity > span {
-  font-size: 8px;
+  font-size: var(--type-nano);
 }
 
 .footer__bottom {
@@ -1085,7 +1092,7 @@ body {
 .docs-card > div,
 .footer__col-title,
 .footer__identity > span {
-  font-size: 8px;
+  font-size: var(--type-nano);
   line-height: 1.45;
 }
 
@@ -1306,4 +1313,231 @@ body {
 
 .metric-card__value--positive {
   color: var(--signal) !important;
+}
+/* Typography finish: one legible hierarchy across every product surface. */
+:where(button, input, select, textarea) {
+  font: inherit;
+}
+
+:where(.btn, .wallet-btn, .nav__launch, .filter-clear, .back-link) {
+  line-height: 1.25;
+}
+
+:where(.page-sub, .section-copy, .hero__sub, .atlas__intro-copy p, .proof__head-copy p) {
+  text-wrap: pretty;
+}
+
+:where(.mono, code, pre, .table, .metric-grid, .proof__readouts) {
+  font-variant-numeric: tabular-nums slashed-zero;
+}
+
+.panel-heading span.mono,
+.panel-heading > div > span,
+.status-indicator,
+.auth-gate > span.mono,
+.marketplace-filters__label span,
+.marketplace-results .mono,
+.page .mkt__meta,
+.docs-card > div {
+  font-size: var(--type-label);
+  line-height: 1.45;
+}
+
+.panel-heading h2,
+.docs-card h2 {
+  font-size: 24px;
+  line-height: 1.12;
+}
+
+.docs-card h2 {
+  min-height: 54px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.docs-card p,
+.auth-gate p,
+.review-list p {
+  color: #aab3ad;
+  font-size: 13.5px;
+  line-height: 1.72;
+}
+
+.auth-gate h2 {
+  font-size: 30px;
+  line-height: 1.08;
+}
+
+.auth-skeleton,
+.page-skeleton {
+  font-size: var(--type-label);
+}
+
+.marketplace-results {
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.page .mkt__meta,
+.page .mkt__pill,
+.page .mkt__price,
+.page .mkt__run {
+  font-size: var(--type-label);
+}
+
+.page .mkt__name {
+  font-size: 26px;
+  line-height: 1.08;
+}
+
+.empty-state,
+.form-message {
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.hero__hud,
+.hero__coordinate,
+.hero__stat-index,
+.hero__stat small,
+.how__step-copy small,
+.flow-console__rail,
+.econ__corner,
+.econ__ledger-head div span,
+.econ__ledger-columns,
+.econ__receipt-row div span,
+.econ__tiers-intro > span,
+.econ__tier-index,
+.mkt__tier,
+.mkt__featured-label,
+.mkt__agent-copy span,
+.mkt__feature-stats span,
+.mkt__agent-bottom div span,
+.mkt__agent-bottom > span {
+  font-size: var(--type-nano);
+  line-height: 1.5;
+}
+
+.econ__big-copy p,
+.econ__tier p,
+.mkt__agent-bottom div span,
+.mkt__agent-bottom > span {
+  font-size: 10.5px;
+  line-height: 1.58;
+}
+
+.atlas__statusbar,
+.atlas__coordinates,
+.atlas__field-copy > span,
+.atlas__trace-head,
+.atlas__trace-state,
+.atlas__trace-body > span,
+.atlas__field-dock,
+.atlas__field-dock .mono,
+.atlas__invariant > span,
+.atlas__invariant small {
+  font-size: var(--type-nano);
+  line-height: 1.5;
+}
+
+.atlas__field-copy p {
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.atlas__route-step span {
+  font-size: 8.5px;
+}
+
+.atlas__route-step strong {
+  font-size: 12px;
+}
+
+.atlas__trace-body > div {
+  font-size: 10px;
+}
+
+.atlas__invariant b {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.proof__visual-chrome,
+.proof__receipt-index,
+.proof__receipt-title small,
+.proof__receipt-value small,
+.proof__readouts span,
+.proof__status,
+.proof__trace-item > div > span,
+.proof__metrics span {
+  font-size: var(--type-nano);
+  line-height: 1.45;
+}
+
+.proof__receipt-title strong {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.proof__receipt-value strong,
+.proof__readouts strong {
+  font-size: 10.5px;
+}
+
+.proof__narrative > p {
+  font-size: 14px;
+  line-height: 1.74;
+}
+
+.proof__trace-item strong {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.proof__trace-item p {
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+
+.proof__metrics p {
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.footer__col-title,
+.footer__identity > span {
+  font-size: var(--type-nano);
+}
+
+.footer__bottom {
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+/* Cinematic annotation floor: decorative readouts remain readable at desktop scale. */
+.hero__receipt-head,
+.hero__receipt-head b,
+.hero__receipt-meta,
+.hero__stage-rail,
+.flow-console__chrome,
+.flow-console__meta,
+.flow-console__rail,
+.flow-node span,
+.flow-console__footer span {
+  font-size: var(--type-nano);
+  line-height: 1.45;
+}
+/* Readability floor for live diagram annotations. */
+.hero__signal,
+.hero__receipt-value span,
+.atlas__route-step span,
+.econ__rail-builder,
+.econ__rail-builder span,
+.econ__rail-platform,
+.econ__rail-platform span,
+.mkt__wafer-face > span,
+.mkt__visual-readout,
+.mkt__visual-readout span,
+.mkt__visual-readout strong {
+  font-size: var(--type-nano);
+  line-height: 1.45;
 }

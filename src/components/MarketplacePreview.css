@@ -648,8 +648,8 @@
 }
 
 .page .marketplace-filters__controls label {
-  color: #737d77;
-  font-size: 8px;
+  color: #87918b;
+  font-size: clamp(9.5px, 0.68vw, 10.5px);
   font-weight: 500;
   letter-spacing: 0.13em;
 }

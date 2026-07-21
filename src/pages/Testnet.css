@@ -95,10 +95,12 @@
   box-shadow: 0 0 14px rgba(255, 211, 123, 0.7);
 }
 
+.testnet-disclosure__state--degraded,
 .testnet-disclosure__state--unavailable {
   color: var(--danger);
 }
 
+.testnet-disclosure__state--degraded i,
 .testnet-disclosure__state--unavailable i {
   background: var(--danger);
   box-shadow: 0 0 14px rgba(239, 113, 104, 0.7);
@@ -152,6 +154,12 @@
   font-size: 11px;
   text-align: right;
   overflow-wrap: anywhere;
+}
+
+.testnet-disclosure__retry {
+  position: relative;
+  width: 100%;
+  margin-top: 18px;
 }
 
 .testnet-build-warning {

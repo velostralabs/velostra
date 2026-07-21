@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { parseUnits } from 'viem'
 import { Link } from 'react-router-dom'
+import { ArrowUpRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
 import BuilderPlatform from '../components/BuilderPlatform'
 import { api } from '../lib/api'
+import { ROBINHOOD_EXPLORER_URL } from '../lib/chain'
 import { velostraEscrowAbi, VELOSTRA_ESCROW_ADDRESS } from '../lib/contract'
 
 interface BuilderData {
@@ -228,6 +230,7 @@ function BuilderConsole() {
   const [claimAmount, setClaimAmount] = useState('')
   const [pendingClaim, setPendingClaim] = useState<{ amount: number; units: bigint } | null>(null)
   const [claimHash, setClaimHash] = useState<`0x${string}`>()
+  const [lastClaimHash, setLastClaimHash] = useState<`0x${string}`>()
   const [claimError, setClaimError] = useState<string | null>(null)
   const [reconciling, setReconciling] = useState(false)
   const claimHandled = useRef<`0x${string}` | null>(null)
@@ -267,6 +270,7 @@ function BuilderConsole() {
         amount: pendingClaim.amount,
         tx_hash: claimHash,
       })
+      setLastClaimHash(claimHash)
       setClaimAmount('')
       setPendingClaim(null)
       setClaimHash(undefined)
@@ -305,6 +309,11 @@ function BuilderConsole() {
       setClaimError('Enter a valid positive claim amount.')
       return
     }
+    const available = data?.earnings?.available ?? 0
+    if (amount > available) {
+      setClaimError('Claim amount cannot exceed your available earnings.')
+      return
+    }
 
     let units: bigint
     try {
@@ -315,6 +324,7 @@ function BuilderConsole() {
     }
 
     setClaimError(null)
+    setLastClaimHash(undefined)
     setPendingClaim({ amount, units })
     setClaimHash(undefined)
     claimHandled.current = null
@@ -373,7 +383,8 @@ function BuilderConsole() {
         <div className="action-row">
           <div className="field-row action-row__field">
             <label htmlFor="builder-claim-amount">Amount (USDG)</label>
-            <input id="builder-claim-amount" inputMode="decimal" value={claimAmount} onChange={(e) => setClaimAmount(e.target.value)} placeholder="0.00" />
+            <input id="builder-claim-amount" inputMode="decimal" min="0" max={data.earnings?.available ?? 0} step="0.01" value={claimAmount} onChange={(e) => setClaimAmount(e.target.value)} placeholder="0.00" />
+            <small>Available: ${(data.earnings?.available ?? 0).toFixed(2)} USDG.</small>
           </div>
           <button
             type="button"
@@ -384,9 +395,22 @@ function BuilderConsole() {
             {claimLabel}
           </button>
         </div>
+        {lastClaimHash && !claimError && (
+          <p className="form-message form-message--notice" role="status">
+            Claim confirmed and indexed.
+            <a href={ROBINHOOD_EXPLORER_URL + '/tx/' + lastClaimHash} target="_blank" rel="noreferrer">
+              Inspect transaction <ArrowUpRight size={13} />
+            </a>
+          </p>
+        )}
         {claimError && (
           <div className="recovery-message">
             <p className="form-message form-message--error" role="alert">{claimError}</p>
+            {claimHash && (
+              <a className="btn btn--ghost btn--small" href={ROBINHOOD_EXPLORER_URL + '/tx/' + claimHash} target="_blank" rel="noreferrer">
+                Inspect confirmed claim <ArrowUpRight size={13} />
+              </a>
+            )}
             {claimReceipt?.status === 'success' && pendingClaim && (
               <button
                 type="button"

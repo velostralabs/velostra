@@ -2,16 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWriteContract, useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { parseUnits } from 'viem'
 import { Link } from 'react-router-dom'
+import { ArrowUpRight } from 'lucide-react'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
 import PrivacyCenter from '../components/PrivacyCenter'
 import { api } from '../lib/api'
+import { ROBINHOOD_EXPLORER_URL, ROBINHOOD_IS_TESTNET } from '../lib/chain'
 import {
   settlementTokenAbi,
   SETTLEMENT_TOKEN_ADDRESS,
   velostraEscrowAbi,
   VELOSTRA_ESCROW_ADDRESS,
 } from '../lib/contract'
+
+const PUBLIC_TESTNET_MAX_TOPUP_USDG = 100
 
 interface DashboardData {
   balance_usd: number
@@ -33,6 +37,7 @@ function DashboardContent() {
   const [pendingTopUp, setPendingTopUp] = useState<{ amountUsd: number; amountUnits: bigint } | null>(null)
   const [approvalHash, setApprovalHash] = useState<`0x${string}`>()
   const [depositHash, setDepositHash] = useState<`0x${string}`>()
+  const [lastDepositHash, setLastDepositHash] = useState<`0x${string}`>()
   const [flowError, setFlowError] = useState<string | null>(null)
   const [reconciling, setReconciling] = useState(false)
   const approvalHandled = useRef<`0x${string}` | null>(null)
@@ -97,6 +102,7 @@ function DashboardContent() {
         amount_usd: pendingTopUp.amountUsd,
         tx_hash: depositHash,
       })
+      setLastDepositHash(depositHash)
       await load()
       setPendingTopUp(null)
       setApprovalHash(undefined)
@@ -137,6 +143,10 @@ function DashboardContent() {
       setFlowError('Top-up amount must be at least $1.00.')
       return
     }
+    if (ROBINHOOD_IS_TESTNET && amountUsd > PUBLIC_TESTNET_MAX_TOPUP_USDG) {
+      setFlowError('Public testnet top-ups are capped at $100.00 synthetic USDG per deposit.')
+      return
+    }
 
     let amountUnits: bigint
     try {
@@ -147,6 +157,7 @@ function DashboardContent() {
     }
 
     setFlowError(null)
+    setLastDepositHash(undefined)
     setApprovalHash(undefined)
     setDepositHash(undefined)
     approvalHandled.current = null
@@ -205,12 +216,21 @@ function DashboardContent() {
         <div className="action-row">
           <div className="field-row action-row__field">
             <label htmlFor="dashboard-topup-amount">Amount (USDG)</label>
-            <input id="dashboard-topup-amount" inputMode="decimal" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} />
+            <input id="dashboard-topup-amount" inputMode="decimal" min="1" max={ROBINHOOD_IS_TESTNET ? PUBLIC_TESTNET_MAX_TOPUP_USDG : undefined} step="0.01" value={topupAmount} onChange={(e) => setTopupAmount(e.target.value)} />
+            {ROBINHOOD_IS_TESTNET && <small>Public testnet limit: 1–100 synthetic USDG per deposit.</small>}
           </div>
           <button type="button" className="btn btn--primary" onClick={handleTopUp} disabled={isPending || Boolean(pendingTopUp)}>
             {flowLabel}
           </button>
         </div>
+        {lastDepositHash && !flowError && (
+          <p className="form-message form-message--notice" role="status">
+            Deposit confirmed and indexed.
+            <a href={ROBINHOOD_EXPLORER_URL + '/tx/' + lastDepositHash} target="_blank" rel="noreferrer">
+              Inspect transaction <ArrowUpRight size={13} />
+            </a>
+          </p>
+        )}
         {flowError && (
           <div className="recovery-message">
             <p className="form-message form-message--error" role="alert">{flowError}</p>

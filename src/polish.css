@@ -349,6 +349,14 @@ button:disabled {
   margin-bottom: 0;
 }
 
+.field-row small {
+  display: block;
+  margin-top: 7px;
+  color: var(--text-2);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
 .form-message {
   margin-top: 14px;
   padding: 11px 13px;

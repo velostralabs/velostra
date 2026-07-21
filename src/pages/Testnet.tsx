@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAccount, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { parseUnits, type Hex } from 'viem'
@@ -40,7 +40,16 @@ interface PublicHealth {
   paidWrites: string
 }
 
-type PublicHealthState = 'checking' | 'live' | 'read-only' | 'unavailable'
+interface PublicReadiness {
+  status: string
+  environment: string
+  release: string
+  ready: boolean
+  checks: Record<string, boolean>
+  capturedAt?: string
+}
+
+type PublicHealthState = 'checking' | 'live' | 'read-only' | 'degraded' | 'unavailable'
 
 export default function Testnet() {
   const { address, chainId, isConnected } = useAccount()
@@ -57,29 +66,50 @@ export default function Testnet() {
     query: { enabled: Boolean(mintHash) },
   })
 
+  const loadRuntime = useCallback(async (signal?: AbortSignal, announce = true) => {
+    if (announce) setHealthState('checking')
+    const [healthResult, readinessResult] = await Promise.allSettled([
+      api.get<PublicHealth>('/health', { signal }),
+      api.get<PublicReadiness>('/ready', { signal }),
+    ])
+    if (signal?.aborted) return
+
+    if (healthResult.status !== 'fulfilled') {
+      setHealthState('unavailable')
+      return
+    }
+
+    const health = healthResult.value
+    const correctStack =
+      health.status === 'ok' &&
+      health.environment === 'staging' &&
+      health.chainId === ROBINHOOD_CHAIN_ID
+    if (!correctStack) {
+      setHealthState('unavailable')
+      return
+    }
+    if (!health.publicTestnet || health.paidWrites !== 'enabled') {
+      setHealthState('read-only')
+      return
+    }
+
+    const deeplyReady =
+      readinessResult.status === 'fulfilled' &&
+      readinessResult.value.ready &&
+      readinessResult.value.status === 'ready' &&
+      readinessResult.value.environment === 'staging'
+    setHealthState(deeplyReady ? 'live' : 'degraded')
+  }, [])
+
   useEffect(() => {
     const controller = new AbortController()
-    setHealthState('checking')
-    api.get<PublicHealth>('/health', { signal: controller.signal })
-      .then((health) => {
-        const correctStack =
-          health.status === 'ok' &&
-          health.environment === 'staging' &&
-          health.chainId === ROBINHOOD_CHAIN_ID
-        if (!correctStack) {
-          setHealthState('unavailable')
-          return
-        }
-        setHealthState(
-          health.publicTestnet && health.paidWrites === 'enabled' ? 'live' : 'read-only'
-        )
-      })
-      .catch((healthError: unknown) => {
-        if (healthError instanceof DOMException && healthError.name === 'AbortError') return
-        setHealthState('unavailable')
-      })
-    return () => controller.abort()
-  }, [])
+    void loadRuntime(controller.signal)
+    const interval = window.setInterval(() => void loadRuntime(controller.signal, false), 30_000)
+    return () => {
+      controller.abort()
+      window.clearInterval(interval)
+    }
+  }, [loadRuntime])
 
   useEffect(() => {
     if (!receipt) return
@@ -189,10 +219,10 @@ export default function Testnet() {
             paid agent execution, onchain settlement, receipts, and self-healing reconciliation
             without putting real funds at risk.
           </p>
-          <div className="testnet-hero__signals" aria-label="Testnet guarantees">
-            <span><CheckCircle2 size={14} /> Publicly accessible</span>
-            <span><ShieldCheck size={14} /> Bounded paid calls</span>
-            <span><Activity size={14} /> Reconciliation active</span>
+          <div className="testnet-hero__signals" aria-label="Testnet runtime signals">
+            <span><CheckCircle2 size={14} /> Public endpoint</span>
+            <span><ShieldCheck size={14} /> {healthState === 'live' ? 'Bounded paid calls' : 'Paid writes protected'}</span>
+            <span><Activity size={14} /> {healthState === 'live' ? 'Recovery workers ready' : healthState === 'checking' ? 'Checking recovery' : 'Recovery not verified'}</span>
           </div>
         </div>
 
@@ -205,7 +235,9 @@ export default function Testnet() {
                 ? 'TESTNET LIVE'
                 : healthState === 'read-only'
                   ? 'PAID CALLS PAUSED'
-                  : 'RUNTIME UNAVAILABLE'}
+                  : healthState === 'degraded'
+                    ? 'RUNTIME DEGRADED'
+                    : 'RUNTIME UNAVAILABLE'}
           </span>
           <strong>No real funds.</strong>
           <p>
@@ -221,7 +253,16 @@ export default function Testnet() {
               <dt>Paid calls</dt>
               <dd>{healthState === 'live' ? 'Enabled / bounded' : healthState === 'checking' ? 'Checking' : 'Paused'}</dd>
             </div>
+            <div>
+              <dt>Recovery</dt>
+              <dd>{healthState === 'live' ? 'Ready' : healthState === 'checking' ? 'Checking' : healthState === 'read-only' ? 'Paused' : 'Unavailable'}</dd>
+            </div>
           </dl>
+          {healthState !== 'live' && healthState !== 'checking' && (
+            <button type="button" className="btn btn--ghost btn--small testnet-disclosure__retry" onClick={() => void loadRuntime()}>
+              Recheck runtime
+            </button>
+          )}
         </aside>
       </section>
 

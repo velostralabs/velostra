@@ -440,3 +440,59 @@
     animation: none;
   }
 }
+
+/* Testnet copy finish: operational detail stays readable without losing density. */
+.testnet-disclosure__state,
+.testnet-disclosure dt,
+.testnet-steps__heading > span,
+.testnet-step__meta span,
+.testnet-result span,
+.testnet-proof-strip span {
+  font-size: clamp(9px, 0.66vw, 10px);
+  line-height: 1.45;
+}
+
+.testnet-disclosure > p,
+.testnet-build-warning {
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.testnet-disclosure dd {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.testnet-step h3 {
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.testnet-step p {
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.testnet-step__action .btn,
+.testnet-step__action .wallet-btn {
+  font-size: 11px;
+}
+
+.testnet-result strong {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.testnet-result a {
+  font-size: 11px;
+}
+
+.testnet-proof-strip strong {
+  font-size: 15px;
+  line-height: 1.25;
+}
+
+.testnet-proof-strip p {
+  font-size: 10.5px;
+  line-height: 1.6;
+}

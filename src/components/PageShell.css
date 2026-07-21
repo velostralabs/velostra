@@ -153,3 +153,34 @@
     min-width: 680px;
   }
 }
+
+/* Functional typography: keep data, forms, and empty states comfortably legible. */
+.page-sub {
+  max-width: 680px;
+  font-size: clamp(14.5px, 1.05vw, 16px);
+  line-height: 1.78;
+}
+
+.field-row label,
+.table th,
+.badge {
+  font-size: clamp(9.5px, 0.68vw, 10.5px);
+  line-height: 1.4;
+}
+
+.field-row input,
+.field-row select,
+.field-row textarea {
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.table td {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.empty-state {
+  font-size: 13px;
+  line-height: 1.65;
+}

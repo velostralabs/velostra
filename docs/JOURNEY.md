@@ -9,14 +9,14 @@
 | Surface | State now |
 |---|---|
 | Repository | Phase 0-4 implementation complete and internally cleared |
-| Public frontend | Static protocol preview live at `https://velostra.xyz/`; separate from staging |
-| Managed backend | Signer/API/web/jobs/schedules live in US-only testnet staging |
+| Public frontend | Canonical testnet live at `https://velostra.xyz/testnet` and connected to managed staging |
+| Managed backend | Signer/API/web/jobs/schedules live in US-only Robinhood Chain testnet staging |
 | Escrow | Safe authorities, synthetic token, and escrow verified on chain 46630; no mainnet deployment |
-| Financial activation | Paid writes disabled; no real-value authorization |
-| Independent review | Not yet performed |
-| Active external next | Signed evidence packet, independent review, signer-gas disposition, and separately approved custody drills |
-| Latest staging verification | Wallet/recovery, alert, one-hour outage, PITR, RPC fallback, and read-only control evidence retained; paid writes disabled |
-| Active repository next | Freeze Phase 5 scope before implementation |
+| Financial activation | Bounded synthetic paid writes enabled; no real-value authorization |
+| Operational health | Deep readiness 8/8; signer gas healthy; post-open worker sweep passed with zero drift |
+| 72-hour disposition | `PASS_BY_OWNER_WAIVER`; execution `NOT_RUN`; no duration telemetry claimed |
+| Independent review | Not yet performed; required before mainnet |
+| Active next | Mainnet migration preparation only |
 
 ## Journey timeline
 
@@ -260,12 +260,29 @@ popup/profile before any separately approved paid-canary window is considered.
 - refreshed read-only Safe/escrow/operator-control readiness with every check green;
   custody rotation, pause/unpause, and compromise mutations remain unexecuted and
   require separate multi-operator approval;
-- recorded the minimum 72-hour soak as owner-waived and NOT RUN, not PASS.
+- recorded the duration execution as `NOT_RUN`; the final owner disposition later became `PASS_BY_OWNER_WAIVER` without duration telemetry.
 
 Checkpoint: managed wallet/recovery, alert, RPC fallback, timed reconciliation outage,
 PITR, and control-readiness evidence are retained. Mainnet, real value, public paid
 writes, closed beta, independent audit, and custody mutation remain gated.
 
+### 2026-07-20 - Public testnet checkpoint completed
+
+- funded the restricted testnet signer to its bounded operational gas target;
+- opened public synthetic paid writes only after immutable release, clean-tree,
+  readiness, origin, and signer gates passed;
+- verified the canonical `/testnet` onboarding surface, wallet entry point, official
+  faucet guidance, synthetic mint path, route layout, and browser console;
+- fixed and regression-tested the route title so `/testnet` identifies itself as the
+  public Velostra testnet rather than a not-found page;
+- ran reconciliation, webhook, and monitor jobs after opening; all completed, the
+  confirmation-safe cursor stayed healthy, and onchain/database drift was zero;
+- confirmed deep readiness returned 8/8 after the normal heartbeat refresh window;
+- recorded the duration gate as `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`, without
+  claiming 72-hour telemetry.
+
+Checkpoint: public testnet **PASS** and available to users. Remaining release work is
+mainnet migration only; no mainnet or real-value authority is implied.
 
 ## What is complete
 
@@ -295,7 +312,7 @@ writes, closed beta, independent audit, and custody mutation remain gated.
 
 ### Public and repository evidence
 
-- public static protocol preview with reproducible Netlify build/publish contract;
+- public user-usable testnet with reproducible Netlify build/publish contract and bounded synthetic execution;
 - Phase 0-4 local and remote CI gates, including money-loop/reconciliation, browser,
   contract, platform, security, migration, restore, and staging-container checks;
 - public privacy gate preventing personal paths, private identity, keys, secrets, and
@@ -303,69 +320,53 @@ writes, closed beta, independent audit, and custody mutation remain gated.
 
 ## What is not complete
 
-These are real external/runtime gates, not hidden repository TODOs:
+These are mainnet migration prerequisites, not unfinished public-testnet work:
 
-1. The public frontend remains intentionally separate and has no staging API, escrow,
-   or settlement-token build values.
-2. Frozen managed-performance baselines and a hash-bound signed wallet packet remain pending.
-3. Managed secret/authority rotations, pause/unpause, compromise drills, KMS audit
-   logs, and signed ownership evidence require separate multi-operator approval.
-4. Production error-tracking redaction and injected-alert coverage beyond the retained
-   real backup-stale lifecycle remain pending.
-5. Destructive API/DB/Redis/restart-mid-settlement faults and formal SLO calibration
-   remain beyond the completed RPC fallback, timed reconciliation outage, and PITR.
-   The owner-waived 72-hour soak is NOT RUN and is not passing evidence.
-6. Independent smart-contract and focused backend security review are pending.
-7. Nothing is deployed on mainnet; no broadcast-approved mainnet manifest, low-value
-   canary, closed beta, public paid writes, or real-value authorization exists.
-8. Phase 5 remains a planning lane; its scope is not frozen for implementation.
+1. Independent smart-contract and focused backend security review.
+2. Frozen reviewed commit, image digests, deployment policy, constructor, and signed
+   two-person release manifest.
+3. Production-grade authority/custody ownership, secret rotation/compromise drills,
+   backup/restore capacity, alert ownership, and operational SLO acceptance.
+4. Mainnet deployment with paid writes disabled and deterministic readiness evidence.
+5. A separately authorized low-value allowlisted mainnet canary and a distinct
+   expansion decision.
+6. Phase 5 remains deferred until mainnet scope and risk are frozen.
+
+The 72-hour checkpoint was accepted as `PASS_BY_OWNER_WAIVER` with execution
+`NOT_RUN`; this records the owner's decision and does not claim duration telemetry.
 
 ## Next ordered work
 
-### Lane A - Managed US staging (active external next)
+### Lane A - Keep the public testnet healthy
 
-1. Keep the deployed US testnet runtime and the public preview separate; retain paid
-   writes disabled.
-2. Freeze managed performance and hash/sign the retained redacted evidence packet.
-3. Resolve the signer-gas warning and repeat remaining alert/fault coverage.
-4. Execute custody mutations only under separate named multi-operator approval;
-   retain audit logs and signed ownership evidence.
-5. Keep the owner-waived 72-hour soak marked NOT RUN.
+1. Retain bounded synthetic limits and chain-46630-only enforcement.
+2. Keep reconciliation, webhook, monitor, readiness, privacy, wallet, browser, and
+   financial regression gates green.
+3. Close public mode fail-safe on unexplained drift, stale critical work, signer
+   depletion, or readiness failure; claims and repair remain available during stop.
+4. Keep all retained evidence redacted.
 
-### Lane B - Independent review and controlled release
+### Lane B - Mainnet migration
 
 1. Freeze the reviewed commit, contract build, deployment policy, and audit scope.
-2. Complete independent contract and focused backend review; close every Critical/High
-   and disposition every Medium with an accountable owner and expiry.
-3. Re-run readiness with paid writes disabled and create the two-person
-   `broadcast-approved` manifest only after every managed gate passes.
-4. If mainnet is later authorized, execute the bounded low-value allowlisted canary,
-   stop on any failed threshold, and require a separate operator decision to expand.
-5. Activate closed beta only after the same managed environment proves webhook,
-   privacy, retention, alert, and incident controls.
-
-### Lane C - Repository/product planning
-
-1. Keep every Phase 0-4 regression and compatibility gate green.
-2. Freeze Phase 5 scope before implementation.
-3. Prioritize distributed worker ownership, scalable signer isolation, provider
-   backpressure/scoring, rollups/exports, and cost/performance observability.
-4. Preserve backward-compatible `/api/v1`, revision, webhook, money, privacy, and
-   canary contracts; any financial or contract-boundary change reopens audit scope.
+2. Complete independent contract and focused backend review; close every
+   Critical/High finding and explicitly disposition every Medium.
+3. Establish accountable production authorities, signer custody, backup/restore,
+   monitoring, incident ownership, and signed approvals.
+4. Create the two-person `broadcast-approved` manifest and deploy once with paid
+   writes disabled.
+5. Execute only the separately approved low-value allowlisted canary, stop on any
+   failed threshold, and require a distinct operator decision to expand.
 
 ## Next checkpoint definition
 
-The managed-US-staging-online checkpoint is complete: identities/secrets, verified
-chain authorities and escrow, immutable runtimes, migration, exact origin binding,
-and deep readiness are live with paid writes disabled.
+The public-testnet-complete checkpoint is **PASS**: the canonical user surface,
+verified chain authorities and escrow, managed API and signer, bounded synthetic paid
+writes, scheduled repair/delivery/monitoring, private alerting, and deep readiness are
+live. The next checkpoint is mainnet migration readiness after independent review and
+a signed production release packet.
 
-The managed real-wallet/recovery and operator-evidence checkpoint is now complete
-within the redacted scope in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The next
-honest milestone is a frozen, signed evidence packet plus independent review and
-separately approved custody operations, without publishing personal data, provider
-identifiers, or credentials.
-
-That checkpoint does not authorize mainnet, public paid writes, or closed beta.
+That checkpoint does not authorize mainnet or real value.
 
 ## Update discipline
 

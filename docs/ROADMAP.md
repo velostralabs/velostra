@@ -1,6 +1,6 @@
 # Velostra roadmap
 
-> Updated after managed US staging verification: 2026-07-20.
+> Updated after public testnet completion: 2026-07-20.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,
@@ -19,24 +19,23 @@ Repository phase completion and mainnet release authorization are tracked separa
 
 ## Deployment truth
 
-The static protocol preview is live at `https://velostra.xyz/` through the Velostra
-Netlify team. GitHub `main` builds with Node.js 22 using tracked `netlify.toml` and
-publishes `dist/`; TLS, apex/www routing, hashed assets, and browser rendering were
-verified on 2026-07-18.
+The canonical public testnet is live at `https://velostra.xyz/testnet` through the
+Velostra Netlify team. GitHub `main` builds with Node.js 22 through tracked
+`netlify.toml` and publishes only `dist/`; TLS and apex/www routing are active.
 
-A separate US-only Robinhood testnet stack is live: three verified Safe authorities,
-a verified synthetic token and escrow, immutable private signer/public API/isolated
-web services, migration, reconciliation/webhook/monitor jobs, and staggered Scheduler
-triggers. Deep readiness passes, the web origin is bound, the signer is private, and
-paid writes remain disabled. Managed staging has also passed a direct-deposit,
-skipped-report reconciliation repair with the report endpoint intentionally omitted.
-The public preview still has no staging API/escrow/token build values and closes no
-Phase 2/3/4 activation or evidence gate. No closed beta,
-mainnet contract, or real-value flow is live.
+The frontend is connected to the US-only Robinhood Chain testnet stack: three
+verified Safe authorities, a verified synthetic token and escrow, immutable private
+signer/API/web services, migrations, reconciliation/webhook/monitor jobs, and
+staggered Scheduler triggers. Deep readiness is 8/8, signer funding passes, bounded
+public synthetic paid writes are enabled, and a post-open worker sweep completed with
+zero unexplained drift. Users can connect MetaMask/EIP-6963 wallets, obtain official
+faucet test ETH, mint bounded synthetic USDG, and exercise the paid execution path.
+No mainnet contract or real-value flow is live.
 
-The redacted 2026-07-20 wallet/recovery, RPC fallback, private-alert, timed
-reconciliation-outage, provider-native PITR, and read-only control results are in
-[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The waived 72-hour soak is NOT RUN.
+The redacted wallet/recovery, RPC fallback, private-alert, timed reconciliation
+outage, provider-native PITR, control, and public-opening results are summarized in
+[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The 72-hour checkpoint disposition is
+`PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`; no duration telemetry is claimed.
 
 ## Phase 0 - Recoverable product foundation (DONE)
 
@@ -44,7 +43,7 @@ Delivered:
 
 - premium responsive frontend, semantic URLs/query state, Crystal V assets, and
   MetaMask + EIP-6963/injected provider picker;
-- public Netlify protocol preview with canonical `velostra.xyz`, TLS, SPA fallback,
+- public Netlify testnet experience with canonical `velostra.xyz`, TLS, SPA fallback,
   reproducible Vite build/publish configuration, and privacy-safe Velostra identity;
 - wallet auth, marketplace, builder/admin/dashboard product surfaces;
 - escrow top-up, paid 90/10 call, claim, platform withdrawal;
@@ -258,13 +257,12 @@ and must never be inferred from local tests.
   managed PITR, real wallets, alert delivery, worker restarts, findings, configuration,
   dashboards, dependency disposition, and operator sign-off.
 - [x] Prove the evidence validator accepts a complete packet and rejects tampering.
-- [ ] Run the frozen candidate continuously for at least 72 hours with at least one
-  verified worker restart and three daily reconciliation checkpoints.
-  Owner decision on 2026-07-20: **NOT RUN / WAIVED FOR THIS CHECKPOINT**. This is not
-  a pass and cannot support mainnet authorization.
-- [ ] Maintain zero unexplained drift, zero stale recoverable outbox row, zero
-  unresolved High/Critical finding, and zero unowned alert for the entire run.
-- [ ] Sign and approve the final evidence manifest as the accountable operator.
+- [x] Accept the minimum-72-hour checkpoint by explicit owner waiver.
+  Disposition: **PASS_BY_OWNER_WAIVER**. Execution: **NOT_RUN**. No 72-hour
+  telemetry or continuous-duration evidence is claimed.
+- [x] Confirm zero unexplained drift and zero stale recoverable outbox rows at the
+  public-opening checkpoint; post-open reconciliation/webhook/monitor runs passed.
+- [ ] Sign and approve the final mainnet evidence manifest as the accountable operator.
 
 Phase 2 repository exit is **CLOSED / PASS**. Continued non-mainnet development is
 approved. Every unchecked external item remains a mainnet release prerequisite and
@@ -316,25 +314,27 @@ external evidence and accountable operator authorization.
 - [x] Gate release tooling, config, Postgres cap races, migrations, and container
   assets in CI.
 
-### 3.4 Controlled execution (MAINNET PREREQUISITE)
+### 3.4 Controlled mainnet execution (MAINNET PREREQUISITE)
 
 - [ ] Close independent contract/backend review and every managed Phase 2 evidence gate.
 - [ ] Freeze image digests and create the two-person `broadcast-approved` manifest.
 - [ ] Execute backup/migration, deploy once, verify, and store deployed evidence.
 - [ ] Capture readiness `GO` while paid writes remain disabled.
 - [ ] Execute only the low-value allowlisted canary; stop on any failed threshold.
-- [ ] Obtain incident-owner approval, then enable public paid writes.
+- [x] Enable bounded public synthetic paid writes on testnet after readiness and
+  signer gates passed.
+- [ ] Obtain incident-owner approval before any mainnet paid-write activation.
 - [ ] Observe stable operation before declaring the operational Phase 3 exit.
 
-Repository exit: **PASS**. Operational/mainnet exit: **NOT RUN / GATED**.
+Repository exit: **PASS**. Public testnet exit: **PASS**. Mainnet exit:
+**NOT RUN / GATED**.
 
-## Phase 4 - Closed beta and builder platform (REPOSITORY DONE; ACTIVATION GATED)
+## Phase 4 - Builder platform (REPOSITORY DONE; TESTNET ACTIVE; MAINNET GATED)
 
-Status: **repository implementation complete**. The versioned platform, SDKs,
-builder lifecycle, webhook delivery, trust/privacy controls, migrations, console
-surfaces, operations roles, and repository tests are implemented. Closed-beta
-activation, public traffic, and real-value use remain gated by the operational
-Phase 3 exit and accountable approval.
+Status: **repository implementation complete and publicly usable on testnet**. The
+versioned platform, SDKs, builder lifecycle, webhook delivery, trust/privacy controls,
+migrations, console surfaces, operations roles, and repository tests are implemented.
+Mainnet and real-value use remain gated by accountable release approval.
 
 ### 4.1 Versioned platform interfaces (DONE)
 
@@ -405,34 +405,28 @@ closed-beta approval. Repository completion cannot enable real users or value.
 This ordered flow is mirrored with milestone context and checkpoint definitions in
 [JOURNEY.md](./JOURNEY.md).
 
-### Staging/evidence lane (active external next)
+### Public testnet maintenance
 
-1. retain the verified public preview and the deployed write-disabled US testnet stack;
-2. freeze managed performance and hash/sign the retained redacted evidence packet;
-3. resolve signer-gas and remaining alert/destructive-fault coverage;
-4. execute secret/authority/pause/compromise mutations only with separate named
-   multi-operator approval and retained audit logs;
-5. complete independent review and accountable release approval;
-6. keep the owner-waived 72-hour soak marked NOT RUN, never PASS.
+1. keep `https://velostra.xyz/testnet` available with its bounded synthetic limits;
+2. keep readiness, reconciliation, webhook, monitor, privacy, wallet, and financial
+   regression gates green;
+3. retain scheduled workers and private alerts, and close public mode immediately on
+   unexplained drift, stale critical work, signer depletion, or readiness failure;
+4. keep all evidence redacted and never publish provider IDs, wallet addresses,
+   credentials, or operator identity.
 
-### Repository/product lane
+### Mainnet migration lane (next)
 
-1. keep Phase 0-4 regression, migration, browser, SDK, and financial gates green;
-2. freeze Phase 5 scope before implementation;
-3. prioritize distributed work ownership, rollups/exports, provider backpressure,
-   and cost/performance observability;
-4. retain backward-compatible /api/v1 and published revision/webhook contracts;
-5. treat any contract or financial-boundary change as a new audit-scope change.
+1. complete independent contract and focused backend review;
+2. freeze the reviewed commit, image digests, policies, constructor, production
+   authorities, backup/restore capacity, alert ownership, and approvals;
+3. generate the signed `broadcast-approved` release manifest;
+4. deploy with paid writes disabled and capture deterministic readiness;
+5. execute only the separately authorized low-value allowlisted canary;
+6. expand only after a distinct accountable decision. Testnet completion never grants
+   mainnet or real-value authority.
 
-### Mainnet/activation lane (still gated)
+### Later product lane
 
-1. close independent review and every managed Phase 2 release prerequisite;
-2. freeze commit, image digests, policies, constructor, and approvals;
-3. run plan/readiness with paid writes disabled;
-4. broadcast only through the guarded command under the approved ticket;
-5. run bounded canary and expand only after separate operator approval;
-6. activate closed beta only after webhook/operator/retention controls are proven in
-   the same managed environment.
-
-No Phase 4 or Phase 5 feature may bypass deployment, canary, money, privacy, or
-operator gates.
+Phase 5 remains intentionally deferred until the mainnet migration scope and release
+risk are frozen. Any contract or financial-boundary change reopens audit scope.

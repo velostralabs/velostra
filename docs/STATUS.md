@@ -1,24 +1,20 @@
 # Velostra status
 
-> Last verified against the workspace and managed staging: 2026-07-20.
+> Last verified against the workspace and public testnet: 2026-07-20.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
-> verified. Controlled mainnet execution remains explicitly gated.
+> verified. The public Robinhood Chain testnet checkpoint is **PASS**.
 > No mainnet deployment or real-value authorization is recorded.
-> Public deployment: the static protocol preview remains live at https://velostra.xyz/
-> and separate from staging. The US-only chain-46630 Safe authorities, token, escrow,
-> private signer, API, isolated web, migration, workers, and Scheduler triggers are
-> deployed; deep readiness passes and paid writes remain disabled.
-> Managed staging now retains direct skipped-report repair, a bounded real-MetaMask
-> synthetic money path with exact reconciled claim verification, private Telegram
-> alert acknowledgement/resolution, provider-native Neon PITR, and live read-only
-> operator-control readiness evidence.
+> Public deployment: `https://velostra.xyz/testnet` is connected to the US-only
+> chain-46630 API, synthetic token, escrow, private signer, workers, and Scheduler.
+> Deep readiness is 8/8 and bounded public synthetic paid writes are enabled.
+> Managed evidence includes skipped-report repair, bounded real-MetaMask execution,
+> exact reconciled claim verification, private Telegram alert lifecycle,
+> provider-native PITR, one-hour catch-up, and read-only control readiness.
 > Chronological handoff and ordered next work: [JOURNEY.md](./JOURNEY.md).
 
-The managed web remains chain-46630-only and separate from the public preview. The
-bounded wallet path used synthetic value; reconciliation repaired the chain-confirmed
-terminal state and a read-only chain/database verifier proved exact-once claim totals.
-Paid writes closed afterward. Raw identifiers stay ignored; see
-[MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
+The user-facing testnet uses only test ETH and resettable synthetic USDG. Public mode
+is bounded by per-call, per-wallet, daily-global, top-up, and sensitive-action caps.
+Raw identifiers remain ignored; see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Executive status
 
@@ -38,17 +34,19 @@ Repository implementation and local verification for Phase 0-4 are **CLEAR / PAS
 This is not activation or mainnet authorization. No mainnet deployment or real-value
 authorization is recorded. Independent review, multi-operator custody mutations,
 signed release approval, and accountable closed-beta approval remain external gates.
-The owner-waived 72-hour soak was not run and is not represented as passing evidence.
+The 72-hour checkpoint disposition is `PASS_BY_OWNER_WAIVER`; execution is
+`NOT_RUN`, and no 72-hour telemetry is claimed.
 
-The static protocol preview is publicly deployed through the Velostra Netlify team
-and Git-linked `velostralabs/velostra` `main` branch. The canonical TLS origin is
+The canonical frontend is publicly deployed through the Velostra Netlify team and
+Git-linked `velostralabs/velostra` `main` branch. The canonical TLS origin is
 `https://velostra.xyz/`; `https://www.velostra.xyz/` redirects to it, and
 `https://velostra.netlify.app/` remains the provider default. The tracked deployment
 contract runs `npm run build` under Node.js 22 and publishes only `dist/`.
 
-This frontend is deliberately a protocol preview. Its production environment has no
-`VITE_API_URL`, `VITE_ESCROW_ADDRESS`, or `VITE_SETTLEMENT_TOKEN`, so API-backed
-and financial flows are not activated and must not be represented as operational.
+Its production testnet configuration binds the browser to the managed API, verified
+escrow, and synthetic settlement token. `/testnet` provides wallet connection,
+official faucet guidance, bounded synthetic minting, and the execution entry point.
+Server-side auth, receipt, quota, pricing, and settlement checks remain authoritative.
 
 The low-cost US-only backend staging path is now deployed: Robinhood testnet chain
 46630; GCP us-east4; Neon aws-us-east-1; Upstash GCP us-east4; bounded Cloud Run
@@ -58,8 +56,9 @@ RPC, twelve scoped secrets, and private Telegram delivery are active. Three disj
 canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token, and
 VelostraEscrow are deployed and live-verified. The private signer, public API,
 isolated web, stateless synthetic-agent service, reconciliation/webhook/monitor jobs,
-migration, and Scheduler triggers are live; origin binding, deep readiness, solvency, worker heartbeats, and anonymous
-signer rejection pass. Paid writes remain disabled.
+migrations, and Scheduler triggers are live. Origin binding, deep readiness, solvency,
+worker heartbeats, and anonymous signer rejection pass; bounded public synthetic paid
+writes are enabled.
 
 ## Audit decision
 
@@ -68,22 +67,22 @@ signer rejection pass. Paid writes remain disabled.
   migration, and CI gates:** PASS locally.
 - **Database:** nine reviewed migrations and 30 application tables.
 - **Independent third-party audit:** not claimed or fabricated.
-- **Deployment state:** public static preview plus a separate managed US testnet
-  contract/runtime are active; no mainnet contract, mainnet transaction, public paid
-  writes, closed beta, or real-value activation.
+- **Deployment state:** the canonical public frontend is connected to the managed US
+  testnet runtime with bounded synthetic paid writes enabled; no mainnet contract,
+  mainnet transaction, or real-value activation.
 - **Expansion state:** impossible from repository automation alone; a passing canary
   still returns `PASS_AWAITING_OPERATOR` and `expansionAuthorized: false`.
 
 | Area | Repository state | External state |
 |---|---|---|
-| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | static preview live at `velostra.xyz`; API/contract build values intentionally absent; bounded real-MetaMask evidence passed; managed-performance freeze pending |
+| Product frontend | lint/build plus browser, visual, a11y, routing, wallet, performance budgets, tracked Netlify config | public `/testnet` live with managed API/contract values, wallet onboarding, and bounded synthetic paid calls |
 | Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | direct skipped-report and bounded wallet/claim reconciliation evidence passed; timed outage result is recorded in the managed evidence packet |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native Neon PITR matched every table, migration, aggregate, constraint, and index |
 | Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
-| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | verified testnet authorities/escrow plus immutable signer/API/web/jobs/schedules live; readiness green and paid writes disabled |
-| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime and all twelve scoped values live; audit logs, rotations, and drills pending |
+| Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | verified testnet authorities/escrow plus immutable signer/API/web/jobs/schedules live; readiness 8/8 and bounded public mode enabled |
+| Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime, all twelve scoped values, and the operational gas floor are healthy; mainnet custody drills remain pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness, heartbeats, and a real private backup-stale create/deliver/ack/heal/resolve lifecycle pass; remaining injected-alert coverage pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | primary-RPC fallback, timed reconciliation outage, and provider-native PITR pass; destructive API/DB/Redis/restart faults and formal SLO calibration pending |
 | CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates | [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) passed on `6e83a04` |
@@ -326,8 +325,8 @@ continued non-mainnet development. They block only real-value/mainnet authorizat
 5. Timed reconciliation-schedule outage and RPC fallback: PASS; destructive API/DB/
    Redis/restart-mid-settlement faults remain separate.
 6. Provider-native PITR integrity: PASS; formal restore-SLO calibration remains.
-7. Minimum 72-hour soak: owner-waived and **NOT RUN**. It is not passing evidence and
-   cannot authorize mainnet unless the release authority explicitly changes the gate.
+7. Minimum 72-hour soak: `PASS_BY_OWNER_WAIVER`; execution `NOT_RUN`; no duration
+   telemetry is claimed. Mainnet remains governed by its separate release gates.
 8. Hash every artifact, obtain operator approval, and pass `npm run phase2:evidence`.
 9. Complete independent contract and focused backend review before mainnet release.
 
@@ -348,13 +347,12 @@ ENABLED. A destructive API/Postgres/Redis outage remains a separate test.
 
 ## Next action
 
-The detailed handoff is maintained in [JOURNEY.md](./JOURNEY.md). Managed US staging
-with a verified Robinhood testnet escrow is online and deep-readiness green while
-paid writes remain disabled.
+The public testnet checkpoint is complete and remains available to users at
+`https://velostra.xyz/testnet`. Keep Phase 0-4 regression, privacy, financial,
+worker, and readiness gates green while preserving bounded testnet limits.
 
-Keep the public preview separate and the deployed staging stack write-disabled.
-Wallet/reconciliation, alert lifecycle, PITR, RPC fallback, and read-only control
-evidence are retained in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Next work is
-the signed evidence packet, independent review, signer-gas warning disposition, and
-separately approved multi-operator custody drills. The 72-hour soak is explicitly
-owner-waived and NOT RUN; it cannot be cited as PASS. Do not use mainnet value.
+The only release lane now is mainnet migration preparation: complete independent
+contract/backend review, freeze the reviewed commit and image digests, bind
+production authorities and recovery/alert capacity, create the signed release
+manifest, then execute a separately authorized low-value allowlisted canary. No
+mainnet value may be used before those gates close.

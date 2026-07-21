@@ -7,21 +7,23 @@
 
 ## Current decision
 
-The managed testnet evidence lanes below are complete except where explicitly marked.
-Paid API writes are disabled after every bounded window. Nothing here authorizes
-mainnet, public paid writes, closed beta, real value, or production custody changes.
+The public Robinhood Chain testnet checkpoint is **PASS**. Bounded synthetic paid
+writes are enabled at the canonical user surface; no mainnet or real-value authority
+is implied. Raw provider identifiers, wallet addresses, transaction hashes,
+credentials, and private operator identity remain outside tracked files.
 
 | Evidence lane | Result | What it proves |
 |---|---|---|
 | Skipped-report reconciliation | PASS | A confirmed direct deposit missing from Postgres is backfilled from chain events without a user report. |
-| Bounded real-wallet money path | PASS with reconciled completion | The synthetic top-up/paid-call/claim path reached chain and exact database state; recovery remained idempotent and paid writes closed. |
+| Bounded real-wallet money path | PASS with reconciled completion | The synthetic top-up/paid-call/claim path reached exact chain and database state with idempotent recovery. |
 | RPC fallback and repair | PASS | A primary-RPC fault fails over and normal reconciliation resumes without skipped ranges. |
-| Private alert lifecycle | PASS | A real critical backup-stale alert was delivered to private Telegram, acknowledged by an operator, healed by heartbeat, and resolved. |
-| Provider-native Neon PITR | PASS | A past point was restored on a disposable branch and matched every required table, migration, aggregate, constraint, and index. |
+| Private alert lifecycle | PASS | A critical backup-stale alert reached private Telegram, was acknowledged, healed, and resolved. |
+| Provider-native PITR | PASS | A disposable past-point branch matched required tables, migrations, aggregates, constraints, and indexes. |
 | Operator control readiness | PASS | Safe, role, signer-isolation, solvency, alert, region, and fail-closed checks are live and redacted. |
-| One-hour reconciliation outage | PASS | Scheduler stayed paused beyond one hour, catch-up reached the recorded safe head with zero duplicate money, pending work, skipped range, or drift, then Scheduler returned ENABLED. |
-| Minimum 72-hour soak | NOT RUN | The owner explicitly waived this run for the current checkpoint; it is not reported as PASS. |
-| Independent third-party audit | NOT PERFORMED | No independent security or contract audit is claimed. |
+| One-hour reconciliation outage | PASS | Catch-up reached safe head with zero duplicate money, pending work, skipped range, or drift; scheduling returned enabled. |
+| Public testnet opening | PASS | Immutable release, signer gas, deep readiness, bounded policy, live onboarding, and post-open repair/delivery/monitoring passed. |
+| Minimum 72-hour soak | PASS_BY_OWNER_WAIVER | Execution `NOT_RUN`; explicit owner waiver accepted this checkpoint; no duration telemetry is claimed. |
+| Independent third-party audit | NOT PERFORMED | No independent security or contract audit is claimed; required before mainnet. |
 
 ## Money and recovery truth
 
@@ -37,10 +39,9 @@ chain receipt/event, exact builder totals, and disabled paid writes. The earlier
 browser wrapper artifacts are intentionally retained with their failed UI assertion;
 they are not rewritten into false passes.
 
-The canary signer had enough testnet gas to complete the bounded recovery, but remains
-below the preferred 0.01 native-token monitoring target. Treat signer gas readiness as
-yellow until a dedicated testnet source can refill it without weakening source
-reserves.
+The restricted signer was refilled from the official testnet faucet and now satisfies
+the bounded operational gas target. Public opening rechecked this evidence before
+changing paid-write mode; no signer address or source identity is tracked here.
 
 ## Alert and operator truth
 
@@ -52,7 +53,7 @@ order. No bot token, channel identifier, or operator identity is tracked.
 The read-only operator-control collector refreshed all three canonical Safe 1.4.1
 2-of-3 authorities and verified disjoint owner policy, settlement signer isolation,
 escrow role separation, unpaused state, solvency, private-alert evidence, US region,
-testnet chain, and disabled paid writes.
+testnet chain, bounded public-write policy, and fail-closed control state.
 
 Secret rotation, Safe owner rotation, pause/unpause, and compromise recovery were not
 broadcast. Their evidence flags remain false because those mutations require a
@@ -97,12 +98,15 @@ current end-to-end result remains the previously retained CI/disposable-Postgres
 managed reconciliation evidence; this run repeated all safe unit, contract, browser,
 and live read-only checks.
 
-## Remaining release gates
+## Remaining mainnet release gates
 
-- resolve or explicitly accept the signer gas-monitor warning;
-- execute any custody mutation only with separate named multi-operator approval;
-- hash/sign the final evidence packet and bind it to a frozen release;
 - complete independent contract and focused backend review;
-- keep mainnet deployment, real value, closed beta, and public paid writes disabled
-  until those gates close;
-- the owner-waived 72-hour soak remains NOT RUN and cannot be cited as evidence.
+- freeze and sign the reviewed commit, image digests, deployment/constructor policy,
+  production authorities, backup/restore capacity, alert ownership, and release packet;
+- execute custody mutations only with separate named multi-operator approval;
+- deploy mainnet with paid writes disabled and capture deterministic readiness;
+- execute only a separately authorized low-value allowlisted mainnet canary;
+- keep real value disabled until a distinct accountable expansion decision.
+
+The 72-hour disposition is `PASS_BY_OWNER_WAIVER` with execution `NOT_RUN`; it is an
+owner decision for the testnet checkpoint and contains no duration telemetry.

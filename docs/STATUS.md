@@ -91,7 +91,7 @@ pool, eliminating a post-worker readiness flap caused by observability query fan
 | Contract | role-separated, solvent, pausable, correlated `callId`, canonical Safe 2-of-3 authority policy, guarded build/deploy/verify tooling | three Safes plus synthetic token/escrow deployed and verified on testnet; independent audit/mainnet pending |
 | Financial recovery | exactly-once reservation/outbox/reconciliation, ambiguity, race, reorg and drift controls | direct skipped-report and bounded wallet/claim reconciliation evidence passed; timed outage result is recorded in the managed evidence packet |
 | Database | nine migrations, 30 tables, canary/platform constraints and indexes, exact restore inventory | provider-native Neon PITR matched every table, migration, aggregate, constraint, and index |
-| Release integrity | immutable manifest, clean-tree and commit binding, policy/evidence/image hashes, two-person authorization | real signed evidence and operator approvals pending |
+| Release integrity | immutable Phase 3 manifest plus a plan-only readiness packet binding commit, contract bytecode, lockfiles, audit, authority/custody, operations, deployment/rollback, and canary policy | readiness packet is structurally valid but deterministically `NO_GO`; audit, production custody/drills, and assigned two-person approval roles remain pending |
 | Canary | disabled-by-default startup, allowlists, window and exposure caps, serialized DB admission, automatic summary and stop plan | low-value mainnet canary not executed |
 | Staging topology | portable Compose plus plan-tested US-only GCP us-east4 Cloud Run services/jobs, scheduler, immutable images, bounded cost policy, and Safe authority wrappers | verified testnet authorities/escrow plus immutable signer/API/web/jobs/schedules live; readiness 8/8 and bounded public mode enabled |
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime, all twelve scoped values, and the operational gas floor are healthy; mainnet custody drills remain pending |
@@ -342,6 +342,15 @@ continued non-mainnet development. They block only real-value/mainnet authorizat
 8. Hash every artifact, obtain operator approval, and pass `npm run phase2:evidence`.
 9. Complete independent contract and focused backend review before mainnet release.
 
+The new `npm run mainnet:prepare` command generates an ignored, SHA-256-bound
+preparation packet and `npm run mainnet:validate` verifies it. The tracked example
+currently returns `NO_GO` with four explicit blockers: independent audit,
+production authority/custody, production recovery/alert/runbook gates, and assigned
+two-person approval roles. `npm run mainnet:gate` intentionally fails until those
+inputs are complete. Even a passing gate is only `READY_FOR_SIGNING`; the packet
+cannot authorize broadcast, canary execution, expansion, or real value. See
+[MAINNET_READINESS.md](./MAINNET_READINESS.md).
+
 ## One-hour outage answer
 
 The worker is designed to catch up safely from a long outage: it persists a cursor,
@@ -366,8 +375,10 @@ handoff. Ongoing health checks are operational maintenance, not unfinished scope
 Keep Phase 0-4 regression, privacy, financial, worker, and readiness gates green
 while preserving bounded testnet limits.
 
-The only release lane now is mainnet migration preparation: complete independent
-contract/backend review, freeze the reviewed commit and image digests, bind
-production authorities and recovery/alert capacity, create the signed release
-manifest, then execute a separately authorized low-value allowlisted canary. No
-mainnet value may be used before those gates close.
+The only release lane now is mainnet migration preparation. The deterministic
+packet machinery is complete and its truthful current decision is `NO_GO`. Close
+the four recorded external blockers, regenerate from a clean reviewed commit until
+`mainnet:gate` yields `READY_FOR_SIGNING`, then create the separate two-person
+`broadcast-approved` manifest. Deployment remains write-closed and any low-value
+allowlisted canary requires its own approval. No mainnet value may be used before
+those gates close.

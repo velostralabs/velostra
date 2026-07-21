@@ -187,6 +187,29 @@ verification command checks receipt, runtime code with immutable slots, settleme
 token, fee, pause/solvency/successor, and role ownership. Local
 `contracts/deployment.json` remains ignored and is never sufficient release evidence.
 
+## Mainnet readiness packet
+
+Before creating any `broadcast-approved` Phase 3 manifest, generate the separate
+plan-only readiness packet from a clean reviewed commit:
+
+```bash
+npm run test:mainnet-readiness
+npm run mainnet:prepare
+npm run mainnet:validate
+npm run mainnet:gate
+```
+
+The tracked example is expected to pass structural validation and fail the strict
+gate with decision `NO_GO`. It records independent audit, production authority and
+custody, recovery/alert/runbook, and two-person approval blockers. A future
+`READY_FOR_SIGNING` packet still carries false broadcast, canary, and expansion
+authorization and cannot deploy anything. See
+[MAINNET_READINESS.md](./MAINNET_READINESS.md).
+
+Do not use the development-only dirty-tree override for a real release. Keep audit
+reports, actual owner identities, provider metadata, and credentials in ignored
+operator evidence; publish only reviewed hashes and privacy-safe product material.
+
 ## Readiness and bounded canary
 
 Keep `PHASE3_PAID_WRITES_MODE=disabled` while collecting the final pre-canary

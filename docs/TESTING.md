@@ -18,6 +18,7 @@
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet/account/chain binding, synchronized auth gates, no-resubmit paid-call recovery, deep-runtime truth, bounded deposit/claim proof, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
 | Phase 3 release | npm run test:phase3-release | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
+| Mainnet readiness | `npm run test:mainnet-readiness` | contract dependencies + Git | deterministic `NO_GO`/`READY_FOR_SIGNING`, commit/artifact/lockfile binding, authority/custody, audit/operations gates, credential rejection, inert authorization, and policy tamper failure |
 | Phase 3 aggregate | `npm run test:phase3` | root/server/contract installs | release gates, server compile/config, canary guard, migration consistency |
 | Phase 4 SDK | npm run test:phase4-sdk | Node + Python 3 | JS/Python client behavior and exact shared HMAC fixtures |
 | Phase 4 unit | npm run test:phase4-unit | root/server/Python installs | SDKs, cursors, idempotency policy, permissions, privacy/telemetry policy |
@@ -56,7 +57,7 @@
 
 - web: lockfile install, production audit, MetaMask reachability, evidence-validator, lint, build;
 - phase4-contracts: JavaScript/Python SDK fixtures plus platform/admin policy contracts;
-- phase3-release: immutable manifest, deployment plan, readiness, catch-up, and canary gates;
+- phase3-release: immutable manifest, deployment plan, readiness, mainnet preparation packet, catch-up, and canary gates;
 - browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
 - server: lockfile install, production audit, build, migration check, resilience and all isolated
   security/unit suites;
@@ -278,11 +279,18 @@ review/tooling-replacement item rather than a hidden passing audit.
 ## Mainnet operational evidence still required
 
 - independent contract and focused backend review;
-- a signed SHA-256-bound mainnet release packet accepted by `npm run phase2:evidence`;
+- a `READY_FOR_SIGNING` SHA-256-bound readiness packet accepted by
+  `npm run mainnet:gate`, followed by a separately signed Phase 3 broadcast manifest;
 - accountable production authority, signer/secret rotation, backup/restore, alert,
   incident, and SLO ownership;
 - deterministic mainnet readiness with paid writes disabled;
 - a separately approved low-value allowlisted mainnet canary and expansion decision.
+
+The readiness tooling itself is implemented and CI-gated. The tracked example
+passes `mainnet:validate` with decision `NO_GO`; `mainnet:gate` must fail until audit,
+authority/custody, operational drills, and approval-role assignment are complete.
+Tests also prove that changing a bound plan, inserting a credential-shaped field, or
+setting any authorization flag causes fail-closed validation.
 
 The testnet duration checkpoint is `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`; no
 72-hour telemetry is claimed. The public testnet checkpoint itself is PASS.

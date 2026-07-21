@@ -316,6 +316,24 @@ truth implementation task is closed. The canonical release is user-usable, bound
 and post-deploy verified. The only uncompleted release work is the separately governed
 mainnet migration lane.
 
+### 2026-07-21 - Mainnet readiness packet established
+
+- added a deterministic preparation packet that binds the current commit, reproducible
+  escrow artifact, dependency lockfiles, audit evidence, production authority/custody,
+  recovery and alert gates, deployment/rollback order, and disabled bounded canary;
+- made all broadcast, canary, and expansion authorization fields immutable false and
+  rejected credential-shaped fields from generated packets;
+- added a strict `mainnet:gate` that accepts only `READY_FOR_SIGNING`, while preserving
+  a structurally valid `NO_GO` packet as an inspectable blocker report;
+- proved pending inputs yield the four truthful external blockers, complete fixtures
+  yield only `READY_FOR_SIGNING`, and plan/authorization/credential tampering fails;
+- retained generated packets and private audit/operator evidence under ignored
+  artifacts rather than publishing identities or provider metadata.
+
+Checkpoint: repository tooling for the next lane is complete, but the current
+mainnet decision remains **NO_GO**. No contract address, broadcast, real value,
+canary approval, or expansion authority exists.
+
 ## What is complete
 
 ### Product and identity

@@ -106,6 +106,8 @@ ownership evidence.
   operational-readiness modules;
 - `server/src/db/schema.ts` and `server/drizzle/*.sql`;
 - `scripts/lib/phase3-*.mjs`, Phase 3 release/deployment/gate CLIs, and contract verify script;
+- `scripts/lib/mainnet-readiness.mjs`, its prepare/validate CLIs, public schemas/templates,
+  and fail-closed audit/custody/operations/approval decision boundary;
 - `server/src/lib/phase3-canary*.ts` and Phase 3 evidence collectors;
 - guarded Phase 2 load/soak/evidence runners and their fail-closed validators;
 - security, resilience, observability, browser, migration, money, and restore suites.
@@ -136,6 +138,7 @@ npm run build
 npm run audit:metamask
 npm run test:browser
 npm run test:phase2-evidence
+npm run test:mainnet-readiness
 npm run test:phase4-unit
 
 npm ci --prefix server
@@ -227,7 +230,11 @@ Policy:
 - [x] Provide compiler, optimizer, OpenZeppelin, Node, and lockfile versions.
 - [x] Provide threat model, architecture, operations runbook, schema, and ABI docs.
 - [x] Provide local/CI and restore evidence references.
-- [ ] Provide proposed multisig, signer, treasury, guardian, token, fee, and limits.
+- [x] Provide fail-closed public templates for multisig groups, restricted signer,
+  deployment/rollback, and bounded disabled canary limits. Actual production
+  principals and owners remain intentionally absent.
+- [ ] Assign and privately evidence the actual production multisig owners, signer,
+  treasury, guardian, token, fee, and limits.
 - [ ] Receive signed scope and reviewer independence statement.
 - [ ] Enter findings without filtering.
 - [ ] Close/re-review findings and update this register.

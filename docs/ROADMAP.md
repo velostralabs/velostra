@@ -291,6 +291,11 @@ external evidence and accountable operator authorization.
 - [x] Preparation, broadcast-approved, and deployed stages validate separately.
 - [x] Tamper, dirty-tree, path escape, cross-release evidence, missing digest,
   duplicate approver, and malformed authorization tests fail closed.
+- [x] Add a separate preparation-only mainnet readiness packet that hash-binds the
+  commit, contract artifact, lockfiles, audit evidence, authority/custody,
+  production drills, deployment/rollback, and disabled low-value canary policy.
+- [x] Reject credential fields, policy tampering, dirty preparation, and every
+  attempt to authorize broadcast/canary/expansion from the readiness packet.
 
 ### 3.2 Guarded deployment and readiness (DONE)
 
@@ -325,6 +330,8 @@ external evidence and accountable operator authorization.
 
 ### 3.4 Controlled mainnet execution (MAINNET PREREQUISITE)
 
+- [x] Generate and validate the deterministic preparation packet. Current decision:
+  `NO_GO`; no mainnet or real-value authority is implied.
 - [ ] Close independent contract/backend review and every managed Phase 2 evidence gate.
 - [ ] Freeze image digests and create the two-person `broadcast-approved` manifest.
 - [ ] Execute backup/migration, deploy once, verify, and store deployed evidence.
@@ -430,13 +437,16 @@ below are recurring operations only; none is an unimplemented testnet deliverabl
 
 ### Mainnet migration lane (only remaining release work)
 
-1. complete independent contract and focused backend review;
-2. freeze the reviewed commit, image digests, policies, constructor, production
+1. use the deterministic readiness packet as the blocker source of truth; its current
+   decision is `NO_GO` and every authorization flag is false;
+2. complete independent contract and focused backend review;
+3. freeze the reviewed commit, image digests, policies, constructor, production
    authorities, backup/restore capacity, alert ownership, and approvals;
-3. generate the signed `broadcast-approved` release manifest;
-4. deploy with paid writes disabled and capture deterministic readiness;
-5. execute only the separately authorized low-value allowlisted canary;
-6. expand only after a distinct accountable decision. Testnet completion never grants
+4. require `npm run mainnet:gate` to produce `READY_FOR_SIGNING`, then generate the
+   separate two-person `broadcast-approved` release manifest;
+5. deploy with paid writes disabled and capture deterministic readiness;
+6. execute only the separately authorized low-value allowlisted canary;
+7. expand only after a distinct accountable decision. Testnet completion never grants
    mainnet or real-value authority.
 
 ### Later product lane

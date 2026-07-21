@@ -22,6 +22,7 @@ real-value authorization is recorded.
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Authority, outbox, exactly-once flow, worker, and failures. |
 | [THREAT_MODEL.md](./THREAT_MODEL.md) | Assets, actors, invariants, threats, controls, residual risks. |
 | [AUDIT_READINESS.md](./AUDIT_READINESS.md) | External scope, frozen decisions, commands, findings policy. |
+| [MAINNET_READINESS.md](./MAINNET_READINESS.md) | Deterministic plan-only mainnet packet, current blockers, authority boundary, and commands. |
 | [OPERATIONS.md](./OPERATIONS.md) | Worker, incidents, one-hour catch-up, backups, secrets, successor. |
 | [SECURITY.md](./SECURITY.md) | Implemented controls and remaining production gates. |
 | [SMART_CONTRACT.md](./SMART_CONTRACT.md) | Roles, ABI behavior, solvency, migration, and test evidence. |
@@ -45,11 +46,12 @@ real-value authorization is recorded.
 5. platform libraries, routes, and webhook worker for versioned interface, integration,
    moderation, privacy, and telemetry authority;
 6. JavaScript and Python SDK source for public client contracts;
-7. guarded Phase 3 deployment/canary runtime for release authority;
-8. deploy/gcp/staging.config.json plus its policy and plan tests for the selected
+7. the fail-closed mainnet readiness packet for audit, custody, operations, and approval gates;
+8. guarded Phase 3 deployment/canary runtime for release authority;
+9. deploy/gcp/staging.config.json plus its policy and plan tests for the selected
    US-only non-mainnet staging deployment;
-9. frontend source for wallet/provider and product behavior;
-10. docs for reviewed explanation and operating policy.
+10. frontend source for wallet/provider and product behavior;
+11. docs for reviewed explanation and operating policy.
 
 Behavior changes require matching tests and updates to status/domain docs. Priority
 or sequencing changes require a roadmap update.
@@ -77,3 +79,7 @@ duration telemetry is claimed. Independent review, a frozen signed mainnet relea
 production custody and recovery capacity, and an explicitly authorized low-value
 mainnet canary remain required. Local or testnet completion never overrides those
 mainnet gates.
+
+The tracked mainnet-readiness templates and validator now turn those prerequisites
+into a SHA-256-bound packet. Its current deterministic decision is `NO_GO`; all
+mainnet broadcast, canary, and expansion authorization fields are immutably false.

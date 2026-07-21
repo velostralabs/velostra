@@ -281,7 +281,10 @@ its own connection-pressure failure during worker completion.
 
 ```mermaid
 flowchart LR
-    INPUT["Reviewed input + evidence"] --> MANIFEST["Immutable release manifest"]
+    FREEZE["Commit + bytecode + audit + custody + operations"] --> PACKET["Plan-only readiness packet"]
+    PACKET -->|"READY_FOR_SIGNING only"| INPUT["Reviewed input + evidence"]
+    PACKET -->|"NO_GO"| BLOCK["Close external blockers"]
+    INPUT --> MANIFEST["Immutable release manifest"]
     MANIFEST --> PLAN["Inert deployment plan"]
     PLAN --> BROADCAST["Explicit guarded broadcast"]
     BROADCAST --> VERIFY["Deployed manifest + verification"]
@@ -293,6 +296,14 @@ flowchart LR
     SUMMARY --> STOP["STOP + forward repair"]
     SUMMARY --> PASS["PASS_AWAITING_OPERATOR"]
 ```
+
+The mainnet readiness packet precedes the release manifest. It independently
+hash-binds the commit, contract source/bytecode, lockfiles, audit evidence,
+production authority/custody and recovery state, write-closed deployment/rollback,
+and disabled low-value canary policy. Its preparation schema makes broadcast,
+canary, and expansion authorization permanently false. `READY_FOR_SIGNING` only
+permits the separate two-person signing workflow; `NO_GO` keeps the release lane
+closed.
 
 The manifest is a separate release authority boundary. It binds the clean full
 commit, reproducible contract output, migration graph, lockfiles, policies, external

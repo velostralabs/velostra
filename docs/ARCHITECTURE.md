@@ -1,6 +1,6 @@
 # Arsitektur Velostra
 
-> Last verified against the workspace and managed staging: 2026-07-20.
+> Last verified against the workspace and public testnet: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -29,20 +29,19 @@ Frontend, API, reconciliation worker, webhook worker, Postgres, Redis, RPC, and
 contract are separate failure domains. Backend roles use the same immutable build but
 run as separate supervised processes.
 
-Current deployment overlay (2026-07-20): the Vite/React protocol preview remains
-public on Netlify at `velostra.xyz` with no staging build values. A separate isolated
-Cloud Run web origin is bound to the managed API. The API, private signer,
-reconciliation/webhook/monitor jobs, Scheduler triggers, Neon Postgres, Upstash Redis,
-primary/fallback RPC, three Safe authorities, synthetic token, and escrow are live in
-the approved US testnet environment. Deep readiness passes and paid writes remain
-disabled.
+Current deployment overlay (2026-07-20): the canonical Vite/React frontend is
+public on Netlify and connected to the managed US testnet API, verified synthetic
+token, and escrow. The private signer, reconciliation/webhook/monitor jobs, Scheduler
+triggers, Neon Postgres, Upstash Redis, primary/fallback RPC, three Safe authorities,
+and stateless synthetic agent are live in the approved US chain-46630 environment.
+Deep readiness is 8/8 and bounded synthetic paid writes are enabled.
 
 ## US-only staging runtime
 
 The low-cost managed translation preserves those failure domains in Virginia:
 
-- the existing public Netlify protocol preview remains a separate static failure
-  domain with no backend or signer authority;
+- the public Netlify frontend remains a separate browser/CDN failure domain and
+  reaches only the exact allowlisted API origin; it has no backend or signer authority;
 - the deployed staging velostra-web and velostra-api Cloud Run services scale from
   zero to at most two instances;
 - the staging-only synthetic-agent service scales from zero to one instance under
@@ -53,6 +52,8 @@ The low-cost managed translation preserves those failure domains in Virginia:
 - reconciliation, webhook delivery, monitoring, and migration are separate one-task
   Cloud Run Jobs;
 - Scheduler invokes only the three recurring jobs at staggered 15-minute intervals;
+- public mode is fail-closed behind immutable-release, signer-funding, readiness, and
+  bounded per-call/per-wallet/global/top-up policy;
 - the API and jobs may invoke the private signer, while the web identity has no
   backend or signer authority;
 - a dedicated build identity can read regional build source, write Cloud Logging,

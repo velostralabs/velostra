@@ -22,25 +22,25 @@
 > privacy/anonymization, telemetry governance, dedicated worker readiness, and
 > migration 0008. No closed-beta activation is claimed.
 
-> Deployment note: `https://velostra.xyz/` remains a Netlify-hosted static protocol
-> preview sourced from `velostralabs/velostra` `main`, with no staging API/contract
-> build values. A separate US-only Robinhood-testnet environment now contains the
-> managed data plane, private signer, API, isolated web, workers/schedules, three Safe
-> authorities, synthetic token, and escrow. It is deep-ready with paid writes disabled.
-> Reviewers should treat both the public browser supply chain and the isolated managed
-> runtime as in-scope surfaces, not as mainnet or real-value activation.
+> Deployment note: `https://velostra.xyz/testnet` is the canonical public testnet
+> surface sourced from `velostralabs/velostra` `main` and connected to the US-only
+> Robinhood Chain testnet managed runtime. The data plane, private signer, API,
+> workers/schedules, three Safe authorities, synthetic token, and escrow are live;
+> deep readiness is 8/8 and bounded synthetic paid writes are enabled. Reviewers
+> should treat the public browser supply chain and managed runtime as in-scope testnet
+> surfaces, not as mainnet or real-value activation.
 >
 > Managed evidence note: redacted wallet/reconciliation, RPC fallback, private-alert
-> lifecycle, provider-native PITR, and read-only control-readiness proof now exist in
-> [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Live custody mutations, a signed
-> release packet, and independent review remain open. The owner-waived 72-hour soak
-> was not run and is not audit evidence.
+> lifecycle, provider-native PITR, operator controls, public opening, and post-open
+> worker proof exist in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The 72-hour
+> disposition is `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`; no duration telemetry is
+> claimed. Independent review and a signed mainnet release packet remain open.
 
 ## Review objective
 
 Give an external contract auditor and focused backend security reviewer a bounded,
 reproducible scope. Local tests are evidence, not a substitute for independence.
-No contract deployment should occur until this packet references the reviewed
+No mainnet contract deployment should occur until this packet references the reviewed
 commit and all Critical/High findings are closed.
 
 ## Frozen implementation record
@@ -49,7 +49,7 @@ commit and all Critical/High findings are closed.
 - handoff evidence: [PHASE_1_HANDOFF.md](./PHASE_1_HANDOFF.md);
 - GitHub evidence: [Product verification run 9](https://github.com/velostralabs/velostra/actions/runs/29403445476), four of four jobs passed;
 - repository state at handoff: clean `main`, local and `origin/main` SHA identical;
-- public frontend state: canonical static preview live at `https://velostra.xyz/`;
+- public frontend state: canonical user-usable testnet live at `https://velostra.xyz/testnet`;
 - deployment state: no mainnet address recorded.
 
 The signed external scope must pin the immutable current release commit or tag and

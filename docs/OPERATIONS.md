@@ -1,18 +1,15 @@
 # Operations and incident runbook
 
-> Last verified against the workspace and managed staging: 2026-07-20.
-> Phase state: Phase 0-4 repository preparation is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
-> The static protocol preview remains live at https://velostra.xyz/ and separate from
-> staging. The US-only chain-46630 authorities, token, escrow, signer/API/web runtime,
-> migration, workers, and Scheduler triggers are deployed; deep readiness passes and
-> paid writes remain disabled. No closed beta, mainnet, or real-value deployment is
-> recorded.
+> Last verified against the workspace and public testnet: 2026-07-20.
+> Phase 0-4 repository preparation and the public testnet checkpoint are complete.
+> The canonical `https://velostra.xyz/testnet` frontend is connected to the US-only
+> chain-46630 managed runtime. Deep readiness is 8/8 and bounded public synthetic paid
+> writes are enabled. No mainnet or real-value deployment is recorded.
 
 ## Current public frontend operations
 
-Netlify owns only the static protocol-preview delivery path. The production project
+Netlify owns the public browser-delivery path; the browser itself owns no financial
+authority. The production project
 is site `velostra` under the Velostra/`velostralabs` team, linked to GitHub
 `velostralabs/velostra` branch `main`. The tracked deployment contract is:
 
@@ -28,19 +25,22 @@ After every frontend deployment, verify:
 
     curl -I https://velostra.xyz/
     curl -I -L https://www.velostra.xyz/
+    curl -I https://velostra.xyz/testnet
 
 Then confirm production HTML references hashed `/assets/*.js` and `/assets/*.css`,
 those assets return 200 with JavaScript/CSS MIME types, and a real browser renders
 navigation plus the landing heading. Roll back with Netlify deploy history only to a
 known Git-linked build; do not rewrite Git history.
 
-The current Netlify environment contains no API, escrow, or settlement-token build
-values. A healthy static smoke is not API readiness or financial activation.
+The Netlify environment contains only public testnet API/escrow/token build values.
+A healthy browser smoke is still not sufficient: require managed `/health`, deep
+`/ready`, worker heartbeats, signer funding, and zero-drift evidence.
 
 ## Production process model
 
 Run the API, reconciliation worker, webhook worker, and operational monitor as
-separate supervised processes from the same immutable backend build. Use managed PostgreSQL with PITR, managed Redis,
+separate supervised processes from the same immutable backend build. Use managed
+PostgreSQL with PITR, managed Redis,
 dedicated primary/fallback HTTPS RPCs, TLS at the edge, and a secret manager.
 
 ```bash
@@ -76,20 +76,37 @@ any Apply action:
 2. confirm the project and every provider region is the selected US Virginia region;
 3. confirm the release equals the clean current full commit;
 4. use immutable server/web image digests;
-5. keep paid writes disabled;
+5. confirm paid-write mode matches the intended state; opening public mode requires
+   its guarded control command;
 6. use the hidden-prompt helper for Secret Manager values;
 7. retain generated records only under ignored artifacts/staging.
 
 The US foundation, managed data plane, twelve scoped secrets, HSM settler, and direct
 private-Telegram connection are active. Three disjoint canonical Safe 1.4.1 2-of-3
 authorities plus the synthetic token and escrow are deployed and verified. Immutable
-Cloud Run signer/API/web services, migration, reconciliation/webhook/monitor jobs,
-and Scheduler triggers are live. The web origin is bound, all deep-readiness checks
-pass, the signer is private, and paid writes are disabled. Manual executions have
-verified each scheduled worker entrypoint. Wallet/reconciliation, backup-stale alert
-lifecycle, timed reconciliation outage, PITR, RPC fallback, and read-only controls
-now have retained redacted evidence. Custody mutations and the owner-waived soak do not;
-see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
+Cloud Run signer/API/web services, migrations, reconciliation/webhook/monitor jobs,
+and Scheduler triggers are live. The public origin is bound, all eight deep-readiness
+checks pass, signer gas is healthy, and bounded public synthetic paid writes are
+enabled. Post-open manual worker runs passed with zero unexplained drift. The retained
+wallet/reconciliation, alert lifecycle, timed outage, PITR, RPC fallback, and read-only
+control evidence is summarized in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
+
+## Public testnet control
+
+Inspect or change the bounded public-testnet state only through the guarded wrapper:
+
+```powershell
+npm run staging:public -- --Action Status
+npm run staging:public -- --Action Open --Apply
+npm run staging:public -- --Action Close --Apply
+```
+
+`Open` requires the exact immutable backend release, clean tree, fresh signer-funding
+evidence, health, and deep readiness. Its fixed limits are 5 synthetic USDG per paid
+call, 10 paid calls per wallet per day, 1,000 global paid calls per day, and a 100
+synthetic-USDG top-up cap. `Close` disables new paid calls but preserves claims,
+indexing, reconciliation, and operator recovery. Use `Close` first for drift, stale
+critical outbox work, signer depletion, or readiness loss.
 
 ## Reconciliation commands
 

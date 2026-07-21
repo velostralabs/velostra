@@ -1,15 +1,11 @@
 # Deployment and operations
 
-> Last verified against build/deploy scripts and managed staging: 2026-07-20.
-> Phase state: Phase 0-4 repository preparation is complete and has passed internal
-> engineering/CI audit; continued development is clear. Managed-staging evidence
-> remains a mainnet release prerequisite.
-> The static public frontend remains at https://velostra.xyz/ and is not connected to
-> staging. A separate US-only Robinhood testnet stack now runs the private signer,
-> API, isolated web, migration, reconciliation/webhook/monitor jobs, and Scheduler
-> triggers against verified testnet Safe authorities and escrow. Deep readiness
-> passes and paid writes remain disabled. No closed beta, mainnet deployment, or
-> real-value authorization is recorded.
+> Last verified against build/deploy scripts and public testnet: 2026-07-20.
+> Phase 0-4 repository preparation and the public testnet checkpoint are complete.
+> `https://velostra.xyz/testnet` is connected to the US-only Robinhood Chain testnet
+> API, private signer, verified synthetic token/escrow, workers, and Scheduler. Deep
+> readiness is 8/8 and bounded public synthetic paid writes are enabled.
+> No mainnet deployment or real-value authorization is recorded.
 
 ## Release gates
 
@@ -18,8 +14,9 @@ audit. This is not deployment authorization. Independent contract/backend review
 the managed-staging evidence packet, an immutable approved release manifest, and an
 explicit operator broadcast remain mainnet release gates. Provision only isolated
 non-mainnet-value staging and retain the wallet/recovery, alert, outage, PITR, and
-control packet in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The 72-hour run is
-owner-waived and NOT RUN. Do not deploy mainnet value until all gates close.
+control packet in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). The duration checkpoint
+is `PASS_BY_OWNER_WAIVER` with execution `NOT_RUN`; no 72-hour telemetry is claimed.
+Do not deploy mainnet value until all gates close.
 
 ## Current US-only staging target
 
@@ -31,25 +28,20 @@ policy is [deploy/gcp](../deploy/gcp/README.md):
 - Upstash Redis Free on GCP us-east4 with no paid read replicas;
 - Alchemy Free primary plus Robinhood public testnet fallback RPC;
 - scale-to-zero web/API/private-signer services and staggered 15-minute jobs;
-- paid writes disabled and a USD 35 cross-provider monthly envelope.
+- bounded public synthetic paid writes and a USD 35 cross-provider monthly envelope.
 
-All mutation scripts are plan-only without Apply. They require a clean full release
-SHA and immutable image digests. The applied US foundation, managed data plane,
-twelve scoped secret values, and direct private-Telegram delivery are verified.
-Three disjoint canonical Safe 1.4.1 2-of-3 authorities, a synthetic 6-decimal token,
-and VelostraEscrow are deployed and live-verified on chain 46630. Immutable
-signer/API/web services, the stateless secretless synthetic-agent service, migration,
-reconciliation/webhook/monitor jobs, and staggered Scheduler triggers are deployed
-in us-east4. The isolated web origin is bound, deep
-readiness passes, anonymous signer access is rejected, and paid writes remain
-disabled. The separate static Netlify preview satisfies no managed staging evidence
-gate until an explicit cutover.
+All mutation scripts are plan-only without `-Apply`. They require a clean full release
+SHA and immutable image digests. The US foundation, data plane, scoped secrets,
+private alerts, Safe authorities, synthetic token, escrow, immutable services,
+migrations, and scheduled jobs are live in approved US regions. The canonical public
+origin is bound, deep readiness is 8/8, signer gas is healthy, anonymous signer access
+is rejected, and bounded public synthetic paid writes are enabled.
 
 ## Target topology
 
 ```mermaid
 flowchart LR
-    CDN["Netlify static frontend / future configured client"] --> API["Express API"]
+    CDN["Netlify public testnet frontend"] --> API["Express API"]
     API --> PG[(Managed PostgreSQL + PITR)]
     API --> REDIS[(Managed Redis)]
     API --> RPC["Dedicated HTTPS RPC"]
@@ -71,10 +63,10 @@ reconciliation, webhooks, and monitoring as separate one-task Cloud Run Jobs on
 staggered 15-minute schedules. API read traffic may scale only within its bounded
 two-instance cap; signer nonce behavior stays isolated.
 
-Current deployment overlay: the static Netlify frontend remains the public preview and
-has no staging API/contract build values. The diagram's API and stateful/financial
-nodes are live only behind the separate isolated staging web origin. That environment
-is testnet-only, readiness-green, and write-disabled.
+Current deployment overlay: Netlify is the canonical public browser surface and
+contains only public testnet configuration. It reaches the exact allowlisted managed
+API; the database, signer, jobs, and secret-bearing identities remain outside the
+browser boundary. The environment is testnet-only, readiness-green, and bounded.
 
 ## Database release
 
@@ -253,10 +245,9 @@ Build-time public values:
 - `VITE_ESCROW_ADDRESS`;
 - `VITE_SETTLEMENT_TOKEN`.
 
-Those three values are intentionally absent from the current public preview. Add them
-only after the US testnet API and verified contract addresses exist. Until then,
-API-backed marketplace/auth/dashboard/builder/admin and financial actions are not
-operational even though the client routes render.
+Those public identifiers are configured for the current Robinhood Chain testnet
+surface and activate API-backed marketplace/auth/dashboard/builder/admin plus bounded
+synthetic financial actions. No server secret may ever use a `VITE_*` variable.
 
 Serve `dist/` behind TLS/CDN with SPA fallback to `/index.html`, no-cache/short cache
 for HTML, immutable cache for hashed assets, CSP appropriate to wallet/RPC/API
@@ -267,11 +258,11 @@ origins, and no server secret in `VITE_*`.
 For the Robinhood testnet staging sequence, follow the guarded procedure in
 [deploy/gcp/README.md](../deploy/gcp/README.md). It prepares encrypted testnet-only
 custody, checks canonical Safe readiness without decrypting keys, deploys and verifies
-three 2-of-3 authorities, then deploys and verifies the escrow before building
-immutable images. Migration remains explicit, paid writes remain disabled, and the
-API is finally rebound to the generated staging web origin. That isolated Cloud Run
-surface remains distinct from the public Netlify preview until an explicit,
-evidence-backed cutover binds `velostra.xyz` to the managed API.
+three 2-of-3 authorities, then deploys and verifies escrow before building immutable
+images. Migration remains explicit. Public mode is a separate guarded control step
+that requires exact release identity, clean tree, fresh signer evidence, and deep
+readiness; rollback closes new paid calls while keeping claims, indexing, and repair
+available.
 
 The mainnet sequence remains gated:
 

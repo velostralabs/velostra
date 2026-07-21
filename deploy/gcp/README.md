@@ -1,18 +1,16 @@
 # US-only managed staging
 
-This directory is the executable deployment policy for the low-cost Velostra
-staging stack. It is isolated from Robinhood mainnet and rejects every non-US
-region.
+This directory is the executable deployment policy for the low-cost Velostra testnet
+stack. It is isolated from Robinhood mainnet and rejects every non-US region.
 
-Deployment truth as of 2026-07-20: the separate static protocol preview remains live
-on Netlify at `velostra.xyz` and is not connected to staging. The US foundation,
-managed Neon/Upstash/Alchemy data plane, twelve scoped secrets, HSM settler, and
-private-Telegram transport are active. Three disjoint canonical Safe 1.4.1 2-of-3
-authorities, a synthetic 6-decimal token, and VelostraEscrow are deployed and
-live-verified on Robinhood testnet. Immutable signer/API/web services, migration,
-reconciliation/webhook/monitor jobs, and staggered Scheduler triggers are deployed in
-us-east4. The isolated web origin is bound, deep readiness passes, the signer rejects
-anonymous access, and paid writes remain disabled.
+Deployment truth as of 2026-07-20: the canonical Netlify frontend at
+`https://velostra.xyz/testnet` is connected to the managed US testnet runtime. The US
+foundation, Neon/Upstash/RPC data plane, scoped secrets, HSM settler, private-Telegram
+transport, three disjoint canonical Safe 1.4.1 2-of-3 authorities, synthetic token,
+and VelostraEscrow are live on Robinhood Chain testnet. Immutable signer/API/web
+services, migrations, reconciliation/webhook/monitor jobs, and staggered Scheduler
+triggers run in us-east4. Deep readiness is 8/8, signer gas is healthy, anonymous
+signer access is rejected, and bounded public synthetic paid writes are enabled.
 
 ## Fixed policy
 
@@ -23,7 +21,7 @@ anonymous access, and paid writes remain disabled.
 - Upstash: Free on GCP us-east4 (Virginia), one primary and no paid read replicas.
 - Alchemy Free primary RPC with the Robinhood public testnet RPC as fallback.
 - Operator alerts: private Telegram bot/channel with direct redacted delivery.
-- No mainnet value, no paid RPC, and paid API writes disabled.
+- No mainnet value or paid RPC; only bounded synthetic public testnet writes.
 - USD 35 total monthly envelope.
 
 The envelope is allocated as a USD 20 GCP alert budget, USD 0 for Upstash Free,
@@ -186,7 +184,7 @@ explicit, first-deployment-only action.
 
     powershell -NoProfile -File deploy/gcp/deploy-runtime.ps1 -ProjectId velostra-production -Release $release -ServerImage '<server immutableImage from artifact>' -EscrowAddress '<verified escrow address>' -DeploymentBlock <verified deployment block> -SignerAddress '<kms-derived address>' -AdminWallet '<admin wallet>' -WebOrigin 'https://staging.velostra.invalid' -RunMigration -Apply
 
-Paid writes remain disabled. The command records the generated API and signer
+Initial deployment keeps paid writes disabled. The command records the generated API and signer
 URLs in artifacts/staging/runtime.json.
 
 ## 7. Build and deploy the isolated staging web service
@@ -201,20 +199,17 @@ Deploy the immutable web digest:
     powershell -NoProfile -File deploy/gcp/deploy-web.ps1 -Release $release -WebImage '<web immutableImage from artifact>' -ProjectId velostra-production -Apply
 
 The Cloud Run web URL is recorded in artifacts/staging/web-runtime.json.
-It is a staging evidence origin, not the current public Netlify origin.
+It is retained as an isolated evidence origin; Netlify is the canonical public browser surface.
 
 ## 8. Bind the canonical web origin
 
-Rerun the runtime command with the exact webUrl from web-runtime.json as the isolated
-staging WebOrigin. RunMigration may be retained because the migration runner is
-idempotent; the deployment record must still state that migration executed. This
-creates the final CORS and wallet-auth binding for the evidence environment. Do not
-leave staging.velostra.invalid configured, and do not bind `velostra.xyz` until a
-separate review explicitly connects the public Netlify build to the verified staging
-API.
+Rerun the runtime command with the exact approved public origin and the immutable
+release. `RunMigration` may be retained because the migration runner is idempotent;
+the deployment record must still state whether it executed. This creates the final
+CORS and wallet-auth binding. Never use a wildcard origin.
 
-After the second pass, verify that runtime.json contains the final web origin
-and that API readiness, reconciliation, webhook, and monitor jobs are healthy.
+After the second pass, verify `runtime.json`, API health/deep readiness,
+reconciliation, webhook, monitor, signer isolation, and exact public-origin binding.
 
 ## 9. Evidence gates
 
@@ -229,28 +224,43 @@ Current retained evidence:
 - provider-native Neon PITR matches all 30 tables, nine migrations, row counts,
   financial aggregates, constraints, and indexes;
 - read-only Safe/escrow/operator-control readiness passes;
-- the minimum 72-hour soak is owner-waived and **NOT RUN**, not PASS.
+- public testnet opening, signer funding, live onboarding, and post-open worker sweep pass;
+- the duration disposition is `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`; no 72-hour telemetry is claimed.
 
 Webhook dead-letter runtime evidence and destructive API/DB/Redis faults remain separate.
 
 Repository tests prove the implementation and deployment policy. They do not
 substitute for these external runtime evidence gates.
 
+## 10. Control the public testnet
+
+The testnet remains write-disabled after initial deployment. Inspect or open it only
+through the guarded controller:
+
+    npm run staging:public -- --Action Status
+    npm run staging:public -- --Action Open --Apply
+    npm run staging:public -- --Action Close --Apply
+
+`Open` requires the exact immutable backend release, clean tree, fresh signer-funding
+evidence, health, and deep readiness. Its fixed caps are 5 synthetic USDG per paid
+call, 10 calls per wallet per day, 1,000 calls globally per day, and 100 synthetic
+USDG per top-up. `Close` blocks new paid calls while keeping claims, indexing,
+reconciliation, and operator repair available.
+
 ## Current managed checkpoint
 
-The US foundation, data plane, twelve scoped secrets, HSM settler, private Telegram
-transport, three testnet Safe authorities, synthetic token, escrow, immutable runtime
-services, workers, Scheduler triggers, migration, and isolated web origin are live.
-API deep readiness passes and all scheduled worker entrypoints have completed at least
-one manual verification run. The public Netlify preview remains intentionally
-separate and paid writes remain disabled.
+The public testnet checkpoint is **PASS**. The canonical frontend, US data plane,
+scoped secrets, HSM settler, private Telegram transport, testnet Safe authorities,
+synthetic token, escrow, immutable services, scheduled workers, migrations, and
+bounded public mode are live. Deep readiness is 8/8 and post-open reconciliation,
+webhook, and monitor executions passed with zero unexplained drift.
 
-Remaining gates are external evidence rather than missing deployment: frozen managed
-performance, signed evidence packaging, remaining alert/fault coverage, signer-gas
-warning disposition, separately approved secret/authority/pause/compromise mutations,
-independent review, and accountable release approval. The waived soak remains NOT RUN.
+Remaining work belongs to mainnet migration: independent review, frozen signed release
+identity, production authorities/custody and recovery capacity, and a separately
+authorized low-value canary. The 72-hour disposition is `PASS_BY_OWNER_WAIVER` with
+execution `NOT_RUN`; no duration telemetry is claimed.
 
-To reproduce the managed skipped-report proof without enabling paid writes:
+To reproduce the managed skipped-report proof:
 
     powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply
     powershell -NoProfile -File deploy/gcp/check-staging-claim.ps1

@@ -1,6 +1,6 @@
 # Security posture
 
-> Last verified against the workspace and managed staging: 2026-07-20.
+> Last verified against the workspace and public testnet: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -10,20 +10,20 @@
 
 ### Public frontend hosting boundary
 
-- the canonical public preview is `https://velostra.xyz/`; valid TLS and the
-  `www` redirect are provider-managed by Netlify;
+- the canonical public testnet is `https://velostra.xyz/testnet`; TLS and the `www`
+  redirect are provider-managed by Netlify;
 - Git-linked `main` builds with Node.js 22 and publishes only Vite `dist/` through
-  tracked `netlify.toml`; repository-root publication is explicitly prohibited;
-- the current Netlify environment contains no `VITE_API_URL`, escrow address,
-  settlement-token address, backend credential, or Netlify Function;
-- the static CDN may deliver globally even though Netlify account metadata reports
-  a US `us-east-2` functions region; no legal-office or user-location claim follows;
-- the frontend is never trusted for auth, receipt, balance, pricing, settlement,
-  signer, governance, or treasury truth.
+  tracked `netlify.toml`; repository-root publication is prohibited;
+- the frontend contains only public testnet API, escrow, token, and chain identifiers;
+  no backend credential, signer material, provider token, or private operator data;
+- the CDN may deliver globally; no legal-office or user-location claim follows;
+- exact-origin CORS and server verification remain authoritative for auth, receipts,
+  balances, pricing, settlement, signer, governance, and treasury truth;
+- bounded public mode enforces per-call, per-wallet/day, global/day, and top-up caps and
+  fails closed when its approval, immutable release, or readiness binding is absent.
 
-This public preview expands the browser/supply-chain surface but does not expand
-financial authority. A separately gated US testnet runtime now exists, but paid
-writes remain disabled and the public preview is not connected to it.
+This browser surface enables only synthetic chain-46630 use. It expands no mainnet or
+real-value authority.
 
 ### Wallet auth and HTTP boundary
 
@@ -148,19 +148,19 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | Risk | Current treatment | Required before mainnet |
 |---|---|---|
 | Independent review absent | release blocked | contract + focused backend review |
-| Public static preview precedes managed backend | no client secrets or contract/API values; static build and routing only | bind exact origins, CSP, API, verified testnet contract, and real-wallet evidence before activation |
+| Public testnet browser reaches managed API | public identifiers only, exact-origin CORS, server authority, bounded synthetic limits, and fail-closed mode binding | repeat origin/config review for mainnet |
 | Release/canary artifact tampering | canonical hashes, exact required sets, authority/constructor binding, deployment init-code provenance, immutable mounts, explicit approvals | protected operator artifact custody |
-| Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial canary intentionally serialized |
-| Restricted signer runtime custody | private HSM signer, isolated identity, live bounded settlement/recovery, nonce lock, and policy tests pass; gas is below the preferred monitor target | refill from a reserve-safe testnet source; capture rotation, compromise, and audit-log evidence |
-| One logical signer writer | documented deployment constraint + bounded local load | managed nonce-pressure test before scale |
-| Deep reorg after configured confirmations | canonical-safe-head policy + local snapshot/revert proof | managed staging drill and explicit incident decision |
+| Concurrent canary cap bypass | serialized transaction-scoped admission plus unique row and DB race test | initial mainnet canary intentionally serialized |
+| Restricted signer runtime custody | private HSM signer, isolated identity, bounded settlement/recovery, nonce lock, policy tests, and operational gas floor pass | production custody ownership, rotation, compromise, and audit-log evidence |
+| One logical signer writer | documented deployment constraint plus bounded local load | managed nonce-pressure test before scale |
+| Deep reorg after configured confirmations | canonical-safe-head policy plus local snapshot/revert proof | managed staging drill and explicit incident decision |
 | Sustained all-provider RPC outage/429 | primary fault failover and one-hour reconciliation recovery pass; cursor remains safe | retain alert routing and test a true all-provider outage separately |
-| Runtime alert lifecycle coverage | real backup-stale delivery, acknowledgement, heartbeat recovery, and resolution pass | repeat for other required alert rules before mainnet |
+| Runtime alert lifecycle coverage | real backup-stale delivery, acknowledgement, heartbeat recovery, and resolution pass | repeat other required alert rules before mainnet |
 | Webhook receiver outage or replay | exact-body HMAC, stable event ID, durable attempts, bounded retry/dead-letter, audited replay | receiver must persist event-ID idempotency and prove rotation/incident drills |
-| Real MetaMask staging evidence | bounded synthetic path ran; terminal browser assertion timed out but exact chain/database reconciliation passes | freeze managed performance and hash the signed wallet evidence packet |
+| Real MetaMask testnet evidence | bounded synthetic path and exact chain/database reconciliation pass | retain a redacted signed packet for mainnet review |
 | Sensitive prompt/output exposure | prohibited telemetry fields, evidence classification, export/delete policy, anonymization | managed retention/legal review and storage controls |
-| Six web transitive `uuid` moderate advisories | high threshold CI + tracking; no upstream fix | reachability/upstream review and acceptance/fix |
-| Ganache bundled advisories | test/dev toolchain only; contract production dependency tree is empty and only bytecode is deployed | keep Ganache isolated and monitor/replace the local EVM toolchain |
+| Six web transitive `uuid` moderate advisories | high threshold CI plus reachability tracking; no upstream fix | upstream review and time-bounded acceptance/fix |
+| Ganache bundled advisories | test/dev toolchain only; production contract dependency tree is empty | keep Ganache isolated and monitor/replace the local EVM toolchain |
 
 ## Dependency and supply chain
 

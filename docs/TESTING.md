@@ -1,6 +1,6 @@
 # Testing and release evidence
 
-> Last verified against tests, CI, and managed staging: 2026-07-20.
+> Last verified against tests, CI, and public testnet: 2026-07-20.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -36,8 +36,8 @@
 | US staging policy | `powershell -NoProfile -File deploy/gcp/test-staging-policy.ps1` | PowerShell | chain 46630, Virginia-only residency, provider caps, schedules, and USD 35 envelope |
 | US deployment plan | `powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1` | PowerShell + gcloud CLI | plan-only bootstrap/runtime/web commands, immutable digests, checked native-command failures, private signer entrypoint, bounded services, valid worker intervals, staggered jobs, and no migration without opt-in |
 | Testnet Safe authority | `npm run test:testnet-authorities` | Windows PowerShell + Node.js 22 | CSPRNG/DPAPI custody round trip, three disjoint 2-of-3 plans, plan-only clean-tree broadcast, private-key cleanup, and live policy validation |
-| Managed staging live probe | guarded runbook steps with ignored artifacts | Robinhood testnet + US providers | 23 contract checks, migration, API deep readiness, worker heartbeats, isolated web response, private signer boundary, and paid-write-disabled state |
-| Managed skipped-report reconciliation | `powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply` | managed US testnet staging | direct synthetic escrow deposit with no report endpoint, missing-DB precondition, event backfill, safe cursor advancement, Scheduler cleanup, and paid writes disabled |
+| Managed staging live probe | guarded runbook steps with ignored artifacts | Robinhood testnet + US providers | contract checks, migration, API deep readiness 8/8, worker heartbeats, public web response, private signer boundary, and bounded-write policy |
+| Managed skipped-report reconciliation | `powershell -NoProfile -File deploy/gcp/run-reconciliation-evidence.ps1 -Apply` | managed US testnet staging | direct synthetic escrow deposit with no report endpoint, missing-DB precondition, event backfill, safe cursor advancement, and Scheduler cleanup |
 | Authority policy | `npm --prefix server run test:authority` | none | owned multisig roles and exact single-approval restricted settler policy |
 | Admin policy | `npm --prefix server run test:admin-policy` | none | roles, permissions, final-admin guard policy |
 | Money unit | `npm --prefix server run test:money-unit` | none | exact 6-decimal parsing, arithmetic, rounding |
@@ -78,21 +78,20 @@ and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/
 
 ## Public frontend deployment smoke
 
-The public protocol preview at `https://velostra.xyz/` was verified on 2026-07-18
-after the tracked Netlify publish contract was added:
+The canonical testnet at `https://velostra.xyz/testnet` was verified on 2026-07-20:
 
-1. Netlify reported the Git-linked `main` deployment as `ready` with no build error.
-2. Production HTML referenced hashed `/assets/*.js` and `/assets/*.css`, not
-   `/src/main.tsx`.
-3. Every referenced entry asset returned 200 with JavaScript or CSS MIME type.
-4. Apex HTTPS returned 200 with valid certificate verification.
-5. `www.velostra.xyz` redirected to the canonical apex.
-6. A clean real-browser load rendered navigation, the primary heading, full landing
-   DOM, and the adaptive Crystal V visual rather than a blank root.
+1. Netlify served the Git-linked `main` build with hashed JavaScript/CSS assets.
+2. Apex TLS and the `www` redirect reached the canonical site.
+3. A clean browser rendered `TESTNET LIVE`, the wallet entry point, official faucet
+   guidance, synthetic mint path, and execution onboarding without layout overflow.
+4. The browser console had no errors and the route title identified the public testnet.
+5. Managed health and deep readiness passed; public mode reported bounded synthetic
+   paid writes and chain 46630.
+6. Post-open reconciliation, webhook, and monitor runs completed successfully with
+   zero unexplained onchain/Postgres drift.
 
-This smoke proves static delivery only. The production Netlify environment currently
-contains only `NODE_VERSION`; API, escrow, and settlement-token values are absent.
-Real API, wallet, contract, worker, and financial tests remain managed-staging gates.
+The smoke uses only public identifiers. It does not expose credentials, signer
+identity, wallet addresses, provider IDs, or real value.
 
 ## Money-loop coverage
 
@@ -238,18 +237,17 @@ advisory's v3/v5/v6 buffer condition is not reachable through the current applic
 path. `npm run audit:metamask` fails if that assumption changes. The decision is
 time-bounded in [METAMASK_DEPENDENCY_DISPOSITION.md](./METAMASK_DEPENDENCY_DISPOSITION.md).
 
-## Phase 2 operational evidence still required
+## Mainnet operational evidence still required
 
-- frozen managed-staging performance baseline and signed wallet evidence packet;
-- managed secret/signer/authority rotation and compromise drills;
-- injected-alert coverage beyond the retained backup-stale delivery/ack/resolution proof;
-- destructive API/DB/Redis/restart-mid-settlement faults beyond the completed RPC
-  fallback and timed reconciliation-schedule outage;
-- formal restore-SLO calibration beyond the passing provider-native Neon PITR integrity drill;
-- the minimum 72-hour soak is owner-waived for this checkpoint and remains NOT RUN,
-  so it cannot be used as passing release evidence;
-- signed SHA-256-bound release packet accepted by `npm run phase2:evidence`;
-- independent contract and focused backend review before real-value/mainnet release.
+- independent contract and focused backend review;
+- a signed SHA-256-bound mainnet release packet accepted by `npm run phase2:evidence`;
+- accountable production authority, signer/secret rotation, backup/restore, alert,
+  incident, and SLO ownership;
+- deterministic mainnet readiness with paid writes disabled;
+- a separately approved low-value allowlisted mainnet canary and expansion decision.
+
+The testnet duration checkpoint is `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`; no
+72-hour telemetry is claimed. The public testnet checkpoint itself is PASS.
 
 The RPC failover, concurrent load, dense local catch-up, reorg, browser, disposable
 restore, soak-runner, evidence-validator, managed KMS signer, and US-only deployment

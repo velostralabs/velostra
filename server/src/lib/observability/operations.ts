@@ -1,4 +1,5 @@
 import { getAddress } from 'viem'
+import type { QueryResult } from 'pg'
 import { pool } from '../../db/client.js'
 import {
   getVelostraEscrowAddress,
@@ -74,6 +75,12 @@ async function checked<T>(
   }
 }
 
+export async function executeOperationalReadsInSequence(
+  operations: readonly (() => Promise<void>)[]
+): Promise<void> {
+  for (const operation of operations) await operation()
+}
+
 export async function collectOperationalSnapshot(): Promise<OperationalSnapshot> {
   const dependencies: Record<string, DependencyCheck> = {}
   const snapshot: OperationalSnapshot = {
@@ -127,47 +134,61 @@ export async function collectOperationalSnapshot(): Promise<OperationalSnapshot>
 
   const state = await checked(async () => {
     const address = getVelostraEscrowAddress()
-    const [
-      outboxRows,
-      oldestRow,
-      cursorRow,
-      pendingRow,
-      webhookRows,
-      oldestWebhookRow,
-      workerAge,
-      webhookWorkerAge,
-      backupAge,
-    ] = await Promise.all([
-        pool.query<{ status: string; count: number }>(
+    let outboxRows!: QueryResult<{ status: string; count: number }>
+    let oldestRow!: QueryResult<{ age_seconds: string | null }>
+    let cursorRow!: QueryResult<{ last_processed_block: string }>
+    let pendingRow!: QueryResult<{ count: number }>
+    let webhookRows!: QueryResult<{ status: string; count: number }>
+    let oldestWebhookRow!: QueryResult<{ age_seconds: string | null }>
+    let workerAge: number | undefined
+    let webhookWorkerAge: number | undefined
+    let backupAge: number | undefined
+
+    // Production pools are intentionally small. Keep this fan-out sequential so one
+    // observability sweep cannot consume every connection or time out its own reads.
+    await executeOperationalReadsInSequence([
+      async () => {
+        outboxRows = await pool.query<{ status: string; count: number }>(
           'select status, count(*)::int as count from settlement_attempts group by status'
-        ),
-        pool.query<{ age_seconds: string | null }>(
+        )
+      },
+      async () => {
+        oldestRow = await pool.query<{ age_seconds: string | null }>(
           `select extract(epoch from (now() - min(updated_at)))::text as age_seconds
            from settlement_attempts
            where status in ('PREPARED','READY','SUBMITTED','AMBIGUOUS','CONFIRMED')`
-        ),
-        pool.query<{ last_processed_block: string }>(
+        )
+      },
+      async () => {
+        cursorRow = await pool.query<{ last_processed_block: string }>(
           `select last_processed_block::text
            from chain_sync_state
            where chain_id = $1 and lower(contract_address) = lower($2)
            limit 1`,
           [velostraChainId, address]
-        ),
-        pool.query<{ count: number }>(
+        )
+      },
+      async () => {
+        pendingRow = await pool.query<{ count: number }>(
           'select count(*)::int as count from chain_events where reconciled = false'
-        ),
-        pool.query<{ status: string; count: number }>(
+        )
+      },
+      async () => {
+        webhookRows = await pool.query<{ status: string; count: number }>(
           'select status, count(*)::int as count from webhook_deliveries group by status'
-        ),
-        pool.query<{ age_seconds: string | null }>(
+        )
+      },
+      async () => {
+        oldestWebhookRow = await pool.query<{ age_seconds: string | null }>(
           `select extract(epoch from (now() - min(created_at)))::text as age_seconds
              from webhook_deliveries
             where status in ('PENDING','RETRYING')`
-        ),
-        heartbeatAgeSeconds('reconciliation-worker'),
-        heartbeatAgeSeconds('webhook-worker'),
-        heartbeatAgeSeconds('backup'),
-      ])
+        )
+      },
+      async () => { workerAge = await heartbeatAgeSeconds('reconciliation-worker') },
+      async () => { webhookWorkerAge = await heartbeatAgeSeconds('webhook-worker') },
+      async () => { backupAge = await heartbeatAgeSeconds('backup') },
+    ])
     return {
       outboxRows,
       oldestRow,

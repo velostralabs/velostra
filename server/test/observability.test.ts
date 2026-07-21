@@ -6,6 +6,7 @@ import {
   sanitizeAlertDetails,
 } from '../src/lib/observability/alerts.js'
 import {
+  executeOperationalReadsInSequence,
   readinessFromSnapshot,
   type OperationalSnapshot,
 } from '../src/lib/observability/operations.js'
@@ -68,6 +69,20 @@ try {
   assert.equal(readinessFromSnapshot(snapshot()).ready, true)
   assert.equal(readinessFromSnapshot(snapshot({ worker: { ageSeconds: 120 } })).ready, false)
   assert.deepEqual(evaluateAlerts(snapshot()), [])
+
+  let activeReads = 0
+  let maximumActiveReads = 0
+  const readOrder: string[] = []
+  const read = (label: string) => async () => {
+    activeReads += 1
+    maximumActiveReads = Math.max(maximumActiveReads, activeReads)
+    await new Promise((resolve) => setTimeout(resolve, 1))
+    readOrder.push(label)
+    activeReads -= 1
+  }
+  await executeOperationalReadsInSequence([read('outbox'), read('heartbeats'), read('webhooks')])
+  assert.equal(maximumActiveReads, 1, 'operational reads must not fan out across the small pool')
+  assert.deepEqual(readOrder, ['outbox', 'heartbeats', 'webhooks'])
 
   const unhealthy = snapshot({
     dependencies: {

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion'
-import { Activity, ArrowUpRight, ShieldCheck, Workflow } from 'lucide-react'
+import { ArrowUpRight, Check, ShieldCheck, Workflow } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { VELOSTRA_ESCROW_ADDRESS } from '../lib/contract'
 import { ROBINHOOD_CHAIN_ID, ROBINHOOD_IS_TESTNET } from '../lib/chain'
@@ -24,7 +24,7 @@ const item = {
 
 const stats = [
   { value: '90%', label: 'Builder yield', note: 'programmatic split' },
-  { value: '100ms', label: 'Target block', note: 'execution velocity' },
+  { value: '100 ms', label: 'Target block', note: 'execution velocity' },
   { value: '$0.08', label: 'Entry price', note: 'per verified call' },
   { value: '24 / 7', label: 'Agent market', note: 'always available' },
 ]
@@ -32,13 +32,17 @@ const stats = [
 function ArtifactPoster() {
   return (
     <div className="hero__poster" aria-hidden="true">
-      <div className="hero__poster-card">
-        <i /><i />
-        <span className="hero__poster-core" />
-        <span className="hero__poster-scan" />
+      <div className="hero__poster-rings">
+        <i /><i /><i />
       </div>
-      <span className="hero__poster-orbit hero__poster-orbit--one" />
-      <span className="hero__poster-orbit hero__poster-orbit--two" />
+      <div className="hero__poster-crystal">
+        <i /><i />
+      </div>
+      <span className="hero__poster-beam" />
+      <span className="hero__poster-node hero__poster-node--one" />
+      <span className="hero__poster-node hero__poster-node--two" />
+      <span className="hero__poster-node hero__poster-node--three" />
+      <span className="hero__poster-node hero__poster-node--four" />
     </div>
   )
 }
@@ -66,11 +70,11 @@ function AdaptiveScene() {
 
       timer = window.setTimeout(() => {
         if ('requestIdleCallback' in window) {
-          idleTask = window.requestIdleCallback(() => setEnableWebGL(true), { timeout: 900 })
+          idleTask = window.requestIdleCallback(() => setEnableWebGL(true), { timeout: 650 })
           return
         }
         setEnableWebGL(true)
-      }, 700)
+      }, 240)
     }
 
     sync()
@@ -94,23 +98,24 @@ export default function Hero() {
   const reducedMotion = useReducedMotion()
   const pointerX = useMotionValue(0)
   const pointerY = useMotionValue(0)
-  const stageXTarget = useTransform(pointerX, [-1, 1], [-12, 12])
-  const stageYTarget = useTransform(pointerY, [-1, 1], [-9, 9])
-  const stageRotateXTarget = useTransform(pointerY, [-1, 1], [1.8, -1.8])
-  const stageRotateYTarget = useTransform(pointerX, [-1, 1], [-2.2, 2.2])
-  const contentXTarget = useTransform(pointerX, [-1, 1], [5, -5])
-  const contentYTarget = useTransform(pointerY, [-1, 1], [3, -3])
-  const glowXTarget = useTransform(pointerX, [-1, 1], [-34, 34])
-  const glowYTarget = useTransform(pointerY, [-1, 1], [-22, 22])
-  const stageX = useSpring(stageXTarget, { stiffness: 78, damping: 24, mass: 0.55 })
-  const stageY = useSpring(stageYTarget, { stiffness: 78, damping: 24, mass: 0.55 })
-  const stageRotateX = useSpring(stageRotateXTarget, { stiffness: 72, damping: 24, mass: 0.6 })
-  const stageRotateY = useSpring(stageRotateYTarget, { stiffness: 72, damping: 24, mass: 0.6 })
-  const contentX = useSpring(contentXTarget, { stiffness: 62, damping: 25, mass: 0.7 })
-  const contentY = useSpring(contentYTarget, { stiffness: 62, damping: 25, mass: 0.7 })
-  const glowX = useSpring(glowXTarget, { stiffness: 38, damping: 24, mass: 0.9 })
-  const glowY = useSpring(glowYTarget, { stiffness: 38, damping: 24, mass: 0.9 })
+  const stageXTarget = useTransform(pointerX, [-1, 1], [-13, 13])
+  const stageYTarget = useTransform(pointerY, [-1, 1], [-10, 10])
+  const stageRotateXTarget = useTransform(pointerY, [-1, 1], [1.45, -1.45])
+  const stageRotateYTarget = useTransform(pointerX, [-1, 1], [-1.8, 1.8])
+  const contentXTarget = useTransform(pointerX, [-1, 1], [4, -4])
+  const contentYTarget = useTransform(pointerY, [-1, 1], [2.5, -2.5])
+  const glowXTarget = useTransform(pointerX, [-1, 1], [-42, 42])
+  const glowYTarget = useTransform(pointerY, [-1, 1], [-28, 28])
+  const stageX = useSpring(stageXTarget, { stiffness: 76, damping: 26, mass: 0.62 })
+  const stageY = useSpring(stageYTarget, { stiffness: 76, damping: 26, mass: 0.62 })
+  const stageRotateX = useSpring(stageRotateXTarget, { stiffness: 70, damping: 25, mass: 0.68 })
+  const stageRotateY = useSpring(stageRotateYTarget, { stiffness: 70, damping: 25, mass: 0.68 })
+  const contentX = useSpring(contentXTarget, { stiffness: 60, damping: 26, mass: 0.72 })
+  const contentY = useSpring(contentYTarget, { stiffness: 60, damping: 26, mass: 0.72 })
+  const glowX = useSpring(glowXTarget, { stiffness: 34, damping: 26, mass: 0.96 })
+  const glowY = useSpring(glowYTarget, { stiffness: 34, damping: 26, mass: 0.96 })
   const contractIsConfigured = /^0x[0-9a-fA-F]{40}$/.test(VELOSTRA_ESCROW_ADDRESS)
+
   const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
     if (reducedMotion || event.pointerType === 'touch') return
     const rect = event.currentTarget.getBoundingClientRect()
@@ -126,6 +131,7 @@ export default function Hero() {
   return (
     <section className="hero" id="top" onPointerMove={handlePointerMove} onPointerLeave={resetPointer}>
       <motion.div className="hero__glow" style={{ x: glowX, y: glowY }} />
+      <div className="hero__atmosphere" aria-hidden="true" />
 
       <div className="hero__grid">
         <motion.div className="hero__content" variants={container} initial="hidden" animate="show" style={{ x: contentX, y: contentY }}>
@@ -173,41 +179,57 @@ export default function Hero() {
 
         <motion.div
           className="hero__stage"
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.9, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, scale: 0.95, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 1.18, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
           style={{ x: stageX, y: stageY, rotateX: stageRotateX, rotateY: stageRotateY }}
         >
           <div className="hero__stage-frame" />
           <AdaptiveScene />
 
           <div className="hero__hud hero__hud--top">
-            <span className="mono">EXECUTION OBJECT / 014</span>
-            <span className="hero__hud-live"><i /> adaptive</span>
+            <span className="mono">KINETIC SETTLEMENT CORE / 014</span>
+            <span className="hero__hud-live"><i /> live geometry</span>
+          </div>
+
+          <div className="hero__signal-map" aria-hidden="true">
+            <span className="hero__signal hero__signal--request"><i /> request</span>
+            <span className="hero__signal hero__signal--verify"><i /> verify</span>
+            <span className="hero__signal hero__signal--settle"><i /> settle</span>
+            <span className="hero__signal hero__signal--index"><i /> index</span>
           </div>
 
           <motion.div
             className="hero__receipt"
-            animate={{ y: [0, -4, 0] }}
-            transition={{ duration: 5.2, repeat: Infinity, ease: 'easeInOut' }}
+            animate={reducedMotion ? undefined : { y: [0, -5, 0] }}
+            transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
           >
             <div className="hero__receipt-head">
-              <Activity size={15} color="var(--signal)" />
-              <span className="mono">agent_call / settled</span>
+              <span className="hero__receipt-check"><Check size={12} strokeWidth={2.2} /></span>
+              <span className="mono">settlement receipt</span>
+              <b className="mono">FINAL</b>
             </div>
             <div className="hero__receipt-value">
               <strong>$0.30</strong>
-              <span>+0.27 builder</span>
+              <span>+$0.27 builder</span>
             </div>
-            <div className="hero__receipt-bars">
-              <i /><i /><i /><i /><i />
+            <div className="hero__receipt-track"><i /></div>
+            <div className="hero__receipt-meta mono">
+              <span>CALL 8FA2</span>
+              <span>90 / 10 ROUTED</span>
             </div>
           </motion.div>
 
           <div className="hero__coordinate mono">
             RHC / {ROBINHOOD_CHAIN_ID}
             <br />
-            LATENCY OPTIMIZED
+            RECONCILIATION ACTIVE
+          </div>
+
+          <div className="hero__stage-rail mono">
+            <span><i /> request sealed</span>
+            <span><i /> execution verified</span>
+            <span><i /> value settled</span>
           </div>
         </motion.div>
       </div>
@@ -216,7 +238,7 @@ export default function Hero() {
         className="hero__stats"
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.68, delay: 0.58, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.76, delay: 0.52, ease: [0.16, 1, 0.3, 1] }}
       >
         {stats.map((stat, index) => (
           <div className="hero__stat" key={stat.label}>

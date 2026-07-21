@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type MutableRefObject } from 'react'
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Float, RoundedBox, Sparkles } from '@react-three/drei'
+import { Edges, Float, Line, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import './Scene3DBackground.css'
 
@@ -10,6 +10,7 @@ type MotionInput = MutableRefObject<{
   scroll: number
   reduced: boolean
 }>
+
 type CrystalFacet = {
   color: string
   opacity: number
@@ -23,30 +24,69 @@ const makeShape = (points: Array<[number, number]>) => {
   return shape
 }
 
-const leftCrystalWing = makeShape([[-1.75, 2.1], [-0.48, 0.92], [-0.1, -0.3], [-0.1, -2.05], [-0.85, -1.15], [-1.45, 0.18]])
-const rightCrystalWing = makeShape([[1.75, 2.1], [0.48, 0.92], [0.1, -0.3], [0.1, -2.05], [0.85, -1.15], [1.45, 0.18]])
+const leftCrystalWing = makeShape([[-1.82, 2.24], [-0.52, 1.02], [-0.1, -0.28], [-0.1, -2.16], [-0.91, -1.16], [-1.5, 0.2]])
+const rightCrystalWing = makeShape([[1.82, 2.24], [0.52, 1.02], [0.1, -0.28], [0.1, -2.16], [0.91, -1.16], [1.5, 0.2]])
 const leftCrystalFacets: CrystalFacet[] = [
-  { shape: makeShape([[-1.75, 2.1], [-0.48, 0.92], [-1.25, 1.16]]), color: '#f0ffad', opacity: 0.46 },
-  { shape: makeShape([[-0.48, 0.92], [-0.1, -0.3], [-0.82, 0.31]]), color: '#d8ff79', opacity: 0.38 },
-  { shape: makeShape([[-0.82, 0.31], [-0.1, -0.3], [-0.1, -2.05], [-0.85, -1.15]]), color: '#173b04', opacity: 0.46 },
+  { shape: makeShape([[-1.82, 2.24], [-0.52, 1.02], [-1.29, 1.24]]), color: '#f4ffc4', opacity: 0.78 },
+  { shape: makeShape([[-1.82, 2.24], [-1.29, 1.24], [-1.5, 0.2]]), color: '#86c81e', opacity: 0.6 },
+  { shape: makeShape([[-0.52, 1.02], [-0.1, -0.28], [-0.82, 0.34]]), color: '#ddff82', opacity: 0.62 },
+  { shape: makeShape([[-0.82, 0.34], [-0.1, -0.28], [-0.1, -2.16], [-0.91, -1.16]]), color: '#173803', opacity: 0.72 },
 ]
 const rightCrystalFacets: CrystalFacet[] = [
-  { shape: makeShape([[1.75, 2.1], [0.48, 0.92], [1.25, 1.16]]), color: '#f5ffc0', opacity: 0.52 },
-  { shape: makeShape([[0.48, 0.92], [0.1, -0.3], [0.82, 0.31]]), color: '#e1ff84', opacity: 0.4 },
-  { shape: makeShape([[0.82, 0.31], [0.1, -0.3], [0.1, -2.05], [0.85, -1.15]]), color: '#214605', opacity: 0.42 },
+  { shape: makeShape([[1.82, 2.24], [0.52, 1.02], [1.29, 1.24]]), color: '#f6ffd0', opacity: 0.84 },
+  { shape: makeShape([[1.82, 2.24], [1.29, 1.24], [1.5, 0.2]]), color: '#9bdd2d', opacity: 0.62 },
+  { shape: makeShape([[0.52, 1.02], [0.1, -0.28], [0.82, 0.34]]), color: '#e5ff91', opacity: 0.66 },
+  { shape: makeShape([[0.82, 0.34], [0.1, -0.28], [0.1, -2.16], [0.91, -1.16]]), color: '#214604', opacity: 0.7 },
+]
+
+const signalCurves = [
+  new THREE.CubicBezierCurve3(
+    new THREE.Vector3(-4.7, 1.55, -0.9),
+    new THREE.Vector3(-3.1, 2.5, 0.2),
+    new THREE.Vector3(-2.3, 0.15, 0.7),
+    new THREE.Vector3(-0.75, 0.45, 0.55),
+  ),
+  new THREE.CubicBezierCurve3(
+    new THREE.Vector3(4.65, 1.7, -1.1),
+    new THREE.Vector3(3.15, 2.8, -0.1),
+    new THREE.Vector3(2.35, 0.2, 0.7),
+    new THREE.Vector3(0.78, 0.48, 0.52),
+  ),
+  new THREE.CubicBezierCurve3(
+    new THREE.Vector3(-4.5, -1.82, -1.35),
+    new THREE.Vector3(-2.7, -2.7, -0.1),
+    new THREE.Vector3(-2.05, -0.7, 0.4),
+    new THREE.Vector3(-0.68, -0.62, 0.55),
+  ),
+  new THREE.CubicBezierCurve3(
+    new THREE.Vector3(4.45, -1.74, -1.25),
+    new THREE.Vector3(2.8, -2.65, -0.05),
+    new THREE.Vector3(2.1, -0.72, 0.44),
+    new THREE.Vector3(0.7, -0.62, 0.56),
+  ),
 ]
 
 function CrystalWing({ shape, facets, color }: { shape: THREE.Shape; facets: CrystalFacet[]; color: string }) {
   return (
     <group>
-      <mesh>
-        <extrudeGeometry args={[shape, { depth: 0.34, bevelEnabled: true, bevelSegments: 1, steps: 1, bevelSize: 0.035, bevelThickness: 0.045 }]} />
-        <meshPhysicalMaterial color={color} metalness={0.34} roughness={0.16} clearcoat={1} clearcoatRoughness={0.1} />
+      <mesh castShadow>
+        <extrudeGeometry args={[shape, { depth: 0.42, bevelEnabled: true, bevelSegments: 2, steps: 1, bevelSize: 0.045, bevelThickness: 0.06 }]} />
+        <meshPhysicalMaterial
+          color={color}
+          emissive="#4e780d"
+          emissiveIntensity={0.12}
+          metalness={0.18}
+          roughness={0.11}
+          clearcoat={1}
+          clearcoatRoughness={0.06}
+          reflectivity={1}
+        />
+        <Edges threshold={10} color="#eaffae" scale={1.001} />
       </mesh>
       {facets.map((facet, index) => (
-        <mesh key={index} position={[0, 0, 0.39]}>
+        <mesh key={index} position={[0, 0, 0.49]}>
           <shapeGeometry args={[facet.shape]} />
-          <meshBasicMaterial color={facet.color} transparent opacity={facet.opacity} />
+          <meshBasicMaterial color={facet.color} transparent opacity={facet.opacity} toneMapped={false} />
         </mesh>
       ))}
     </group>
@@ -55,175 +95,220 @@ function CrystalWing({ shape, facets, color }: { shape: THREE.Shape; facets: Cry
 
 function CrystalV() {
   return (
-    <group scale={0.9}>
-      <CrystalWing shape={leftCrystalWing} facets={leftCrystalFacets} color="#98d92c" />
-      <CrystalWing shape={rightCrystalWing} facets={rightCrystalFacets} color="#bdf34c" />
-      <mesh position={[0, -2.16, 0.08]} scale={[1.5, 0.12, 1]} rotation={[0, 0, Math.PI / 2]}>
-        <circleGeometry args={[0.42, 48]} />
-        <meshBasicMaterial color="#c9ff5f" transparent opacity={0.2} />
+    <group scale={0.92}>
+      <group position={[0, 0, -0.14]} scale={1.035}>
+        <mesh>
+          <extrudeGeometry args={[leftCrystalWing, { depth: 0.18, bevelEnabled: false }]} />
+          <meshBasicMaterial color="#78ff86" transparent opacity={0.1} wireframe />
+        </mesh>
+        <mesh>
+          <extrudeGeometry args={[rightCrystalWing, { depth: 0.18, bevelEnabled: false }]} />
+          <meshBasicMaterial color="#c9ff5f" transparent opacity={0.1} wireframe />
+        </mesh>
+      </group>
+      <CrystalWing shape={leftCrystalWing} facets={leftCrystalFacets} color="#8ed321" />
+      <CrystalWing shape={rightCrystalWing} facets={rightCrystalFacets} color="#b8ef3e" />
+      <mesh position={[0, -2.24, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.48, 0.48, 0.014, 64]} />
+        <meshBasicMaterial color="#d7ff75" transparent opacity={0.34} toneMapped={false} />
       </mesh>
     </group>
   )
 }
 
-function DataModule({
-  position,
-  rotation,
-  accent,
-  scale = 1,
-}: {
-  position: [number, number, number]
-  rotation: [number, number, number]
-  accent: string
-  scale?: number
-}) {
+function SignalNetwork({ reduced }: { reduced: boolean }) {
+  const packetRefs = useRef<Array<THREE.Mesh | null>>([])
+  const pulseRefs = useRef<Array<THREE.Mesh | null>>([])
+  const pointSets = useMemo(() => signalCurves.map((curve) => curve.getPoints(52)), [])
+
+  useFrame((state) => {
+    const time = reduced ? 0 : state.clock.elapsedTime
+    packetRefs.current.forEach((packet, index) => {
+      if (!packet) return
+      const progress = (time * (0.12 + index * 0.012) + index * 0.22) % 1
+      packet.position.copy(signalCurves[index].getPointAt(progress))
+      const intensity = 0.72 + Math.sin(time * 5 + index) * 0.18
+      packet.scale.setScalar(intensity)
+    })
+    pulseRefs.current.forEach((pulse, index) => {
+      if (!pulse) return
+      const scale = 1 + Math.sin(time * 2.4 + index * 0.8) * 0.26
+      pulse.scale.setScalar(scale)
+    })
+  })
+
   return (
-    <Float speed={1.6} rotationIntensity={0.18} floatIntensity={0.35}>
-      <group position={position} rotation={rotation} scale={scale}>
-        <RoundedBox args={[1.5, 0.86, 0.22]} radius={0.08} smoothness={3}>
-          <meshPhysicalMaterial
-            color="#10161d"
-            metalness={0.72}
-            roughness={0.23}
-            clearcoat={1}
-            clearcoatRoughness={0.16}
+    <group>
+      {pointSets.map((points, index) => (
+        <group key={index}>
+          <Line
+            points={points}
+            color={index % 2 === 0 ? '#c9ff5f' : '#8fe9dc'}
+            lineWidth={0.72}
+            transparent
+            opacity={0.28}
           />
-        </RoundedBox>
-        <RoundedBox args={[1.24, 0.57, 0.025]} radius={0.045} smoothness={4} position={[0, 0, 0.13]}>
-          <meshBasicMaterial color="#070b0f" />
-        </RoundedBox>
-        <mesh position={[-0.42, 0.12, 0.16]}>
-          <boxGeometry args={[0.19, 0.16, 0.025]} />
-          <meshStandardMaterial color={accent} emissive={accent} emissiveIntensity={1.2} />
-        </mesh>
-        <mesh position={[0.17, 0.14, 0.16]}>
-          <boxGeometry args={[0.62, 0.045, 0.02]} />
-          <meshBasicMaterial color="#68716e" />
-        </mesh>
-        <mesh position={[0.03, -0.1, 0.16]}>
-          <boxGeometry args={[0.88, 0.035, 0.02]} />
-          <meshBasicMaterial color={accent} transparent opacity={0.5} />
-        </mesh>
-      </group>
-    </Float>
+          <mesh ref={(node) => { packetRefs.current[index] = node }}>
+            <sphereGeometry args={[0.072, 18, 18]} />
+            <meshBasicMaterial color={index % 2 === 0 ? '#d7ff7a' : '#a8fff1'} toneMapped={false} />
+          </mesh>
+          <mesh ref={(node) => { pulseRefs.current[index] = node }} position={signalCurves[index].getPointAt(0)}>
+            <octahedronGeometry args={[0.13, 0]} />
+            <meshStandardMaterial
+              color={index % 2 === 0 ? '#b9f044' : '#80d9cd'}
+              emissive={index % 2 === 0 ? '#6d9d16' : '#24746b'}
+              emissiveIntensity={0.7}
+              metalness={0.55}
+              roughness={0.18}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
   )
 }
 
-function ExecutionArtifact({ input }: { input: MotionInput }) {
-  const artifact = useRef<THREE.Group>(null)
-  const core = useRef<THREE.Group>(null)
+function KineticRings({ reduced }: { reduced: boolean }) {
+  const ringOne = useRef<THREE.Group>(null)
+  const ringTwo = useRef<THREE.Group>(null)
+  const ringThree = useRef<THREE.Group>(null)
+
+  useFrame((_, delta) => {
+    if (reduced) return
+    if (ringOne.current) ringOne.current.rotation.z += delta * 0.095
+    if (ringTwo.current) ringTwo.current.rotation.z -= delta * 0.14
+    if (ringThree.current) ringThree.current.rotation.y += delta * 0.11
+  })
+
+  return (
+    <group position={[0, 0, -0.58]}>
+      <group ref={ringOne} rotation={[0.12, 0.06, 0.1]}>
+        <mesh>
+          <torusGeometry args={[3.05, 0.012, 8, 180]} />
+          <meshBasicMaterial color="#9bdc68" transparent opacity={0.28} toneMapped={false} />
+        </mesh>
+        {[0, Math.PI * 0.5, Math.PI, Math.PI * 1.5].map((angle) => (
+          <mesh key={angle} position={[Math.cos(angle) * 3.05, Math.sin(angle) * 3.05, 0]}>
+            <sphereGeometry args={[0.055, 14, 14]} />
+            <meshBasicMaterial color="#c9ff5f" toneMapped={false} />
+          </mesh>
+        ))}
+      </group>
+      <group ref={ringTwo} rotation={[0.18, -0.08, -0.25]}>
+        <mesh>
+          <torusGeometry args={[2.52, 0.008, 8, 160]} />
+          <meshBasicMaterial color="#8fe9dc" transparent opacity={0.2} toneMapped={false} />
+        </mesh>
+        <mesh rotation={[0, 0, 0.88]}>
+          <torusGeometry args={[2.52, 0.028, 8, 24, 0.72]} />
+          <meshBasicMaterial color="#c9ff5f" transparent opacity={0.74} toneMapped={false} />
+        </mesh>
+      </group>
+      <group ref={ringThree} rotation={[1.02, 0.28, 0]}>
+        <mesh>
+          <torusGeometry args={[2.16, 0.008, 8, 150]} />
+          <meshBasicMaterial color="#d9e8df" transparent opacity={0.14} toneMapped={false} />
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
+function ExecutionCore({ input }: { input: MotionInput }) {
+  const root = useRef<THREE.Group>(null)
+  const crystal = useRef<THREE.Group>(null)
   const scan = useRef<THREE.Mesh>(null)
+  const platform = useRef<THREE.Mesh>(null)
 
   useFrame((state, delta) => {
-    if (!artifact.current || !core.current || !scan.current) return
+    if (!root.current || !crystal.current || !scan.current || !platform.current) return
     const time = state.clock.elapsedTime
     const motion = input.current
     const multiplier = motion.reduced ? 0 : 1
 
-    artifact.current.rotation.x = THREE.MathUtils.damp(
-      artifact.current.rotation.x,
-      -0.12 + motion.y * 0.13 * multiplier + motion.scroll * 0.025,
-      4,
-      delta
+    root.current.rotation.x = THREE.MathUtils.damp(
+      root.current.rotation.x,
+      -0.04 + motion.y * 0.1 * multiplier + motion.scroll * 0.018,
+      4.4,
+      delta,
     )
-    artifact.current.rotation.y = THREE.MathUtils.damp(
-      artifact.current.rotation.y,
-      0.18 + motion.x * 0.22 * multiplier,
-      4,
-      delta
+    root.current.rotation.y = THREE.MathUtils.damp(
+      root.current.rotation.y,
+      motion.x * 0.18 * multiplier,
+      4.4,
+      delta,
     )
-    artifact.current.rotation.z = THREE.MathUtils.damp(
-      artifact.current.rotation.z,
-      -0.055 + motion.x * 0.025 * multiplier,
-      3,
-      delta
-    )
-    artifact.current.position.y = Math.sin(time * 0.72) * 0.09 * multiplier - motion.scroll * 0.12
-    core.current.position.z = 0.77 + Math.sin(time * 1.35) * 0.045 * multiplier
-    scan.current.position.y = motion.reduced ? 0 : ((time * 0.7) % 3.3) - 1.65
+    root.current.position.y = THREE.MathUtils.damp(root.current.position.y, -motion.scroll * 0.12, 3.2, delta)
+    crystal.current.position.y = Math.sin(time * 0.75) * 0.095 * multiplier + 0.16
+    crystal.current.rotation.y = Math.sin(time * 0.38) * 0.055 * multiplier
+    scan.current.position.y = motion.reduced ? 0 : ((time * 0.76) % 4.7) - 2.35
+    platform.current.scale.x = 1 + Math.sin(time * 1.05) * 0.055 * multiplier
+    platform.current.scale.z = 1 + Math.sin(time * 1.05) * 0.055 * multiplier
   })
 
   return (
-    <group ref={artifact} scale={0.86}>
-      <RoundedBox args={[4.25, 5.18, 0.62]} radius={0.2} smoothness={4}>
-        <meshPhysicalMaterial
-          color="#080c12"
-          metalness={0.84}
-          roughness={0.2}
-          clearcoat={1}
-          clearcoatRoughness={0.12}
-        />
-      </RoundedBox>
+    <group ref={root} scale={0.94}>
+      <KineticRings reduced={input.current.reduced} />
+      <SignalNetwork reduced={input.current.reduced} />
 
-      <RoundedBox args={[3.84, 4.75, 0.1]} radius={0.14} smoothness={3} position={[0, 0, 0.35]}>
-        <meshPhysicalMaterial
-          color="#111821"
-          metalness={0.5}
-          roughness={0.28}
-          transparent
-          opacity={0.92}
-        />
-      </RoundedBox>
-
-      <RoundedBox args={[3.45, 4.25, 0.055]} radius={0.1} smoothness={3} position={[0, 0, 0.43]}>
-        <meshBasicMaterial color="#06090d" />
-      </RoundedBox>
-
-      <group ref={core} position={[0, 0.05, 0.77]}>
+      <group ref={crystal} position={[0, 0.16, 0.5]}>
         <CrystalV />
       </group>
 
-      <mesh ref={scan} position={[0, -1.5, 0.62]}>
-        <boxGeometry args={[3.08, 0.012, 0.018]} />
-        <meshBasicMaterial color="#c9ff5f" transparent opacity={0.34} />
+      <mesh ref={scan} position={[0, -2.2, 0.9]}>
+        <planeGeometry args={[4.3, 0.012]} />
+        <meshBasicMaterial color="#c9ff5f" transparent opacity={0.25} toneMapped={false} />
       </mesh>
 
-      <group position={[0, -1.78, 0.52]}>
-        {[-1.1, -0.55, 0, 0.55, 1.1].map((x, index) => (
-          <mesh key={x} position={[x, 0, 0]}>
-            <boxGeometry args={[index === 2 ? 0.34 : 0.42, 0.07, 0.04]} />
-            <meshBasicMaterial
-              color={index === 2 ? '#c9ff5f' : '#39433f'}
-              transparent
-              opacity={index === 2 ? 0.9 : 0.65}
-            />
-          </mesh>
-        ))}
-      </group>
+      <mesh ref={platform} position={[0, -2.34, -0.24]} rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.72, 2.45, 96]} />
+        <meshBasicMaterial
+          color="#a7ec3e"
+          transparent
+          opacity={0.095}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh position={[0, -2.38, -0.38]} rotation={[Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.5, 96]} />
+        <meshBasicMaterial color="#08100b" transparent opacity={0.72} side={THREE.DoubleSide} />
+      </mesh>
 
-      <DataModule position={[-2.85, 1.65, 0.08]} rotation={[0.05, 0.38, -0.08]} accent="#c9ff5f" />
-      <DataModule position={[2.82, -1.45, -0.05]} rotation={[-0.05, -0.42, 0.06]} accent="#8fe9dc" scale={0.92} />
-
-      <Float speed={1.2} rotationIntensity={0.28} floatIntensity={0.42}>
-        <mesh position={[2.75, 1.75, -0.45]} rotation={[0.4, 0.25, 0.7]}>
-          <tetrahedronGeometry args={[0.34, 0]} />
-          <meshStandardMaterial color="#d6b684" metalness={0.8} roughness={0.18} />
+      <Float speed={1.15} rotationIntensity={0.26} floatIntensity={0.4}>
+        <mesh position={[3.45, 2.25, -0.72]} rotation={[0.4, 0.25, 0.7]}>
+          <icosahedronGeometry args={[0.22, 0]} />
+          <meshStandardMaterial color="#d6b684" metalness={0.86} roughness={0.15} />
         </mesh>
       </Float>
-      <Float speed={1.4} rotationIntensity={0.3} floatIntensity={0.5}>
-        <mesh position={[-2.5, -2.05, -0.35]} rotation={[0.2, -0.3, 0.4]}>
-          <octahedronGeometry args={[0.26, 0]} />
-          <meshStandardMaterial color="#8fe9dc" metalness={0.65} roughness={0.2} />
+      <Float speed={1.35} rotationIntensity={0.3} floatIntensity={0.46}>
+        <mesh position={[-3.35, -2.22, -0.58]} rotation={[0.2, -0.3, 0.4]}>
+          <octahedronGeometry args={[0.18, 0]} />
+          <meshStandardMaterial color="#8fe9dc" emissive="#286e67" emissiveIntensity={0.34} metalness={0.72} roughness={0.16} />
         </mesh>
       </Float>
     </group>
   )
 }
 
-function ArtifactScene({ input }: { input: MotionInput }) {
+function CoreScene({ input }: { input: MotionInput }) {
   return (
     <>
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[4, 6, 5]} intensity={2.2} color="#f3ffe2" />
-      <pointLight position={[-4, 1, 4]} intensity={28} distance={10} color="#8fe9dc" />
-      <pointLight position={[4, -2, 3]} intensity={24} distance={9} color="#c9ff5f" />
-      <ExecutionArtifact input={input} />
-      <Sparkles count={20} scale={[8, 7, 4]} size={1.3} speed={0.22} opacity={0.42} color="#dce7df" />
+      <ambientLight intensity={0.42} />
+      <hemisphereLight intensity={0.7} color="#efffde" groundColor="#030609" />
+      <directionalLight position={[4, 7, 6]} intensity={3.1} color="#f4ffe7" />
+      <directionalLight position={[-5, -1, 3]} intensity={1.7} color="#8fe9dc" />
+      <pointLight position={[-4, 1.5, 4]} intensity={34} distance={11} color="#8fe9dc" />
+      <pointLight position={[4, -1.2, 3.5]} intensity={39} distance={10} color="#c9ff5f" />
+      <pointLight position={[0, 3.5, 1]} intensity={22} distance={8} color="#e9ffb4" />
+      <ExecutionCore input={input} />
+      <Sparkles count={42} scale={[10, 7.8, 5]} size={1.05} speed={0.28} opacity={0.48} color="#dce7df" />
     </>
   )
 }
 
-function FrameDriver({ active }: { active: boolean }) {
+function FrameDriver({ active, pauseUntil }: { active: boolean; pauseUntil: MutableRefObject<number> }) {
   const invalidate = useThree((state) => state.invalidate)
 
   useEffect(() => {
@@ -232,7 +317,7 @@ function FrameDriver({ active }: { active: boolean }) {
     let lastFrame = 0
 
     const render = (time: number) => {
-      if (time - lastFrame >= 1000 / 30) {
+      if (time >= pauseUntil.current && time - lastFrame >= 1000 / 60) {
         lastFrame = time
         invalidate()
       }
@@ -241,7 +326,7 @@ function FrameDriver({ active }: { active: boolean }) {
 
     frame = window.requestAnimationFrame(render)
     return () => window.cancelAnimationFrame(frame)
-  }, [active, invalidate])
+  }, [active, invalidate, pauseUntil])
 
   return null
 }
@@ -251,6 +336,7 @@ export default function Scene3DBackground() {
   const [active, setActive] = useState(true)
   const [reduced, setReduced] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
+  const pauseUntil = useRef(0)
   const input = useRef({ x: 0, y: 0, scroll: 0, reduced: false })
 
   useEffect(() => {
@@ -270,7 +356,7 @@ export default function Scene3DBackground() {
         intersecting = entry.isIntersecting
         syncActivity()
       },
-      { rootMargin: '140px' }
+      { rootMargin: '140px' },
     )
     if (root) observer.observe(root)
 
@@ -278,6 +364,9 @@ export default function Scene3DBackground() {
       if (!intersecting) return
       input.current.x = (event.clientX / window.innerWidth) * 2 - 1
       input.current.y = -((event.clientY / window.innerHeight) * 2 - 1)
+    }
+    const handleInteraction = () => {
+      pauseUntil.current = performance.now() + 520
     }
     const handleScroll = () => {
       if (!intersecting) return
@@ -289,6 +378,8 @@ export default function Scene3DBackground() {
     motionQuery.addEventListener('change', syncMotion)
     document.addEventListener('visibilitychange', syncActivity)
     window.addEventListener('pointermove', handlePointer, { passive: true })
+    window.addEventListener('pointerdown', handleInteraction, { passive: true, capture: true })
+    window.addEventListener('keydown', handleInteraction, { passive: true, capture: true })
     window.addEventListener('scroll', handleScroll, { passive: true })
 
     return () => {
@@ -296,6 +387,8 @@ export default function Scene3DBackground() {
       motionQuery.removeEventListener('change', syncMotion)
       document.removeEventListener('visibilitychange', syncActivity)
       window.removeEventListener('pointermove', handlePointer)
+      window.removeEventListener('pointerdown', handleInteraction, { capture: true })
+      window.removeEventListener('keydown', handleInteraction, { capture: true })
       window.removeEventListener('scroll', handleScroll)
     }
   }, [])
@@ -305,14 +398,20 @@ export default function Scene3DBackground() {
   return (
     <div ref={rootRef} className="scene3d" aria-hidden="true">
       <Canvas
-        camera={{ position: [0, 0, 9.6], fov: 38 }}
-        dpr={[1, 1.3]}
+        camera={{ position: [0, 0.05, 10.6], fov: 39 }}
+        dpr={[1.25, 2]}
         frameloop="demand"
-        performance={{ min: 0.55 }}
-        gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
+        performance={{ min: 0.72 }}
+        resize={{ debounce: 0 }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        onCreated={({ gl }) => {
+          gl.outputColorSpace = THREE.SRGBColorSpace
+          gl.toneMapping = THREE.ACESFilmicToneMapping
+          gl.toneMappingExposure = 1.08
+        }}
       >
-        <FrameDriver active={active && !reduced} />
-        <ArtifactScene input={input} />
+        <FrameDriver active={active && !reduced} pauseUntil={pauseUntil} />
+        <CoreScene input={input} />
       </Canvas>
     </div>
   )

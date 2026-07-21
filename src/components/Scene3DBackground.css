@@ -1,20 +1,40 @@
 .scene3d {
   position: absolute;
-  inset: -7% -5% -8%;
+  inset: -13% -14% -15%;
   z-index: 1;
   pointer-events: none;
-  filter: saturate(1.06) contrast(1.03);
+  isolation: isolate;
+  filter: saturate(1.08) contrast(1.055);
+  transform: translateZ(0);
 }
 
+.scene3d::before,
 .scene3d::after {
   content: '';
   position: absolute;
-  inset: 8% 5%;
   pointer-events: none;
+}
+
+.scene3d::before {
+  inset: 7% 9% 4%;
+  z-index: -1;
+  border-radius: 50%;
+  opacity: 0.92;
   background:
-    radial-gradient(circle at 58% 45%, rgba(201, 255, 95, 0.08), transparent 24%),
-    radial-gradient(circle at 42% 52%, rgba(143, 233, 220, 0.08), transparent 30%);
-  filter: blur(24px);
+    radial-gradient(circle at 50% 48%, rgba(201, 255, 95, 0.13), transparent 25%),
+    radial-gradient(ellipse at 50% 58%, rgba(143, 233, 220, 0.07), transparent 42%);
+  filter: blur(30px);
+}
+
+.scene3d::after {
+  right: 10%;
+  bottom: 13%;
+  left: 10%;
+  z-index: 2;
+  height: 24%;
+  opacity: 0.82;
+  background: radial-gradient(ellipse, rgba(201, 255, 95, 0.11), transparent 68%);
+  filter: blur(26px);
   mix-blend-mode: screen;
 }
 
@@ -22,20 +42,57 @@
   display: block;
   width: 100% !important;
   height: 100% !important;
+  min-width: 100%;
+  min-height: 100%;
+  outline: 0;
 }
 
 .scene3d--fallback {
-  inset: 8%;
-  border: 1px solid var(--border-hair);
-  border-radius: 30px;
+  inset: 3%;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 48%;
   background:
-    radial-gradient(circle at 50% 45%, rgba(201, 255, 95, 0.14), transparent 28%),
-    linear-gradient(145deg, rgba(143, 233, 220, 0.05), transparent);
+    radial-gradient(circle at 50% 44%, rgba(201, 255, 95, 0.12), transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(143, 233, 220, 0.055), transparent 42%);
+}
+
+.scene3d--fallback::before {
+  inset: 14%;
+  border: 1px solid rgba(201, 255, 95, 0.13);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 56px rgba(143, 233, 220, 0.025),
+    0 0 0 112px rgba(232, 238, 232, 0.018);
+  animation: scene-fallback-orbit 10s linear infinite;
+}
+
+@keyframes scene-fallback-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1180px) {
+  .scene3d {
+    inset: -9% -12% -12%;
+  }
+}
+
+@media (max-width: 900px) {
+  .scene3d {
+    inset: -5% -13% -10%;
+    opacity: 0.94;
+  }
 }
 
 @media (max-width: 760px) {
   .scene3d {
-    inset: -4% -16% -8%;
-    opacity: 0.9;
+    inset: -3% -24% -9%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene3d--fallback::before {
+    animation: none;
   }
 }

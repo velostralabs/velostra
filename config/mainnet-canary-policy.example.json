@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-mainnet-canary-policy",
+  "environment": "robinhood-mainnet",
+  "enabled": false,
+  "approval": "not-approved",
+  "allowlists": {
+    "wallets": [],
+    "agents": [],
+    "builders": []
+  },
+  "limits": {
+    "maxCalls": 5,
+    "maxGrossAmountPerCallBaseUnits": "100000",
+    "maxGrossAmountPerWalletBaseUnits": "500000",
+    "maxGrossAmountTotalBaseUnits": "1000000",
+    "maxDurationSeconds": 1800
+  },
+  "thresholds": {
+    "maximumDriftBaseUnits": "0",
+    "maximumFailedCalls": 0,
+    "maximumReconciliationLagBlocks": 10
+  },
+  "requiredFlows": [
+    "deposit",
+    "paid-call",
+    "builder-claim",
+    "reconciliation"
+  ],
+  "stopActions": [
+    "disable-paid-writes",
+    "pause-new-risk-if-required",
+    "preserve-claims-and-reconciliation",
+    "notify-incident-owner"
+  ],
+  "expansionRequiresSeparateApproval": true
+}

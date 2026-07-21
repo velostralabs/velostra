@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-mainnet-readiness-input",
+  "stage": "preparation",
+  "release": "git-head",
+  "network": {
+    "name": "robinhood-mainnet",
+    "chainId": 4663
+  },
+  "paths": {
+    "authorityPlan": "config/mainnet-authority-plan.example.json",
+    "deploymentPlan": "config/mainnet-deployment-plan.example.json",
+    "canaryPolicy": "config/mainnet-canary-policy.example.json"
+  },
+  "audit": {
+    "status": "pending",
+    "scopeAccepted": false,
+    "reviewerOrganization": null,
+    "reportPath": null,
+    "reportSha256": null,
+    "criticalOpen": null,
+    "highOpen": null,
+    "mediumFindingsDispositioned": false
+  },
+  "operations": {
+    "productionDatabaseRestoreDrillPassed": false,
+    "productionSignerRecoveryDrillPassed": false,
+    "productionAlertDeliveryVerified": false,
+    "incidentOwnerAssigned": false,
+    "runbookReviewed": false
+  },
+  "approvalPolicy": {
+    "minimumDistinctApprovers": 2,
+    "requiredRoles": [
+      "security",
+      "operations"
+    ],
+    "separationOfDuties": true,
+    "approversAssigned": false
+  },
+  "authorization": {
+    "mainnetBroadcast": false,
+    "canaryExecution": false,
+    "expansion": false
+  }
+}

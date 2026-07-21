@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-mainnet-authority-plan",
+  "environment": "robinhood-mainnet",
+  "status": "pending",
+  "safes": [
+    {
+      "purpose": "governance-admin",
+      "principal": null,
+      "threshold": 2,
+      "requiredOwners": 3,
+      "owners": [],
+      "hardwareWalletsRequired": true
+    },
+    {
+      "purpose": "pause-guardian",
+      "principal": null,
+      "threshold": 2,
+      "requiredOwners": 3,
+      "owners": [],
+      "hardwareWalletsRequired": true
+    },
+    {
+      "purpose": "treasury-fee",
+      "principal": null,
+      "threshold": 2,
+      "requiredOwners": 3,
+      "owners": [],
+      "hardwareWalletsRequired": true
+    }
+  ],
+  "roleAssignments": {
+    "DEFAULT_ADMIN": "governance-admin",
+    "FEE_MANAGER": "treasury-fee",
+    "PAUSER": "pause-guardian",
+    "TREASURY": "treasury-fee",
+    "SETTLER": "restricted-settler"
+  },
+  "ownerSetsDisjoint": false,
+  "settler": {
+    "principal": null,
+    "custody": "hardware-backed-hsm",
+    "transactionAllowlist": [
+      "creditBuilderEarnings"
+    ],
+    "valueTransferAllowed": false,
+    "rotationDrillPassed": false
+  },
+  "recovery": {
+    "runbookReviewed": false,
+    "accessDrillPassed": false,
+    "lastDrillAt": null
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://velostra.xyz/schemas/mainnet-readiness-packet.schema.json",
+  "title": "Velostra Mainnet Readiness Packet",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "kind",
+    "stage",
+    "generatedAt",
+    "release",
+    "network",
+    "repository",
+    "plans",
+    "controls",
+    "gates",
+    "decision",
+    "blockers",
+    "authorization",
+    "integrity"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "kind": { "const": "velostra-mainnet-readiness-packet" },
+    "stage": { "const": "preparation" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "release": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" },
+    "network": { "type": "object" },
+    "repository": { "type": "object" },
+    "plans": { "type": "object" },
+    "controls": { "type": "object" },
+    "gates": { "type": "object" },
+    "decision": { "enum": ["NO_GO", "READY_FOR_SIGNING"] },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "authorization": {
+      "type": "object",
+      "required": ["mainnetBroadcast", "canaryExecution", "expansion"],
+      "properties": {
+        "mainnetBroadcast": { "const": false },
+        "canaryExecution": { "const": false },
+        "expansion": { "const": false }
+      },
+      "additionalProperties": false
+    },
+    "integrity": { "type": "object" }
+  },
+  "additionalProperties": false
+}

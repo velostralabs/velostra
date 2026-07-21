@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-mainnet-deployment-plan",
+  "environment": "robinhood-mainnet",
+  "chainId": 4663,
+  "mode": "plan-only",
+  "mainnetBroadcast": false,
+  "paidWritesAtDeploy": "disabled",
+  "deployment": {
+    "contractAddress": null,
+    "deploymentBlock": null,
+    "transactionHash": null,
+    "explorerVerification": "not-started"
+  },
+  "sequence": [
+    "freeze-reviewed-release",
+    "backup-production-database",
+    "apply-production-migrations-once",
+    "deploy-and-verify-contract",
+    "deploy-api-and-workers-with-paid-writes-disabled",
+    "run-read-only-readiness-and-drift-checks",
+    "request-separate-low-value-canary-approval"
+  ],
+  "requiredReadiness": [
+    "api-health",
+    "database-migrations-current",
+    "redis-connectivity",
+    "rpc-chain-id",
+    "contract-code-and-runtime-config",
+    "reconciliation-cursor-and-drift",
+    "telegram-alert-delivery",
+    "public-frontend-read-only-smoke"
+  ],
+  "rollback": {
+    "strategy": "pause-new-risk-and-forward-repair",
+    "preserveClaims": true,
+    "preserveReconciliation": true,
+    "restorePreviousRuntimeImage": true,
+    "databaseRestoreDrillRequired": true,
+    "automaticMainnetRetry": false
+  }
+}

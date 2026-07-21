@@ -67,6 +67,7 @@ jobs:
       - run: npm run test:contract-lock
       - run: npm ci --prefix contracts
       - run: npm run test:phase3-release
+      - run: npm run test:mainnet-readiness
 
   browser:
     name: Browser accessibility, wallet, visual, and performance

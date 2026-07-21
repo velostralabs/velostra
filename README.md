@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://velostra.xyz"><img alt="Public preview: live" src="https://img.shields.io/badge/public_preview-live-c9ff5f?style=flat-square&labelColor=090c11" /></a>
+  <a href="https://velostra.xyz/testnet"><img alt="Public testnet: live" src="https://img.shields.io/badge/public_testnet-live-c9ff5f?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/STATUS.md"><img alt="Status: pre-mainnet" src="https://img.shields.io/badge/status-pre--mainnet-c9ff5f?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/SMART_CONTRACT.md"><img alt="EVM settlement" src="https://img.shields.io/badge/settlement-EVM-8fe9dc?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/ARCHITECTURE.md"><img alt="Builder share: 90%" src="https://img.shields.io/badge/builder_share-90%25-d6b684?style=flat-square&labelColor=090c11" /></a>
@@ -23,16 +23,17 @@
 
 ## Public deployment
 
-The static protocol preview is live at [velostra.xyz](https://velostra.xyz/).
-Netlify builds `main` with Node.js 22, runs `npm run build`, and publishes only
-`dist/` through the tracked [`netlify.toml`](./netlify.toml). `www.velostra.xyz`
-redirects to the TLS-protected apex domain.
+The public Robinhood Chain testnet is live at
+[velostra.xyz/testnet](https://velostra.xyz/testnet). Netlify builds `main` with
+Node.js 22, runs `npm run build`, and publishes only `dist/` through the tracked
+[`netlify.toml`](./netlify.toml). `www.velostra.xyz` redirects to the TLS-protected
+apex domain.
 
-This public deployment intentionally has no managed `VITE_API_URL`, escrow address,
-or settlement-token address. The landing experience, documentation, and client-side
-routing are live; API-backed marketplace data, wallet authentication, top-up, paid
-calls, claims, builder operations, and admin operations remain inactive until the
-isolated US backend/testnet deployment passes its gates.
+The production frontend is bound to the managed US testnet API, verified synthetic
+settlement token, and VelostraEscrow on chain 46630. Users can connect MetaMask or a
+compatible EIP-6963 wallet, obtain test ETH from the official faucet, mint bounded
+synthetic USDG, explore approved agents, execute paid test calls, inspect receipts,
+and exercise claims. No real funds or mainnet value are used.
 
 ## Execution should leave evidence
 
@@ -63,7 +64,8 @@ repair the exact database row after process, RPC, or database failure.
 - `/dashboard` - credits, top-up, reservations, and call history;
 - `/builder` - registration, agent submission, secret lifecycle, earnings, claim;
 - `/admin` - RBAC moderation, roles, audit, and statistics;
-- `/docs` - in-product protocol overview.
+- `/docs` - in-product protocol overview;
+- `/testnet` - public testnet onboarding, faucet, synthetic mint, and execution path.
 
 Wallet access always uses an explicit picker. MetaMask is first-class, while
 EIP-6963/injected discovery keeps Rainbow, Coinbase, and compatible browser wallets
@@ -249,18 +251,13 @@ signer, bounded web/API services, and staggered one-task jobs:
     powershell -NoProfile -File deploy/gcp/test-deployment-plan.ps1
     powershell -NoProfile -File deploy/gcp/bootstrap-staging.ps1 -ProjectId velostra-production
 
-The applied foundation, managed data plane, twelve scoped secrets, and private
-Telegram connection are active in approved US regions. Three disjoint canonical
-Safe 1.4.1 authority accounts are deployed and live-verified as 2-of-3 testnet-only
-principals; owner and deployer keys remain DPAPI-encrypted below ignored artifacts
-and are never written in plaintext. A synthetic 6-decimal token and VelostraEscrow
-are deployed on Robinhood testnet and passed bytecode, receipt, role, solvency,
-token, and authority verification. Immutable server/web images now run the private
-signer, public API, isolated staging web, migration, reconciliation, webhook, and
-monitor jobs plus staggered Scheduler triggers in us-east4. The generated web origin
-is bound to the API, deep readiness is green, anonymous signer access is rejected,
-and paid writes remain disabled. The public Netlify preview remains separate. See
-the [US staging runbook](./deploy/gcp/README.md). This path cannot target mainnet.
+The applied US foundation, managed data plane, scoped secrets, Safe authorities,
+synthetic token, VelostraEscrow, immutable signer/API/web services, migrations, and
+scheduled jobs are live on Robinhood Chain testnet. The canonical Netlify frontend
+is connected to the managed API. Deep readiness is 8/8, signer gas is healthy,
+anonymous signer access is rejected, and bounded public synthetic paid writes are
+enabled. See the [US staging runbook](./deploy/gcp/README.md). This path cannot
+target mainnet.
 
 ## Controlled release tooling
 
@@ -309,23 +306,22 @@ sentinel. See [Deployment](./docs/DEPLOYMENT.md).
 The complete chronological handoff - what shipped, what remains external, and the
 exact next sequence - is maintained in [Journey](./docs/JOURNEY.md).
 
-Phase 0-4 repository preparation is implemented and locally verified: product,
-security, exactly-once recovery, staging/observability, immutable release identity,
-guarded deployment/canary, plus the versioned builder platform, JS/Python SDKs,
-immutable revisions, signed webhook recovery, moderation, privacy, and telemetry
-governance. The public Netlify protocol preview is live at `velostra.xyz`; the
-separate US-only Robinhood testnet environment is now deployed in approved Virginia
-regions. It includes three verified Safe authorities, a verified synthetic token and
-escrow, immutable API/signer/web images, migrations, reconciliation/webhook/monitor
-jobs, Scheduler triggers, scoped secrets, and private Telegram alert delivery. API
-deep readiness passes, the signer is private, the isolated web origin is bound, and
-paid writes remain disabled.
+Phase 0-4 repository preparation and the public testnet checkpoint are complete.
+The canonical Netlify frontend is connected to the immutable US-only Robinhood Chain
+testnet runtime: three verified Safe authorities, a verified synthetic token and
+escrow, private signer, API, migrations, reconciliation/webhook/monitor jobs,
+staggered Scheduler triggers, scoped secrets, and private Telegram alert delivery.
+Deep readiness is 8/8, bounded public paid writes are enabled, signer gas satisfies
+the operational gate, and a post-open worker sweep finished with zero unexplained
+drift.
 
-No mainnet deployment, closed-beta activation, or real-value authorization is
-recorded. Real MetaMask money-loop evidence, full alert acknowledgement/resolution,
-authority/secret drills, one-hour outage, provider-native PITR, minimum 72-hour soak,
-independent review, accountable approvals, and the low-value canary remain mandatory.
-A passing canary returns PASS_AWAITING_OPERATOR and never expands traffic by itself.
+The 72-hour duration requirement was accepted for this checkpoint by explicit owner
+waiver: disposition `PASS_BY_OWNER_WAIVER`, execution `NOT_RUN`. No 72-hour telemetry
+is claimed. No mainnet deployment or real-value authorization is recorded. Mainnet
+still requires independent contract/backend review, a frozen signed release packet,
+production custody/backup/alert capacity, and a separately authorized low-value
+canary. A passing canary returns `PASS_AWAITING_OPERATOR` and never expands traffic by
+itself.
 
 ## Security
 

@@ -58,12 +58,7 @@ invariant while adding closed-beta platform capabilities.
 
 ## Exit contract
 
-Phase 4 repository completion requires fresh and upgrade migrations, API and SDK contract
-tests, concurrency/idempotency/webhook tests, browser regression gates, an isolated
-synthetic closed-beta journey, zero unexplained financial or delivery drift, and updated
-documentation. It does not authorize API-backed public traffic, closed-beta activation,
-mainnet deployment, or real value. The separate static protocol preview has no
-platform/backend authority.
+Phase 4 repository completion requires fresh and upgrade migrations, API and SDK contract tests, concurrency/idempotency/webhook tests, browser regression gates, an isolated synthetic journey, zero unexplained financial or delivery drift, and updated documentation. Those repository gates are complete and the platform is publicly usable on bounded testnet. They do not authorize mainnet or real value; backend authority remains server-side.
 
 ## Completion evidence
 

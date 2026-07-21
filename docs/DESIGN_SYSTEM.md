@@ -10,8 +10,7 @@ Velostra memakai visual language dark institutional/financial: graphite surfaces
 acid-lime signal, cool ice accent, restrained champagne detail, geometric display
 type, dense data labels, dan depth/motion yang tetap menjaga keterbacaan.
 
-Canonical public visual surface: [https://velostra.xyz/](https://velostra.xyz/). It
-is a static protocol preview; API-backed state is not part of this visual baseline.
+Canonical public visual surface: [https://velostra.xyz/testnet](https://velostra.xyz/testnet). It is the live user-facing testnet; visual regression fixtures remain deterministic and do not depend on mutable API data.
 
 ## Source files
 

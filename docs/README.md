@@ -1,17 +1,14 @@
 # Velostra documentation
 
-> Last verified against the workspace and managed staging: 2026-07-20.
+> Last verified against the workspace and public testnet: 2026-07-20.
 
 Start with [JOURNEY.md](./JOURNEY.md), [STATUS.md](./STATUS.md),
 [ROADMAP.md](./ROADMAP.md), and
 [PHASE_4_CONTRACT.md](./PHASE_4_CONTRACT.md). Phase 0-4 repository implementation
-is complete and locally cleared. Phase 3 execution and closed-beta activation remain
-gated on independent review, managed evidence, immutable release approval, and
-explicit operator authorization; no mainnet deployment is recorded.
-The static protocol preview remains live at [velostra.xyz](https://velostra.xyz/) and
-separate from a deployed US-only Robinhood-testnet backend/escrow. The staging stack
-is deep-readiness green with paid writes disabled; no closed beta, mainnet, or
-real-value flow is live.
+and the public Robinhood Chain testnet checkpoint are complete. The canonical
+`https://velostra.xyz/testnet` experience is connected to the managed US testnet
+runtime with bounded synthetic paid writes enabled. No mainnet deployment or
+real-value authorization is recorded.
 
 | Document | Purpose |
 |---|---|
@@ -59,15 +56,17 @@ or sequencing changes require a roadmap update.
 ## Scope statement
 
 The repository has passed automated and internal engineering review for Phase 0-4,
-which clears continued non-mainnet development. The static protocol preview is a
-verified public deployment, and a separate managed US testnet contract/runtime is
-also live. Three verified Safe authorities, a synthetic token and escrow, immutable
-signer/API/web services, migration, scheduled jobs, scoped secrets, and private
-Telegram delivery are active; deep readiness passes and paid writes remain disabled.
-This is not an independent audit, closed-beta approval, mainnet deployment, or
-real-value authorization. Managed wallet/reconciliation, RPC fallback, private alert
-lifecycle, provider-native PITR, and read-only control-readiness evidence are retained
-in [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md). Custody mutations, independent
-review, signed release approval, and mainnet activation remain gated. The explicitly
-waived 72-hour soak was not run and is not reported as PASS.
-Local completion never overrides activation gates.
+and the user-accessible testnet checkpoint is **PASS**. The canonical public frontend
+is connected to the managed US testnet contract/runtime. Three verified Safe
+authorities, a synthetic token and escrow, immutable signer/API/web services,
+migrations, scheduled reconciliation/webhook/monitor jobs, scoped secrets, and
+private Telegram delivery are active. Deep readiness is 8/8; bounded public paid
+writes and user onboarding are enabled; signer funding passes; and the post-open
+worker sweep reports zero unexplained drift.
+
+This is not an independent audit, mainnet deployment, or real-value authorization.
+The 72-hour item is recorded as `PASS_BY_OWNER_WAIVER` with execution `NOT_RUN`; no
+duration telemetry is claimed. Independent review, a frozen signed mainnet release,
+production custody and recovery capacity, and an explicitly authorized low-value
+mainnet canary remain required. Local or testnet completion never overrides those
+mainnet gates.

@@ -3,11 +3,7 @@
 > Last verified against server routes, middleware, and deployment status: 2026-07-20.
 > Phase state: Phase 0-4 repository implementation is complete; activation remains gated.
 > Local base URL: http://localhost:8787.
-> Managed staging API: deployed behind the isolated US testnet web origin, deep-ready,
-> and paid-write disabled. `velostra.xyz` remains a separate static protocol preview
-> with no public API binding.
-> The 2026-07-20 managed recovery evidence did not change this API contract or enable
-> public mutations; see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
+> Managed public-testnet API: live behind the canonical `velostra.xyz/testnet` surface, deep-ready 8/8, and bounded for synthetic paid writes. Server auth, quotas, receipts, and settlement remain authoritative; see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
 ## Version and response contract
 

@@ -8,8 +8,8 @@
 > three verified Safe authorities plus a synthetic 6-decimal token; 23 live bytecode,
 > receipt, role, event, token, and solvency checks pass. It is not independently
 > audited and is not deployed to mainnet.
-> The public Netlify frontend contains no escrow/token deployment addresses; only the
-> separate isolated staging web image is bound to the testnet deployment.
+> The canonical public testnet frontend contains the verified public escrow/token
+> identifiers and is bound to the managed chain-46630 API.
 > Bounded wallet/claim reconciliation and read-only authority/solvency evidence passed
 > on 2026-07-20; no custody mutation or mainnet authorization is implied. See
 > [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).

@@ -84,13 +84,7 @@ VITE_ESCROW_ADDRESS=0x...
 VITE_SETTLEMENT_TOKEN=0x...
 ```
 
-Open `http://localhost:5173`. The same static protocol preview is public at
-[https://velostra.xyz/](https://velostra.xyz/), built by Netlify from `main` using
-`netlify.toml`. The public preview has no managed API or contract build values; use
-the local environment above for full-stack development. Canonical routes include
-`/system`, `/proof`,
-`/economics`, `/marketplace`, `/agents/:slug`, `/dashboard`, `/builder`, `/admin`,
-and `/docs`. Legacy hash links are normalized to clean paths.
+Open `http://localhost:5173`. The canonical public testnet is [https://velostra.xyz/testnet](https://velostra.xyz/testnet), built by Netlify from `main` using `netlify.toml` and configured with public testnet API/contract identifiers. Use the local environment above for full-stack development. Canonical routes include `/system`, `/proof`, `/economics`, `/marketplace`, `/agents/:slug`, `/dashboard`, `/builder`, `/admin`, `/docs`, and `/testnet`. Legacy hash links are normalized to clean paths.
 
 `Connect Wallet` opens an explicit provider picker. MetaMask has a first-class
 connector; Rainbow, Coinbase, and other wallets may appear through EIP-6963/
@@ -201,11 +195,7 @@ ignored authority/deployment records without decrypting keys:
     npm run test:testnet-authorities
     powershell -NoProfile -File deploy/gcp/check-testnet-authorities.ps1
 
-Deep readiness, origin binding, signer privacy, and scheduled-worker entrypoints have
-passed while paid writes remain disabled. Follow
-[the US staging runbook](../deploy/gcp/README.md) for idempotent redeploy and the
-remaining real-wallet/alert/outage/PITR/soak evidence. Use only approved US regions
-and Robinhood testnet chain 46630. Never use mainnet or real value for this path.
+Deep readiness 8/8, origin binding, signer privacy, bounded public mode, and scheduled-worker entrypoints pass. Follow [the US staging runbook](../deploy/gcp/README.md) for idempotent redeploy and public open/close control. Use only approved US regions and Robinhood Chain testnet 46630. Never use mainnet or real value for this path.
 
 ## Phase 3 release preparation
 

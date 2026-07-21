@@ -231,6 +231,7 @@ export default function AgentDetail() {
                   <p className="form-message form-message--notice"><Activity size={14} /> {recoveryMessage}</p>
                   <div className="action-row">
                     {lastCallId && <span className="mono">CALL {lastCallId}</span>}
+                    <Link className="btn btn--ghost btn--small" to="/dashboard">View in dashboard</Link>
                     {pendingTxHash && (
                       <a className="btn btn--ghost btn--small" href={ROBINHOOD_EXPLORER_URL + '/tx/' + pendingTxHash} target="_blank" rel="noreferrer">
                         Inspect settlement <ArrowUpRight size={13} />

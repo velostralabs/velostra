@@ -82,6 +82,22 @@ test('injected wallet covers reject, reconnect, chain recovery, auth, money, and
   await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()
 })
 
+test('one wallet verification synchronizes every protected surface on the page', async ({ page }) => {
+  const state = createProductState()
+  await installInjectedWallet(page)
+  await installProductApi(page, state)
+
+  await page.goto('/agents/flowbook-trader')
+  const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' })
+  await primaryNavigation.getByRole('button', { name: 'Connect Wallet' }).click()
+  await page.getByRole('button', { name: /Other browser wallet/i }).click()
+
+  await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toHaveCount(2)
+  await page.getByRole('button', { name: 'Sign in securely' }).first().click()
+  await expect(page.getByRole('button', { name: 'Run · $0.30' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Report this agent' })).toBeVisible()
+})
+
 test('public testnet onboarding mints synthetic USDG and links the official faucet', async ({ page }) => {
   const state = createProductState()
   await installInjectedWallet(page)

@@ -41,6 +41,12 @@ export function useVelostraAuth() {
 
   useEffect(() => { void refresh() }, [refresh])
 
+  useEffect(() => {
+    const synchronize = () => void refresh()
+    window.addEventListener('velostra:auth-changed', synchronize)
+    return () => window.removeEventListener('velostra:auth-changed', synchronize)
+  }, [refresh])
+
   const signIn = useCallback(async () => {
     if (!address || !correctNetwork) return
     const expectedAddress = address
@@ -69,6 +75,7 @@ export function useVelostraAuth() {
         throw new Error('The verified session does not match the active wallet.')
       }
       setAuth(user)
+      window.dispatchEvent(new Event('velostra:auth-changed'))
     } catch (signInError) {
       setAuth(null)
       setError(signInError instanceof Error ? signInError.message : 'Wallet verification failed')
@@ -82,6 +89,7 @@ export function useVelostraAuth() {
       await api.post('/api/auth/logout')
     } finally {
       setAuth(null)
+      window.dispatchEvent(new Event('velostra:auth-changed'))
     }
   }, [])
 

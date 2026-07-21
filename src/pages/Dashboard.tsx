@@ -69,6 +69,13 @@ function DashboardContent() {
     void load()
   }, [load])
 
+  const hasProcessingCalls = data?.recent_calls.some((call) => call.status === 'PROCESSING') ?? false
+  useEffect(() => {
+    if (!hasProcessingCalls) return
+    const interval = window.setInterval(() => void load(), 5_000)
+    return () => window.clearInterval(interval)
+  }, [hasProcessingCalls, load])
+
   useEffect(() => {
     if (!approvalReceipt || !pendingTopUp || !approvalHash) return
     if (approvalHandled.current === approvalHash) return

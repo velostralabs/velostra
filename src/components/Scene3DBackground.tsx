@@ -366,7 +366,7 @@ export default function Scene3DBackground() {
       input.current.y = -((event.clientY / window.innerHeight) * 2 - 1)
     }
     const handleInteraction = () => {
-      pauseUntil.current = performance.now() + 520
+      pauseUntil.current = performance.now() + 120
     }
     const handleScroll = () => {
       if (!intersecting) return
@@ -399,11 +399,11 @@ export default function Scene3DBackground() {
     <div ref={rootRef} className="scene3d" aria-hidden="true">
       <Canvas
         camera={{ position: [0, 0.05, 10.6], fov: 39 }}
-        dpr={[1.25, 2]}
+        dpr={[1.4, 2]}
         frameloop="demand"
         performance={{ min: 0.72 }}
         resize={{ debounce: 0 }}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', precision: 'highp' }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace
           gl.toneMapping = THREE.ACESFilmicToneMapping

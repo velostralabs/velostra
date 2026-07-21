@@ -96,11 +96,14 @@ test('critical desktop layouts have no viewport overflow or known text collision
 
       const ninety = document.querySelector<HTMLElement>('.econ__big-number strong')?.getBoundingClientRect()
       const percent = document.querySelector<HTMLElement>('.econ__big-number sup')?.getBoundingClientRect()
+      const atlasCopy = document.querySelector<HTMLElement>('.atlas__field-copy p')?.getBoundingClientRect()
+      const atlasRoute = document.querySelector<HTMLElement>('.atlas__route')?.getBoundingClientRect()
       return {
         documentOverflow,
         clippedControls,
         filterLabelsClear: filters.every(Boolean),
         economicsMarkClear: ninety && percent ? ninety.right <= percent.left + 1 : true,
+        atlasCopyClear: atlasCopy && atlasRoute ? atlasCopy.bottom <= atlasRoute.top : true,
       }
     })
     expect(diagnostics, `${route}: ${JSON.stringify(diagnostics)}`).toEqual({
@@ -108,8 +111,21 @@ test('critical desktop layouts have no viewport overflow or known text collision
       clippedControls: [],
       filterLabelsClear: true,
       economicsMarkClear: true,
+      atlasCopyClear: true,
     })
   }
+})
+
+test('hero WebGL surface renders above CSS resolution', async ({ page }) => {
+  await page.goto('/')
+  const canvas = page.locator('.scene3d canvas')
+  await expect(canvas).toBeVisible()
+  const renderScale = await canvas.evaluate((element) => {
+    const rect = element.getBoundingClientRect()
+    return Math.min(element.width / rect.width, element.height / rect.height)
+  })
+  expect(renderScale).toBeGreaterThanOrEqual(1.35)
+  expect(renderScale).toBeLessThanOrEqual(2.01)
 })
 
 test('home and marketplace retain approved desktop visual baselines', async ({ page }) => {

@@ -14,14 +14,14 @@ export default function PageTransition({ children }: { children: ReactNode }) {
         initial={{ scaleX: 1 }}
         animate={{ scaleX: 0 }}
         exit={{ scaleX: 1 }}
-        transition={{ duration: 0.92, delay: 0.04, ease: [0.76, 0, 0.24, 1] }}
+        transition={{ duration: 0.72, delay: 0.02, ease: [0.76, 0, 0.24, 1] }}
       />
       <motion.div
         className="page-transition__veil page-transition__veil--main"
         initial={{ scaleX: 1 }}
         animate={{ scaleX: 0 }}
         exit={{ scaleX: 1 }}
-        transition={{ duration: 0.78, ease: [0.76, 0, 0.24, 1] }}
+        transition={{ duration: 0.62, ease: [0.76, 0, 0.24, 1] }}
       >
         <motion.div
           className="page-transition__signature"
@@ -36,10 +36,10 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       </motion.div>
       <motion.div
         className="page-transition__content"
-        initial={{ opacity: 0, y: 24, scale: 0.992, filter: 'blur(9px)', clipPath: 'inset(0 0 7% 0)' }}
-        animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)', clipPath: 'inset(0 0 0% 0)' }}
-        exit={{ opacity: 0, y: -14, scale: 0.996, filter: 'blur(5px)', clipPath: 'inset(5% 0 0 0)' }}
-        transition={{ duration: 0.84, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0, y: 18, scale: 0.996, clipPath: 'inset(0 0 3% 0)' }}
+        animate={{ opacity: 1, y: 0, scale: 1, clipPath: 'inset(0 0 0% 0)' }}
+        exit={{ opacity: 0, y: -10, scale: 0.998, clipPath: 'inset(3% 0 0 0)' }}
+        transition={{ duration: 0.68, delay: 0.04, ease: [0.16, 1, 0.3, 1] }}
       >
         {children}
       </motion.div>

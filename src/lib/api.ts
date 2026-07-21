@@ -5,14 +5,29 @@ export class ApiError extends Error {
   readonly code: string
   readonly requestId?: string
   readonly details?: unknown
+  readonly callId?: string
+  readonly transactionHash?: string
+  readonly reconciliationPending: boolean
 
-  constructor(input: { status: number; code: string; message: string; requestId?: string; details?: unknown }) {
+  constructor(input: {
+    status: number
+    code: string
+    message: string
+    requestId?: string
+    details?: unknown
+    callId?: string
+    transactionHash?: string
+    reconciliationPending?: boolean
+  }) {
     super(input.message)
     this.name = 'ApiError'
     this.status = input.status
     this.code = input.code
     this.requestId = input.requestId
     this.details = input.details
+    this.callId = input.callId
+    this.transactionHash = input.transactionHash
+    this.reconciliationPending = input.reconciliationPending ?? false
   }
 }
 
@@ -44,6 +59,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       message: typeof data.error === 'string' ? data.error : `Request failed (${res.status})`,
       requestId: typeof data.request_id === 'string' ? data.request_id : undefined,
       details: data.details,
+      callId: typeof data.call_id === 'string' ? data.call_id : undefined,
+      transactionHash: typeof data.settlement_tx_hash === 'string' ? data.settlement_tx_hash : undefined,
+      reconciliationPending: data.reconciliation_pending === true,
     })
   }
   return data as T

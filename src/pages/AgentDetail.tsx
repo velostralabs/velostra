@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, BadgeCheck, Play, Star } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, BadgeCheck, Play, Star } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
-import { api, createIdempotencyKey, v1 } from '../lib/api'
+import { ApiError, api, createIdempotencyKey, v1 } from '../lib/api'
+import { ROBINHOOD_EXPLORER_URL } from '../lib/chain'
 
 interface AgentDetailData {
   id: string
@@ -18,6 +19,18 @@ interface AgentDetailData {
   reviews: Array<{ id: string; rating: number; comment?: string | null }>
 }
 
+interface CallRecoveryStatus {
+  id: string
+  status: 'PROCESSING' | 'SUCCESS' | 'FAILED'
+  output: unknown
+  settlement: null | {
+    status: string
+    tx_hash: string | null
+    block_number: string | null
+    updated_at: string
+  }
+}
+
 export default function AgentDetail() {
   const { slug } = useParams<{ slug: string }>()
   const [agent, setAgent] = useState<AgentDetailData | null>(null)
@@ -27,6 +40,9 @@ export default function AgentDetail() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [runError, setRunError] = useState<string | null>(null)
   const [lastCallId, setLastCallId] = useState<string | null>(null)
+  const [pendingCallId, setPendingCallId] = useState<string | null>(null)
+  const [pendingTxHash, setPendingTxHash] = useState<string | null>(null)
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null)
   const [reportReason, setReportReason] = useState('NOT_WORKING')
   const [reportDescription, setReportDescription] = useState('')
   const [reporting, setReporting] = useState(false)
@@ -48,11 +64,69 @@ export default function AgentDetail() {
     return () => controller.abort()
   }, [slug])
 
+  useEffect(() => {
+    if (!pendingCallId) return
+
+    let cancelled = false
+    let timer: number | undefined
+    let checks = 0
+
+    const poll = async () => {
+      try {
+        const response = await v1.get<{ call: CallRecoveryStatus }>(
+          '/dashboard/calls/' + encodeURIComponent(pendingCallId)
+        )
+        if (cancelled) return
+        const call = response.data.call
+        if (call.settlement?.tx_hash) setPendingTxHash(call.settlement.tx_hash)
+
+        if (call.status === 'SUCCESS') {
+          setOutput(JSON.stringify(call.output, null, 2))
+          setPendingCallId(null)
+          setRecoveryMessage('Execution recovered and settled without resubmitting your work.')
+          return
+        }
+        if (call.status === 'FAILED') {
+          setPendingCallId(null)
+          setRecoveryMessage(null)
+          setRunError('Execution reached a definitive failed state. Your request was not resubmitted.')
+          return
+        }
+
+        checks += 1
+        if (checks >= 120) {
+          setRecoveryMessage(
+            'Recovery is still in progress. Keep this call ID; the system will continue reconciling it without a second charge.'
+          )
+          return
+        }
+      } catch (pollError) {
+        if (cancelled) return
+        if (pollError instanceof ApiError && pollError.status === 404) {
+          setPendingCallId(null)
+          setRecoveryMessage(null)
+          setRunError('This call is not available to the connected wallet. Verify the active wallet and session.')
+          return
+        }
+        setRecoveryMessage('Recovery status is temporarily unavailable. Retrying the same call automatically.')
+      }
+      timer = window.setTimeout(() => void poll(), 2500)
+    }
+
+    void poll()
+    return () => {
+      cancelled = true
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [pendingCallId])
+
   async function run() {
-    if (!slug || !input.trim()) return
+    if (!slug || !input.trim() || pendingCallId) return
     setRunning(true)
     setRunError(null)
     setOutput(null)
+    setRecoveryMessage(null)
+    setPendingTxHash(null)
     try {
       const response = await v1.post<{ call_id: string; output: unknown }>(
         '/agents/' + slug + '/run',
@@ -62,7 +136,16 @@ export default function AgentDetail() {
       setLastCallId(response.data.call_id)
       setOutput(JSON.stringify(response.data.output, null, 2))
     } catch (error) {
-      setRunError(error instanceof Error ? error.message : 'Run failed')
+      if (error instanceof ApiError && error.reconciliationPending && error.callId) {
+        setLastCallId(error.callId)
+        setPendingCallId(error.callId)
+        setPendingTxHash(error.transactionHash ?? null)
+        setRecoveryMessage(
+          'The chain result is being reconciled. Velostra is tracking this exact call; do not submit it again.'
+        )
+      } else {
+        setRunError(error instanceof Error ? error.message : 'Run failed')
+      }
     } finally {
       setRunning(false)
     }
@@ -138,11 +221,24 @@ export default function AgentDetail() {
                   placeholder="Describe the outcome you need…"
                 />
               </div>
-              <button type="button" className="btn btn--primary" onClick={run} disabled={running || !input.trim()}>
+              <button type="button" className="btn btn--primary" onClick={run} disabled={running || Boolean(pendingCallId) || !input.trim()}>
                 <Play size={15} fill="currentColor" />
-                {running ? 'Executing…' : 'Run · $' + agent.price_per_call.toFixed(2)}
+                {running ? 'Executing…' : pendingCallId ? 'Reconciling…' : 'Run · $' + agent.price_per_call.toFixed(2)}
               </button>
               {runError && <p className="form-message form-message--error">{runError}</p>}
+              {recoveryMessage && (
+                <div className="recovery-message" role="status" aria-live="polite">
+                  <p className="form-message form-message--notice"><Activity size={14} /> {recoveryMessage}</p>
+                  <div className="action-row">
+                    {lastCallId && <span className="mono">CALL {lastCallId}</span>}
+                    {pendingTxHash && (
+                      <a className="btn btn--ghost btn--small" href={ROBINHOOD_EXPLORER_URL + '/tx/' + pendingTxHash} target="_blank" rel="noreferrer">
+                        Inspect settlement <ArrowUpRight size={13} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
               {output && <pre className="mono output-block">{output}</pre>}
             </section>
           )}

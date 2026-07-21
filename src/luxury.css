@@ -1247,6 +1247,26 @@ body {
   margin-top: 0;
 }
 
+.form-message--notice a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  color: var(--ice);
+}
+
+.recovery-message .action-row {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.recovery-message .action-row > .mono {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: var(--text-2);
+  font-size: 9px;
+}
+
 .secret-note {
   max-width: 720px;
   margin-bottom: 14px;

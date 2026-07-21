@@ -12,7 +12,7 @@ export default function SignInGate({
   requireBuilder?: boolean
   requireAdmin?: boolean
 }) {
-  const { auth, isConnected, loading, signingIn, error, signIn } = useVelostraAuth()
+  const { auth, isConnected, correctNetwork, loading, signingIn, error, signIn } = useVelostraAuth()
 
   if (loading) return <div className="auth-skeleton"><i /><span className="mono">Checking session</span></div>
 
@@ -23,6 +23,18 @@ export default function SignInGate({
         <span className="mono">WALLET REQUIRED</span>
         <h2>Connect to continue</h2>
         <p>Connect a Robinhood Chain wallet to access this execution surface.</p>
+        <WalletButton />
+      </div>
+    )
+  }
+
+  if (!correctNetwork) {
+    return (
+      <div className="panel auth-gate">
+        <span className="auth-gate__icon"><WalletCards size={21} strokeWidth={1.5} /></span>
+        <span className="mono">NETWORK REQUIRED</span>
+        <h2>Switch network to continue</h2>
+        <p>The active wallet must use the configured Robinhood Chain before session verification or paid actions.</p>
         <WalletButton />
       </div>
     )

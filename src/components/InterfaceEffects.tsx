@@ -74,7 +74,6 @@ export default function InterfaceEffects() {
             style={{ x: cursorX, y: cursorY, scale: cursorScale, opacity: cursorOpacity }}
             aria-hidden="true"
           ><i /></motion.div>
-          <div className="interface-scan" aria-hidden="true" />
         </>
       )}
       <motion.div className="scroll-progress" style={{ scaleX: progress }} aria-hidden="true" />

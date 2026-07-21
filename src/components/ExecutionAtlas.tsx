@@ -151,7 +151,7 @@ export default function ExecutionAtlas() {
                   <motion.div
                     className={`atlas__feed-row ${active ? 'atlas__feed-row--active' : ''}`}
                     key={call.id}
-                    animate={{ opacity: active ? 1 : 0.56 }}
+                    animate={{ opacity: active ? 1 : 0.72 }}
                     transition={{ duration: 0.45 }}
                   >
                     <span className="mono">{call.id}</span>

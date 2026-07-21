@@ -2,7 +2,7 @@
   position: relative;
   width: min(1480px, 100%);
   margin: 18px auto 0;
-  padding: 64px 34px 38px;
+  padding: 48px 34px 30px;
   overflow: clip;
   perspective: 1600px;
 }
@@ -68,7 +68,7 @@
   align-items: center;
   gap: 8px;
   color: #8b948f;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
 }
 
@@ -229,7 +229,7 @@
 .atlas__feed-columns {
   min-height: 42px;
   padding: 0 22px;
-  color: #4f5854;
+  color: #626c66;
   border-bottom: 1px solid var(--border-hair);
   font-size: 7px;
   letter-spacing: 0.13em;
@@ -242,14 +242,14 @@
   min-height: 70px;
   padding: 0 22px;
   overflow: hidden;
-  color: #78827d;
+  color: #89938d;
   border-bottom: 1px solid rgba(232, 238, 232, 0.05);
-  font-size: 9px;
+  font-size: 10px;
   transition: color 380ms ease, background-color 380ms ease;
 }
 
 .atlas__feed-row:last-child { border-bottom: 0; }
-.atlas__feed-row strong { color: #aeb6b1; font-size: 12px; font-weight: 600; }
+.atlas__feed-row strong { color: #c0c8c2; font-size: 13px; font-weight: 600; }
 
 .atlas__feed-row--active {
   color: #dfe4de;

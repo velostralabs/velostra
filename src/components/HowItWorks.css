@@ -3,7 +3,7 @@
   z-index: 2;
   width: min(1420px, 100%);
   margin: 0 auto;
-  padding: 150px 42px;
+  padding: 116px 42px;
   display: grid;
   grid-template-columns: minmax(390px, 0.78fr) minmax(560px, 1.22fr);
   gap: clamp(56px, 8vw, 126px);

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import { Activity, ArrowLeft, ArrowUpRight, BadgeCheck, Play, Star } from 'lucide-react'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Activity, ArrowLeft, ArrowUpRight, BadgeCheck, FlaskConical, Play, ShieldCheck, Star } from 'lucide-react'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
+import { testnetDemoAgentForSlug } from '../data/testnetDemoAgents'
 import { ApiError, api, createIdempotencyKey, v1 } from '../lib/api'
 import { ROBINHOOD_EXPLORER_URL } from '../lib/chain'
 import { applyPageMetadata } from '../lib/metadata'
@@ -34,6 +35,10 @@ interface CallRecoveryStatus {
 
 export default function AgentDetail() {
   const { slug } = useParams<{ slug: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const demoAgent = testnetDemoAgentForSlug(slug)
+  const requestedScenarioId = searchParams.get('scenario')
   const [agent, setAgent] = useState<AgentDetailData | null>(null)
   const [input, setInput] = useState('')
   const [output, setOutput] = useState<string | null>(null)
@@ -68,6 +73,11 @@ export default function AgentDetail() {
       })
     return () => controller.abort()
   }, [slug])
+
+  useEffect(() => {
+    if (!demoAgent || requestedScenarioId !== demoAgent.scenario.id) return
+    setInput((current) => current || demoAgent.scenario.prompt)
+  }, [demoAgent, requestedScenarioId])
 
   useEffect(() => {
     if (!pendingCallId) return
@@ -124,6 +134,16 @@ export default function AgentDetail() {
       if (timer !== undefined) window.clearTimeout(timer)
     }
   }, [pendingCallId])
+
+  function loadDemoScenario() {
+    if (!demoAgent) return
+    setInput(demoAgent.scenario.prompt)
+    setSearchParams({ scenario: demoAgent.scenario.id }, { replace: true })
+    window.requestAnimationFrame(() => {
+      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      inputRef.current?.focus({ preventScroll: true })
+    })
+  }
 
   async function run() {
     if (!slug || !input.trim() || pendingCallId) return
@@ -208,6 +228,47 @@ export default function AgentDetail() {
         </div>
       </div>
 
+      {demoAgent && (
+        <section className="panel demo-playbook" aria-labelledby="demo-playbook-title">
+          <div className="demo-playbook__heading">
+            <div>
+              <span className="section-eyebrow"><FlaskConical size={13} /> Deterministic testnet demo</span>
+              <h2 id="demo-playbook-title">{demoAgent.scenario.title}</h2>
+            </div>
+            <span className="badge badge--success">Runnable</span>
+          </div>
+          <div className="demo-playbook__grid">
+            <article>
+              <span className="mono">SUGGESTED INPUT</span>
+              <p>{demoAgent.scenario.prompt}</p>
+              <button
+                type="button"
+                className="btn btn--primary"
+                onClick={loadDemoScenario}
+                aria-pressed={requestedScenarioId === demoAgent.scenario.id && input === demoAgent.scenario.prompt}
+              >
+                <Play size={14} fill="currentColor" />
+                {input === demoAgent.scenario.prompt ? 'Scenario loaded' : 'Load verified scenario'}
+              </button>
+            </article>
+            <aside>
+              <div>
+                <span className="mono">01 / EXECUTE</span>
+                <p>{demoAgent.scenario.outcome}</p>
+              </div>
+              <div>
+                <span className="mono">02 / VERIFY</span>
+                <p>{demoAgent.scenario.proof}</p>
+              </div>
+              <div>
+                <span className="mono"><ShieldCheck size={12} /> SAFETY BOUNDARY</span>
+                <p>Synthetic output only. No live trade, no custody, and no wallet secret is requested.</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+      )}
+
       <div className="agent-layout">
         <SignInGate>
           {() => (
@@ -219,6 +280,7 @@ export default function AgentDetail() {
               <div className="field-row">
                 <label htmlFor="agent-input">Input</label>
                 <textarea
+                  ref={inputRef}
                   id="agent-input"
                   value={input}
                   onChange={(event) => setInput(event.target.value)}

@@ -172,7 +172,7 @@ test('homepage execution and settlement controls update their correlated evidenc
 })
 
 test('public internal links stay on canonical clean routes', async ({ page }) => {
-  const allowedRoute = /^\/(?:$|index$|system$|proof$|economics$|marketplace(?:\?.*)?$|agents\/[^/?#]+$|dashboard$|builder$|admin$|docs$|testnet$)/
+  const allowedRoute = /^\/(?:$|index$|system$|proof$|economics$|marketplace(?:\?.*)?$|agents\/[^/?#]+(?:\?.*)?$|dashboard$|builder$|admin$|docs$|testnet$)/
 
   for (const route of criticalRoutes) {
     await page.goto(route)
@@ -213,7 +213,7 @@ test('home and marketplace retain approved desktop visual baselines', async ({ p
 test('canonical routes survive direct refresh and browser history', async ({ page }) => {
   await page.goto('/marketplace?q=flowbook&category=TRADING&sort=popular')
   await expect(page.getByLabel('Search agents')).toHaveValue('flowbook')
-  await page.getByRole('link', { name: /Flowbook Trader/i }).click()
+  await page.locator('.mkt__card').getByRole('heading', { name: 'Flowbook Trader' }).click()
   await expect(page).toHaveURL(/\/agents\/flowbook-trader$/)
   await page.goBack()
   await expect(page).toHaveURL(/\/marketplace\?q=flowbook&category=TRADING&sort=popular$/)
@@ -243,6 +243,24 @@ test('rapid marketplace filter changes preserve the complete URL state', async (
   await page.getByRole('button', { name: 'Reset filters' }).click()
   await expect(page).toHaveURL('/marketplace')
 })
+
+test('public testnet demo catalog opens a real prefilled scenario playbook', async ({ page }) => {
+  await page.goto('/marketplace')
+
+  const lab = page.getByRole('region', { name: 'Start with a scenario, not a blank prompt.' })
+  await expect(lab).toBeVisible()
+  await expect(lab.getByRole('link')).toHaveCount(4)
+
+  await lab.getByRole('link', { name: /Open Flowbook Trader scenario/i }).click()
+  await expect(page).toHaveURL('/agents/flowbook-trader?scenario=market-brief')
+  await expect(page.getByRole('heading', { level: 2, name: 'Price a disciplined market brief' })).toBeVisible()
+
+  const loaded = page.getByRole('button', { name: 'Scenario loaded' })
+  await expect(loaded).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByText(/No live trade, no custody, and no wallet secret/i)).toBeVisible()
+  await expect(page.locator('pre.output-block')).toHaveCount(0)
+})
+
 test('semantic section routes align the requested content below the fixed navigation', async ({ page }) => {
   await page.goto('/economics')
   await expect(page.locator('#economics')).toBeVisible()

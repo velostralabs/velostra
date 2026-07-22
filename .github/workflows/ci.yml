@@ -27,6 +27,7 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run test:privacy
       - run: npm run test:social-assets
+      - run: npm run test:demo-agents
       - run: npm run test:hosting
       - run: npm run audit:metamask
       - run: npm run test:phase2-evidence
@@ -121,6 +122,7 @@ jobs:
       - run: npm run test:authority
       - run: npm run test:observability
       - run: npm run test:resilience
+      - run: npm run test:synthetic-agent
       - run: npm run authority:validate -- ../deploy/staging/authority-policy.example.json
       - run: npm run test:phase4-platform
       - run: npm run test:admin-policy

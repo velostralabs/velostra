@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowUpRight, FlaskConical, Search, SlidersHorizontal, X } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import PageShell from '../components/PageShell'
+import { TESTNET_DEMO_AGENTS } from '../data/testnetDemoAgents'
 import { api, type AgentSummary } from '../lib/api'
 import '../components/MarketplacePreview.css'
 
@@ -230,6 +231,52 @@ export default function Marketplace() {
             </motion.div>
           ))}
         </div>
+      )}
+
+      {!loading && !error && (
+        <section className="panel demo-lab" aria-labelledby="demo-lab-title">
+        <div className="demo-lab__heading">
+          <div>
+            <span className="section-eyebrow"><FlaskConical size={13} /> Public testnet lab</span>
+            <h2 id="demo-lab-title">Start with a scenario, not a blank prompt.</h2>
+          </div>
+          <p>
+            Every scenario is deterministic demonstration data. Choose one to prefill
+            a real Velostra execution path, then inspect its correlated receipt.
+          </p>
+        </div>
+        <div className="demo-lab__grid">
+          {TESTNET_DEMO_AGENTS.map((demo, index) => (
+            <motion.div
+              key={demo.slug}
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={{ duration: 0.38, delay: index * 0.04 }}
+            >
+              <Link
+                className="demo-lab__card"
+                to={`/agents/${demo.slug}?scenario=${demo.scenario.id}`}
+                aria-label={`Open ${demo.name} scenario: ${demo.scenario.title}`}
+              >
+                <div className="demo-lab__card-top">
+                  <span className="mono">0{index + 1} / {demo.category}</span>
+                  <span className="demo-lab__price mono">{'$' + demo.price.toFixed(2)}</span>
+                </div>
+                <h3>{demo.scenario.title}</h3>
+                <p>{demo.summary}</p>
+                <div className="demo-lab__card-foot">
+                  <span>{demo.name}</span>
+                  <span>Load scenario <ArrowUpRight size={13} /></span>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+        <p className="demo-lab__disclaimer mono">
+          SYNTHETIC OUTPUT / NO LIVE TRADES / NEVER SHARE A PRIVATE KEY OR SEED PHRASE
+        </p>
+        </section>
       )}
     </PageShell>
   )

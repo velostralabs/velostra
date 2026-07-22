@@ -45,6 +45,7 @@
     "performance:build": "node scripts/check-performance-budget.mjs",
     "test:privacy": "node scripts/check-public-privacy.mjs",
     "test:social-assets": "node scripts/check-social-assets.mjs",
+    "test:hosting": "node scripts/check-hosting-config.mjs",
     "audit:metamask": "node scripts/check-metamask-advisory-reachability.mjs",
     "phase2:load": "node scripts/run-phase2-load.mjs",
     "phase2:soak": "node scripts/run-phase2-soak.mjs",

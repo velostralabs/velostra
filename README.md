@@ -71,13 +71,13 @@ repair the exact database row after process, RPC, or database failure.
 - `/docs` - in-product protocol overview;
 - `/testnet` - public testnet onboarding, faucet, synthetic mint, and execution path.
 
-The next RC adds four deterministic demo playbooks to `/marketplace`: Flowbook
+The managed public testnet includes four deterministic demo playbooks in `/marketplace`: Flowbook
 Trader, Wallet Sentinel, TokenScope, and Contract Lens. A scenario link uses
 `/agents/:slug?scenario=:id` to prefill a safe synthetic prompt; it never runs or
 charges automatically. The stateless service returns correlated public-testnet proof,
-declares input non-retention, and rejects unknown profile paths. Deployment is
-truth-bound: the UI is not considered live until the immutable runtime and idempotent
-catalog seed have been published and smoke-tested.
+declares input non-retention, and rejects unknown profile paths. The immutable US
+testnet runtime, idempotent catalog seed, live browser catalog, and a dedicated
+MetaMask paid-call smoke passed on 2026-07-22.
 
 
 Wallet access always uses an explicit picker. MetaMask is first-class, while

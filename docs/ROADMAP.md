@@ -441,9 +441,13 @@ below are recurring operations only; none is an unimplemented testnet deliverabl
 - [x] Add release-bound idempotent seed logic without changing the retained canary.
 - [x] Add marketplace playbooks, clean scenario URLs, safety boundaries, and no-auto-run behavior.
 - [x] Add catalog-drift, HTTP/privacy, browser, accessibility, routing, visual, lint, and build gates.
-- [ ] After owner approval, publish the micro-commits, deploy an immutable US testnet
+- [x] After owner approval, publish the micro-commits, deploy an immutable US testnet
   runtime, run the catalog seed, and capture managed browser plus paid-call smoke.
-- [ ] Only after that evidence, mark the four profiles managed-live in status and journey docs.
+- [x] Only after that evidence, mark the four profiles managed-live in status and journey docs.
+
+Managed result: **PASS on 2026-07-22**. The reusable public smoke performs one
+Wallet Sentinel paid call without top-up, claim, or write-mode transition. Repeat it
+as maintenance after future immutable runtime changes.
 
 
 ### Mainnet migration lane (only remaining release work)

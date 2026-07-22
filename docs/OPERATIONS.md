@@ -350,9 +350,18 @@ existing agent or immutable revision differs:
 
     powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
 
-This step does not enable the API paid path. The bounded MetaMask path has run; use the
-exact read-only verifier as the recovery authority and keep the original browser
-timeout artifacts unchanged.
+This step does not enable the API paid path. After public mode is opened through
+`set-public-testnet.ps1`, repeat the catalog smoke with the dedicated wallet:
+
+    powershell -NoProfile -File deploy/gcp/run-paid-canary.ps1 -PublicPaidCallOnly -Apply
+
+The public mode requires the ignored runtime artifact to report US chain 46630 and
+`paidWritesMode=public`. It performs a preflight and exactly one Wallet Sentinel paid
+call. It sends no top-up or claim and never opens/closes paid writes. Its redacted
+ignored evidence is `artifacts/staging/evidence/public-demo-paid-call.json`.
+
+The earlier bounded MetaMask path also remains retained; use the exact read-only claim
+verifier as its recovery authority and keep the original browser timeout artifacts unchanged.
 
     powershell -NoProfile -File deploy/gcp/check-staging-claim.ps1
     powershell -NoProfile -File deploy/gcp/capture-alert-lifecycle.ps1

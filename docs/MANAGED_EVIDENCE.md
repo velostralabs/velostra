@@ -1,6 +1,6 @@
 # Managed staging evidence
 
-> Evidence captured: 2026-07-20.
+> Evidence captured: 2026-07-22.
 > Scope: isolated US-only Robinhood testnet staging. This document records redacted
 > operational truth; raw provider identifiers, wallet addresses, transaction hashes,
 > credentials, and private operator identity remain below ignored artifacts.
@@ -22,6 +22,7 @@ credentials, and private operator identity remain outside tracked files.
 | Operator control readiness | PASS | Safe, role, signer-isolation, solvency, alert, region, and fail-closed checks are live and redacted. |
 | One-hour reconciliation outage | PASS | Catch-up reached safe head with zero duplicate money, pending work, skipped range, or drift; scheduling returned enabled. |
 | Public testnet opening | PASS | Immutable release, signer gas, deep readiness, bounded policy, live onboarding, and post-open repair/delivery/monitoring passed. |
+| Public demo catalog | PASS | Four playbooks are managed-live; catalog/route/privacy checks and a real MetaMask paid call passed without a top-up, claim, or mode transition. |
 | Minimum 72-hour soak | PASS_BY_OWNER_WAIVER | Execution `NOT_RUN`; explicit owner waiver accepted this checkpoint; no duration telemetry is claimed. |
 | Independent third-party audit | NOT PERFORMED | No independent security or contract audit is claimed; required before mainnet. |
 
@@ -42,6 +43,23 @@ they are not rewritten into false passes.
 The restricted signer was refilled from the official testnet faucet and now satisfies
 the bounded operational gas target. Public opening rechecked this evidence before
 changing paid-write mode; no signer address or source identity is tracked here.
+
+## Public demo catalog truth
+
+The release-bound seed retained the original canary and provisioned Flowbook Trader,
+Wallet Sentinel, TokenScope, and Contract Lens with approved immutable revisions. A
+live marketplace read verified all five slugs, the four public prices, scenario URLs,
+and safety copy. Direct calls to every isolated endpoint returned deterministic chain
+46630 proof with the submitted sentinel absent and `input_retained` false.
+
+The first full MetaMask journey timed out after the top-up confirmations while its UI
+was still polling. It remains a failed wrapper result. Reconciliation ran before any
+retry and the database showed one recovered top-up, no paid call, and no claim. The
+follow-up paid-call-only smoke used that existing synthetic balance and completed a
+Wallet Sentinel call. Database verification proved one `SUCCESS` row, one 0.20 user
+debit, and one 0.18 builder credit. The packaged repeat also passed and retained only
+a redacted ignored artifact. It does not top up, claim, change public mode, expose an
+operator identifier, or grant mainnet authority.
 
 ## Alert and operator truth
 

@@ -266,6 +266,21 @@ completed the chain-confirmed state and the retained read-only verifier proves o
 matching claim receipt/event, exact database/chain totals, and disabled paid writes.
 This reconciled proof is the current money-path authority.
 
+The 2026-07-22 demo-catalog release adds a narrower repeatable public smoke. The first
+full wallet attempt confirmed its MetaMask actions but timed out before the top-up UI
+reached its terminal state. No blind retry occurred: reconciliation ran first, then
+Postgres showed the test balance increased exactly once and no new agent call or claim.
+The paid-call-only path then signed in the dedicated wallet and ran Wallet Sentinel
+without another top-up, claim, or write-mode transition. It passed twice: once while
+validating the new browser branch and once through the packaged operator command.
+The first paid call was additionally checked in Postgres as exactly one `SUCCESS`
+call, a 0.20 user debit, and a 0.18 builder credit.
+
+Repeat the safe public smoke only while the ignored runtime artifact reports bounded
+public mode:
+
+    powershell -NoProfile -File deploy/gcp/run-paid-canary.ps1 -PublicPaidCallOnly -Apply
+
 The managed skipped-report repair is separately evidenced and passed on 2026-07-19.
 The guarded runner deliberately sends a direct synthetic-token escrow deposit without
 calling `/api/dashboard/topup`, verifies the missing Postgres row, runs one

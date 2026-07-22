@@ -400,6 +400,25 @@ The 72-hour checkpoint was accepted as `PASS_BY_OWNER_WAIVER` with execution
 Checkpoint: source implementation is **PASS locally**. Publication, immutable runtime
 deployment, catalog seed, and managed smoke remain deliberately unclaimed.
 
+### 2026-07-22 - Optional public demo catalog promoted to managed-live
+
+- published the three implementation/docs micro-commits and observed all remote
+  product-verification plus reproducible-staging jobs pass on the exact release;
+- built a digest-bound server image, deployed it to US `us-east4` with paid writes
+  closed, seeded the five-profile catalog idempotently, refreshed bounded signer gas
+  evidence, and reopened public mode through the fail-closed controller;
+- verified the canonical marketplace exposes five approved agents, four scenario
+  playbooks, clean routes, and correct prices;
+- verified all four isolated endpoints return correlated deterministic proof without
+  retaining or echoing the submitted synthetic input;
+- retained the first full wallet journey as a timeout after its top-up UI did not
+  converge, ran reconciliation before any retry, and proved the top-up landed once;
+- added and passed a reusable paid-call-only MetaMask smoke. It performs no top-up,
+  claim, or mode transition, and the resulting Wallet Sentinel call produced exactly
+  one user debit and one builder credit.
+
+Checkpoint: the optional demo catalog is **managed-live PASS** on bounded public
+testnet. No mainnet action or real value was authorized.
 
 ## Next ordered work
 

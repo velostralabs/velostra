@@ -14,9 +14,14 @@ import {
 import { priceTierFor } from '../lib/constants.js'
 import { closeRedis, ensureRedisConnected } from '../lib/redis.js'
 import { encryptAgentSecret, generateAgentSecret } from '../lib/gateway/secrets.js'
+import {
+  SYNTHETIC_AGENT_CATALOG,
+  type SyntheticAgentProfile,
+} from '../synthetic-agent/catalog.js'
 
-const SLUG = 'phase2-synthetic-agent'
-const PRICE = 1.2
+const RELEASE_PROFILE = SYNTHETIC_AGENT_CATALOG[0]
+const SLUG = RELEASE_PROFILE.slug
+const PRICE = RELEASE_PROFILE.price
 const FREE_TIER_LIMIT = 10
 
 function required(name: string): string {
@@ -63,6 +68,118 @@ function secondsUntilMonthEnd(): number {
   const now = new Date()
   const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
   return Math.max(1, Math.floor((end.getTime() - now.getTime()) / 1000))
+}
+
+function endpointForProfile(baseEndpointUrl: string, profile: SyntheticAgentProfile): string {
+  const endpoint = new URL(baseEndpointUrl)
+  endpoint.pathname = profile.endpointPath
+  return endpoint.toString()
+}
+
+async function ensureDemoAgent(input: {
+  profile: SyntheticAgentProfile
+  builderId: string
+  userId: string
+  baseEndpointUrl: string
+}): Promise<void> {
+  const { profile, builderId, userId, baseEndpointUrl } = input
+  const endpointUrl = endpointForProfile(baseEndpointUrl, profile)
+  const tier = priceTierFor(profile.price)
+  const [existing] = await db.select().from(agents).where(eq(agents.slug, profile.slug)).limit(1)
+
+  if (existing) {
+    const [revision] = existing.active_revision_id
+      ? await db
+          .select()
+          .from(agentRevisions)
+          .where(
+            and(
+              eq(agentRevisions.id, existing.active_revision_id),
+              eq(agentRevisions.agent_id, existing.id)
+            )
+          )
+          .limit(1)
+      : []
+    if (
+      existing.builder_id !== builderId ||
+      existing.endpoint_url !== endpointUrl ||
+      existing.status !== 'APPROVED' ||
+      existing.name !== profile.name ||
+      existing.description !== profile.description ||
+      existing.long_description !== profile.longDescription ||
+      existing.category !== profile.category ||
+      Number(existing.price_per_call) !== profile.price ||
+      existing.price_tier !== tier ||
+      existing.featured !== profile.featured ||
+      !revision ||
+      revision.status !== 'PUBLISHED' ||
+      revision.name !== profile.name ||
+      revision.description !== profile.description ||
+      revision.long_description !== profile.longDescription ||
+      revision.category !== profile.category ||
+      revision.price_tier !== tier ||
+      revision.endpoint_url !== endpointUrl ||
+      Number(revision.price_per_call) !== profile.price
+    ) {
+      throw new Error(`existing demo agent does not match catalog policy: ${profile.slug}`)
+    }
+    await db
+      .insert(agentTags)
+      .values(profile.tags.map((tag) => ({ agent_id: existing.id, tag })))
+      .onConflictDoNothing()
+    return
+  }
+
+  await db.transaction(async (tx) => {
+    const encryptedSecret = encryptAgentSecret(generateAgentSecret())
+    const [agent] = await tx
+      .insert(agents)
+      .values({
+        builder_id: builderId,
+        name: profile.name,
+        slug: profile.slug,
+        description: profile.description,
+        long_description: profile.longDescription,
+        category: profile.category,
+        endpoint_url: endpointUrl,
+        secret_key_ciphertext: encryptedSecret,
+        price_per_call: profile.price.toFixed(6),
+        price_tier: tier,
+        status: 'APPROVED',
+        featured: profile.featured,
+      })
+      .returning({ id: agents.id })
+    if (!agent) throw new Error(`demo agent creation failed: ${profile.slug}`)
+
+    const [revision] = await tx
+      .insert(agentRevisions)
+      .values({
+        agent_id: agent.id,
+        revision_number: 1,
+        status: 'PUBLISHED',
+        name: profile.name,
+        description: profile.description,
+        long_description: profile.longDescription,
+        category: profile.category,
+        endpoint_url: endpointUrl,
+        price_per_call: profile.price.toFixed(6),
+        price_tier: tier,
+        change_summary: 'Initial public testnet demo scenario',
+        created_by_user_id: userId,
+        published_at: new Date(),
+      })
+      .returning({ id: agentRevisions.id })
+    if (!revision) throw new Error(`demo revision creation failed: ${profile.slug}`)
+
+    await tx
+      .update(agents)
+      .set({ active_revision_id: revision.id, updated_at: new Date() })
+      .where(eq(agents.id, agent.id))
+    await tx
+      .insert(agentTags)
+      .values(profile.tags.map((tag) => ({ agent_id: agent.id, tag })))
+      .onConflictDoNothing()
+  })
 }
 
 async function main(): Promise<void> {
@@ -193,9 +310,38 @@ async function main(): Promise<void> {
     userId = created
   }
 
+  const [catalogBuilder] = await db
+    .select({ id: builders.id, wallet_address: builders.wallet_address })
+    .from(builders)
+    .where(eq(builders.user_id, userId))
+    .limit(1)
+  if (!catalogBuilder || getAddress(catalogBuilder.wallet_address) !== builderWallet) {
+    throw new Error('synthetic catalog builder does not match the staging wallet')
+  }
+
+  const [releaseAgent] = await db
+    .select({ id: agents.id })
+    .from(agents)
+    .where(eq(agents.slug, RELEASE_PROFILE.slug))
+    .limit(1)
+  if (!releaseAgent) throw new Error('release-evidence agent is missing after provisioning')
+  await db
+    .insert(agentTags)
+    .values(RELEASE_PROFILE.tags.map((tag) => ({ agent_id: releaseAgent.id, tag })))
+    .onConflictDoNothing()
+
+  for (const profile of SYNTHETIC_AGENT_CATALOG.slice(1)) {
+    await ensureDemoAgent({
+      profile,
+      builderId: catalogBuilder.id,
+      userId,
+      baseEndpointUrl: endpointUrl,
+    })
+  }
+
   const redis = await ensureRedisConnected()
   await redis.set(monthKey(userId), String(FREE_TIER_LIMIT), 'EX', secondsUntilMonthEnd())
-  console.info(`PASS staging synthetic agent provisioned; slug=${SLUG}; free-tier exhausted`)
+  console.info(`PASS staging demo catalog provisioned; agents=${SYNTHETIC_AGENT_CATALOG.length}; free-tier exhausted`)
 }
 
 main()

@@ -49,9 +49,9 @@ if ($Apply) {
     [string]$runtime.region -ne 'us-east4' -or
     [string]$runtime.release -ne $Release.ToLowerInvariant() -or
     [string]$runtime.serverImage -ne $ServerImage -or
-    [string]$runtime.paidWritesMode -ne 'disabled' -or
+    ([string]$runtime.paidWritesMode) -notin @('disabled', 'canary', 'public') -or
     ([string]$runtime.syntheticAgentUrl).TrimEnd('/') + '/execute' -ne $SyntheticAgentUrl
-  ) { throw 'Synthetic provisioning parameters do not match the disabled-write staging runtime' }
+  ) { throw 'Synthetic provisioning parameters do not match the approved staging runtime' }
 
   try {
     $health = Invoke-RestMethod -Method Get -Uri (([string]$runtime.syntheticAgentUrl).TrimEnd('/') + '/health') -TimeoutSec 20
@@ -83,7 +83,7 @@ $job = @(
   '--labels=application=velostra,environment=staging,residency=us-only'
 )
 if (-not $Apply) {
-  Write-Output 'PLAN deploy and execute the idempotent synthetic-agent seed job (staging-only; endpoint and wallet redacted)'
+  Write-Output 'PLAN deploy and execute the idempotent synthetic demo-catalog seed job (staging-only; endpoint and wallet redacted)'
   Write-Output 'PLAN free-tier counter will be exhausted so the next isolated call follows the paid settlement path'
   exit 0
 }
@@ -96,4 +96,4 @@ try {
   & $gcloud 'run' 'jobs' 'execute' 'velostra-synthetic-agent-seed' '--region=us-east4' ('--project=' + $ProjectId) '--wait' '--quiet' *> $null
   if ($LASTEXITCODE -ne 0) { throw 'Synthetic seed job execution failed' }
 } finally { $ErrorActionPreference = $previous }
-Write-Output 'PASS staging synthetic-agent service seeded idempotently; no production or mainnet writes performed'
+Write-Output 'PASS staging synthetic demo catalog seeded idempotently; no production or mainnet writes performed'

@@ -71,6 +71,8 @@ $reconciliationEvidenceScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'run-reconciliation-evidence.ps1')
 $syntheticServiceText = Get-Content -Raw -LiteralPath (
   Join-Path $repositoryRoot 'server\src\synthetic-agent\index.ts')
+$syntheticCatalogText = Get-Content -Raw -LiteralPath (
+  Join-Path $repositoryRoot 'server\src\synthetic-agent\catalog.ts')
 $syntheticProvisionScriptText = Get-Content -Raw -LiteralPath (
   Join-Path $PSScriptRoot 'provision-synthetic-agent.ps1')
 $syntheticSeedText = Get-Content -Raw -LiteralPath (
@@ -186,13 +188,19 @@ Require-Match $frontendChainText 'explorer[.]testnet[.]chain[.]robinhood[.]com' 
 
 Require-Match $syntheticServiceText "ROBINHOOD_CHAIN_ID !== '46630'" 'Synthetic endpoint must fail outside Robinhood testnet'
 Require-Match $syntheticServiceText 'input[.]length > 10_000' 'Synthetic endpoint must enforce a bounded input'
+Require-Match $syntheticServiceText 'syntheticProfileForPath' 'Synthetic endpoint must resolve only catalogued demo profiles'
 Reject-Match $syntheticServiceText '(?:db/client|REDIS_URL|DATABASE_URL)' 'Synthetic endpoint must remain stateless and unprivileged'
+foreach ($slug in @('flowbook-trader', 'wallet-sentinel', 'token-scope', 'contract-lens')) {
+  Require-Match $syntheticCatalogText ([regex]::Escape("slug: '$slug'")) ('Synthetic demo catalog must include ' + $slug)
+}
+Require-Match $syntheticServiceText 'input_retained: false' 'Synthetic demo endpoint must declare privacy-safe output'
 Require-Match $syntheticProvisionScriptText 'isolated-staging-agent-approved' 'Synthetic seed job must require its explicit approval sentinel'
 Require-Match $syntheticProvisionScriptText '[(].*--set-env-vars=.*[+] [\$]BuilderWallet[)]' 'Synthetic seed environment must remain one native CLI argument'
 Require-Match $syntheticProvisionScriptText 'staging[.]config[.]json' 'Synthetic seed job must validate the US staging policy'
-Require-Match $syntheticProvisionScriptText 'paidWritesMode.*-ne ''disabled''' 'Synthetic seed must bind to a disabled-write runtime artifact'
+Require-Match $syntheticProvisionScriptText 'paidWritesMode.*-notin.*disabled.*canary.*public' 'Synthetic seed must bind to an explicit staging write mode'
 Require-Match $syntheticProvisionScriptText 'Invoke-RestMethod .*[/]health' 'Synthetic seed must health-check the deployed endpoint before database mutation'
 Require-Match $syntheticSeedText "status: 'APPROVED'" 'Synthetic agent must be explicitly approved for staging discovery'
+Require-Match $syntheticSeedText 'SYNTHETIC_AGENT_CATALOG[.]slice[(]1[)]' 'Synthetic seed must provision every public demo profile idempotently'
 Require-Match $syntheticSeedText 'free-tier exhausted' 'Synthetic seed must force the next call through the paid path'
 Require-Match $stagingCanaryScriptText 'ValidateSet\(''Plan'', ''Open'', ''Close'', ''Status''\)' 'Staging canary control must expose explicit open/close/status actions'
 Require-Match $stagingCanaryScriptText "PHASE2_STAGING_CANARY_APPROVAL.*isolated-staging-paid-canary" 'Staging canary must require a distinct approval sentinel'

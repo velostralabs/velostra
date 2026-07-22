@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { AddressInfo } from 'node:net'
 import { assertStagingPolicy, createSyntheticAgentServer } from '../src/synthetic-agent/index.js'
+import { SYNTHETIC_AGENT_CATALOG } from '../src/synthetic-agent/catalog.js'
 
 const original = {
   environment: process.env.VELOSTRA_ENVIRONMENT,
@@ -26,18 +27,35 @@ try {
     const port = (server.address() as AddressInfo).port
     const health = await fetch('http://127.0.0.1:' + port + '/health')
     assert.equal(health.status, 200)
-    assert.equal((await health.json() as { chain_id: number }).chain_id, 46630)
+    const healthBody = await health.json() as { chain_id: number; profiles: number }
+    assert.equal(healthBody.chain_id, 46630)
+    assert.equal(healthBody.profiles, SYNTHETIC_AGENT_CATALOG.length)
 
-    const marker = 'must-not-be-echoed'
-    const execution = await fetch('http://127.0.0.1:' + port + '/execute', {
+    for (const profile of SYNTHETIC_AGENT_CATALOG) {
+      const marker = `must-not-be-echoed-${profile.slug}`
+      const callId = `test-call-${profile.slug}`
+      const execution = await fetch('http://127.0.0.1:' + port + profile.endpointPath, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: marker, call_id: callId }),
+      })
+      assert.equal(execution.status, 200)
+      const text = await execution.text()
+      assert.doesNotMatch(text, new RegExp(marker))
+      const body = JSON.parse(text) as {
+        output: { agent_slug: string; scenario_id: string; proof: { call_id: string; input_retained: boolean } }
+      }
+      assert.equal(body.output.agent_slug, profile.slug)
+      assert.equal(body.output.scenario_id, profile.scenario.id)
+      assert.equal(body.output.proof.call_id, callId)
+      assert.equal(body.output.proof.input_retained, false)
+    }
+
+    const unknownProfile = await fetch('http://127.0.0.1:' + port + '/execute/unknown', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: marker, call_id: 'phase2-test-call' }),
+      body: JSON.stringify({ input: 'test', call_id: 'unknown-profile' }),
     })
-    assert.equal(execution.status, 200)
-    const text = await execution.text()
-    assert.doesNotMatch(text, new RegExp(marker))
-    assert.match(text, /Synthetic staging execution complete/)
+    assert.equal(unknownProfile.status, 404)
 
     const malformed = await fetch('http://127.0.0.1:' + port + '/execute', {
       method: 'POST',

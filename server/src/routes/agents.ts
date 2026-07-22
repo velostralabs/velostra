@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { and, desc, asc, eq, ilike, avg, count, gte, sql } from 'drizzle-orm'
+import { and, desc, asc, eq, ilike, or, avg, count, gte, sql } from 'drizzle-orm'
 import { createId } from '@paralleldrive/cuid2'
 import type { Address, Hash } from 'viem'
 import { db } from '../db/client.js'
@@ -65,7 +65,15 @@ agentsRouter.get('/', async (req, res) => {
   if (category && (agentCategoryEnum.enumValues as readonly string[]).includes(category)) {
     conditions.push(eq(agents.category, category as (typeof agentCategoryEnum.enumValues)[number]))
   }
-  if (q) conditions.push(ilike(agents.name, `%${q}%`))
+  if (q) {
+    const term = `%${q.trim()}%`
+    const search = or(
+      ilike(agents.name, term),
+      ilike(agents.description, term),
+      ilike(agents.long_description, term)
+    )
+    if (search) conditions.push(search)
+  }
 
   const orderBy =
     sort === 'popular' ? desc(agents.total_calls) : sort === 'price' ? asc(agents.price_per_call) : desc(agents.featured)

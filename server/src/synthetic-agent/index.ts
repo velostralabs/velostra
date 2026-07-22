@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { pathToFileURL } from 'node:url'
+import { SYNTHETIC_AGENT_CATALOG, syntheticProfileForPath } from './catalog.js'
 
 const MAX_BODY_BYTES = 16 * 1024
 const MAX_CALL_ID_BYTES = 128
@@ -59,10 +60,12 @@ async function handle(request: IncomingMessage, response: ServerResponse): Promi
       service: 'velostra-synthetic-agent',
       environment: 'staging',
       chain_id: 46630,
+      profiles: SYNTHETIC_AGENT_CATALOG.length,
     })
     return
   }
-  if (method !== 'POST' || path !== '/execute') {
+  const profile = syntheticProfileForPath(path)
+  if (method !== 'POST' || !profile) {
     response.setHeader('Allow', 'GET, POST')
     json(response, method === 'POST' ? 404 : 405, { error: 'not found' })
     return
@@ -105,7 +108,17 @@ async function handle(request: IncomingMessage, response: ServerResponse): Promi
   json(response, 200, {
     output: {
       status: 'verified',
-      message: 'Synthetic staging execution complete',
+      agent_slug: profile.slug,
+      scenario_id: profile.scenario.id,
+      scenario: profile.scenario.title,
+      ...profile.scenario.result,
+      proof: {
+        call_id: callId,
+        environment: 'public-testnet',
+        chain_id: 46630,
+        deterministic: true,
+        input_retained: false,
+      },
     },
   })
 }

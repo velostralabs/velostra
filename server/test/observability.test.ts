@@ -14,6 +14,7 @@ import {
   renderPrometheus,
   setOperationalSnapshot,
 } from '../src/lib/observability/metrics.js'
+import { startApiObservability } from '../src/lib/observability/runtime.js'
 
 function snapshot(overrides: Partial<OperationalSnapshot> = {}): OperationalSnapshot {
   return {
@@ -202,6 +203,31 @@ try {
   assert.match(metrics, /velostra_signer_balance_wei 20000000000000000/)
   assert.match(metrics, /velostra_chain_solvent 1/)
 
+  let releaseInitialCollection: (() => void) | undefined
+  const initialCollectionGate = new Promise<void>((resolve) => {
+    releaseInitialCollection = resolve
+  })
+  let initialCollectionStarted = false
+  let runtimeResolved = false
+  const runtimePromise = startApiObservability({
+    intervalMs: 60_000,
+    collectSnapshot: async () => {
+      initialCollectionStarted = true
+      await initialCollectionGate
+      return snapshot()
+    },
+    heartbeat: async () => undefined,
+  }).then((stop) => {
+    runtimeResolved = true
+    return stop
+  })
+  await Promise.resolve()
+  assert.equal(initialCollectionStarted, true)
+  assert.equal(runtimeResolved, false, 'runtime must not resolve before its first snapshot')
+  releaseInitialCollection?.()
+  const stopRuntime = await runtimePromise
+  assert.equal(runtimeResolved, true)
+  stopRuntime()
   console.log('OBSERVABILITY READINESS, METRICS, AND ALERT RULES VERIFIED')
 } finally {
   globalThis.fetch = originalFetch

@@ -21,7 +21,7 @@ async function main(): Promise<void> {
 
   await assertSecurityReadiness()
   const app = createApp()
-  const stopObservability = startApiObservability()
+  const stopObservability = await startApiObservability()
   const server = app.listen(port, () => {
     logger.info('api_listening', {
       port,

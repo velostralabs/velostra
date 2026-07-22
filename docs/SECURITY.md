@@ -125,6 +125,12 @@ accepted as a compatibility bootstrap input, not ongoing authorization.
 - public metadata is US-locale and Velostra-attributed; CI rejects local user-profile
   paths, private-key blocks, non-public email domains, and non-Velostra HEAD attribution
   while reporting only the category and file path.
+- CI additionally fetches the complete Git history and scans every author/committer
+  identity plus added and removed patch line for private paths, identity numbers,
+  credentials, keys, tokens, and non-public email domains; matches are never echoed.
+- GitHub secret scanning, push protection, vulnerability alerts, and Dependabot
+  security updates are enabled. An active default-branch ruleset blocks deletion and
+  non-fast-forward pushes while preserving the owner's fast-forward micro-commit flow.
 
 ## Production startup checks
 
@@ -167,6 +173,7 @@ API, reconciliation worker, webhook worker, and monitor run role-aware subsets o
 | Sensitive prompt/output exposure | prohibited telemetry fields, evidence classification, export/delete policy, anonymization | managed retention/legal review and storage controls |
 | Six web transitive `uuid` moderate advisories | high threshold CI plus reachability tracking; no upstream fix | upstream review and time-bounded acceptance/fix |
 | Ganache bundled advisories | test/dev toolchain only; production contract dependency tree is empty | keep Ganache isolated and monitor/replace the local EVM toolchain |
+| Repository history mutation | active default-branch ruleset blocks deletion and non-fast-forward updates; public identity and full-history privacy gates pass | retain ruleset and review required-status/PR policy before adding untrusted contributors or mainnet operators |
 
 ## Dependency and supply chain
 

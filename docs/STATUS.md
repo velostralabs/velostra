@@ -17,6 +17,44 @@ The user-facing testnet uses only test ETH and resettable synthetic USDG. Public
 is bounded by per-call, per-wallet, daily-global, top-up, and sensitive-action caps.
 Raw identifiers remain ignored; see [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).
 
+## 2026-07-22 brutal audit closeout candidate
+
+The public repository head `1c22d08462f7c49f7380266b35e74da360706a73`
+has one truthful remote discrepancy: Staging artifact verification passed, while
+Product verification failed only because Chromium Event Timing emitted zero entries
+for a homepage click that completed faster than the observer threshold. The dialog
+opened and every product assertion around it passed. The local closeout candidate
+now accepts that standards-compliant zero-entry case while continuing to enforce the
+200 ms INP budget whenever Event Timing emits an interaction.
+
+The same candidate passed the full 31-scenario Chromium matrix: 30 deterministic
+checks passed and only the explicitly guarded real-MetaMask extension journey was
+skipped. It also passed lint/build, documentation and hosting integrity, all ten
+contract local-EVM groups, Phase 2 evidence tamper checks, Phase 3 release/mainnet
+readiness tests, Phase 4 SDK/RBAC contracts, backend auth/HTTP/SSRF/secrets/signer/
+KMS/resilience/observability policies, testnet Safe authority policy, and production
+dependency audits. Server production dependencies report zero vulnerabilities; the
+six Moderate web entries remain the documented unreachable MetaMask/UUID condition.
+
+Live `https://velostra.xyz` was checked independently of the fixture: apex, `www`,
+and Netlify-host redirects are canonical; production security headers are present;
+all public routes render without broken images, horizontal overflow, clipped controls,
+or visible text collisions at 1920, 1366, and 1024 desktop widths; managed health and
+deep readiness pass 8/8 on chain 46630. One first cold-instance probe correctly
+failed closed with `snapshot=false`; the next eight probes passed 8/8. The candidate
+now awaits the bounded first observability snapshot before opening the HTTP listener,
+removing that healthy cold-start false degradation after the backend is redeployed.
+Repository homepage metadata now points to the canonical domain. GitHub secret
+scanning, push protection, vulnerability alerts, and Dependabot security updates are
+enabled.
+
+A new non-shallow history gate scanned all 285 existing commits and found no private
+identity, local user path, token, private key, credential URL, Indonesian identity
+number, or non-public email domain. The gate reports only category, short commit, and
+path, never a matched value. Product verification remains truthfully red on the
+published head until this candidate is committed and pushed; no remote-green claim is
+made in advance.
+
 ## Executive status
 
 Velostra now includes the repository-side Phase 4 platform on top of the cleared
@@ -97,7 +135,7 @@ pool, eliminating a post-worker readiness flap caused by observability query fan
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime, all twelve scoped values, and the operational gas floor are healthy; mainnet custody drills remain pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness, heartbeats, and a real private backup-stale create/deliver/ack/heal/resolve lifecycle pass; remaining injected-alert coverage pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | primary-RPC fallback, timed reconciliation outage, and provider-native PITR pass; destructive API/DB/Redis/restart faults and formal SLO calibration pending |
-| CI | dedicated docs/privacy, immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates; the current baseline includes 22 browser checks plus one guarded external-wallet skip | [Product verification run 29920252583](https://github.com/velostralabs/velostra/actions/runs/29920252583) and [staging artifact run 29920252566](https://github.com/velostralabs/velostra/actions/runs/29920252566) passed on the public-testnet/mainnet-isolation baseline |
+| CI | dedicated current-tree and full-history privacy, immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates; the closeout candidate runs 30 deterministic browser passes plus one guarded external-wallet skip | [Product baseline](https://github.com/velostralabs/velostra/actions/runs/29920252583) and [artifact baseline](https://github.com/velostralabs/velostra/actions/runs/29920252566) passed; the newer [artifact run](https://github.com/velostralabs/velostra/actions/runs/29923417382) passed while [Product run](https://github.com/velostralabs/velostra/actions/runs/29923417408) exposes the fast-click false-negative fixed and locally verified by this candidate |
 
 ## Managed skipped-report reconciliation evidence
 

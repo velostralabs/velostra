@@ -15,6 +15,7 @@
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Netlify production build | `netlify build --context production` | linked Netlify project | tracked Node 22 build command and `dist/` publish contract |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
+| Public history privacy | `npm run test:privacy:history` | complete non-shallow Git history | every commit identity is Velostra public noreply; added/removed patches exclude private paths, identity numbers, private email domains, keys, tokens, and credential-shaped values without echoing matches |
 | Social assets | `npm run test:social-assets` | none | X/OG dimensions, metadata hygiene, and link-preview tags |
 | Demo catalog | `npm run test:demo-agents` | none | four public slugs/prices/scenario IDs match UI and backend; isolated routes, non-retention, and explicit safety boundaries remain present |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet/account/chain binding, synchronized auth gates, no-resubmit paid-call recovery, deep-runtime truth, bounded deposit/claim proof, axe, keyboard, layout, visual, URL, and performance budgets |
@@ -30,7 +31,7 @@
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
 | Resilience policy | `npm --prefix server run test:resilience` | local HTTP | RPC 429 failover and confirmation/range policy |
-| Observability | `npm --prefix server run test:observability` | none | alert rules, metrics, readiness policy, and single-concurrency operational reads |
+| Observability | `npm --prefix server run test:observability` | none | alert rules, metrics, readiness policy, startup waits for the first bounded snapshot, and single-concurrency operational reads |
 | Observability DB | `npm --prefix server run test:observability-db` | disposable Postgres | heartbeat and alert lifecycle persistence |
 | Auth | `npm --prefix server run test:auth` | none | bound challenge, Redis-style atomic multi-instance replay defense |
 | SSRF | `npm --prefix server run test:ssrf` | local sockets/DNS doubles | blocked ranges, redirect/DNS/size/timeout boundary |
@@ -58,7 +59,7 @@
 
 .github/workflows/ci.yml has seven jobs:
 
-- web: lockfile install, production audit, documentation/privacy/social/demo/hosting gates, MetaMask reachability, evidence validator, lint, and build;
+- web: full-history checkout, lockfile install, production audit, documentation/current-tree/history privacy/social/demo/hosting gates, MetaMask reachability, evidence validator, lint, and build;
 - phase4-contracts: JavaScript/Python SDK fixtures plus platform/admin policy contracts;
 - phase3-release: immutable manifest, deployment plan, readiness, mainnet preparation packet, catch-up, and canary gates;
 - browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
@@ -81,6 +82,35 @@ The latest published public-testnet and isolated-mainnet-preparation baseline pa
 [Product verification run 29920252583](https://github.com/velostralabs/velostra/actions/runs/29920252583)
 and [staging artifact run 29920252566](https://github.com/velostralabs/velostra/actions/runs/29920252566).
 
+## Brutal audit candidate verification
+
+On 2026-07-22, the published head `1c22d08462f7c49f7380266b35e74da360706a73`
+produced [a passing staging artifact run](https://github.com/velostralabs/velostra/actions/runs/29923417382)
+and [a failing Product verification run](https://github.com/velostralabs/velostra/actions/runs/29923417408).
+The Product failure was isolated to a homepage performance assertion that required an
+Event Timing entry even when the click completed faster than the browser observer
+threshold. The clicked dialog opened; the product behavior passed. The candidate fix
+retains the 200 ms INP ceiling for observed interactions and treats a zero-entry fast
+click as the best possible result instead of a regression.
+
+The candidate was then verified locally with:
+
+- 31 Chromium scenarios: 30 pass, one explicitly guarded external-MetaMask skip;
+- homepage LCP 316 ms, INP 160 ms, CLS 0.01393, one WebGL context;
+- marketplace LCP 536 ms, INP 88 ms, CLS 0.00075;
+- dashboard LCP 536 ms, INP 96 ms, CLS 0.00191;
+- initial entry 160,897 gzip bytes, largest async chunk 241,737, total JavaScript
+  696,947; all remain within committed budgets;
+- lint/build, docs, privacy, social, demo, hosting, contract, release, readiness,
+  SDK, RBAC, backend trust-boundary, signer, resilience, and authority gates passing;
+- a complete-history privacy scan of 285 commits passing without printing sensitive
+  matched content;
+- a cold-start regression proving the API observability runtime does not resolve, and
+  therefore the HTTP server cannot listen, before its first bounded snapshot completes.
+
+These are local candidate results, not a fabricated remote pass. Product verification
+must rerun after owner-approved publication.
+
 ## Public frontend deployment smoke
 
 The canonical testnet at `https://velostra.xyz/testnet` was reverified on 2026-07-22:
@@ -89,7 +119,9 @@ The canonical testnet at `https://velostra.xyz/testnet` was reverified on 2026-0
 2. Apex TLS and the `www` redirect reached the canonical site.
 3. A clean browser rendered `TESTNET LIVE`, the wallet entry point, official faucet
    guidance, synthetic mint path, and execution onboarding without layout overflow.
-4. The browser console had no errors and the route title identified the public testnet.
+4. The browser console had no errors and the route title identified the public testnet;
+   one upstream `THREE.Clock` deprecation warning remains inside the lazy R3F vendor
+   chunk, while WebGL rendering and performance budgets pass.
 5. Managed health and deep readiness passed; public mode reported bounded synthetic
    paid writes and chain 46630.
 6. Post-open reconciliation, webhook, and monitor runs completed successfully with
@@ -306,6 +338,12 @@ Ganache's bundled local-EVM toolchain; those packages are neither installed nor
 shipped in a production-only contract artifact. They remain an explicit mainnet
 review/tooling-replacement item rather than a hidden passing audit.
 
+The GitHub Dependabot snapshot on 2026-07-22 listed 71 alerts: 70 belong to the
+contracts/server development manifests and their Ganache/local-tooling closure, while
+one Moderate runtime alert is the separately reachability-gated MetaMask/UUID issue.
+No High or Critical production dependency was found by either production install
+audit. The alerts remain visible rather than being mass-dismissed as a substitute for
+replacing the dev toolchain.
 ## Mainnet operational evidence still required
 
 - independent contract and focused backend review;

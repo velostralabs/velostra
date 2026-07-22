@@ -4,8 +4,9 @@ This runbook is for isolated managed staging and Phase 3 release preparation. It
 does not authorize a production or mainnet rollout. The managed US identities,
 secrets, HSM settlement signer, provider data plane, three synthetic testnet Safe
 authorities, synthetic token, escrow, and immutable application runtime are deployed.
-Deep readiness passes, the signer is private, and paid writes remain disabled. The
-public Netlify preview contains none of these managed values.
+Deep readiness passes, the signer is private, and bounded synthetic paid writes are
+enabled. The public Netlify application receives only approved public testnet
+identifiers; it contains no managed credential, signer material, or operator data.
 
 ## Secret delivery
 

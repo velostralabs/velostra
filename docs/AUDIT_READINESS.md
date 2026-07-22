@@ -1,6 +1,6 @@
 # External audit readiness packet
 
-> Prepared: 2026-07-20.
+> Prepared: 2026-07-22.
 > Status: internal engineering/CI audit passed and the repository is clear for
 > continued development; independent third-party review has not yet been performed
 > and remains a mainnet release prerequisite.
@@ -21,6 +21,12 @@
 > JavaScript/Python SDK signing fixtures, signed webhook delivery/replay, moderation,
 > privacy/anonymization, telemetry governance, dedicated worker readiness, and
 > migration 0008. No closed-beta activation is claimed.
+
+>
+> Mainnet-isolation note: review must include the SHA-256-bound environment plan that
+> prohibits reusing the public-testnet cloud project, database, Redis, signer,
+> Scheduler, secret namespace, identities, and evidence store. The current readiness
+> decision is `NO_GO`; every broadcast/canary/expansion authorization remains false.
 
 > Deployment note: `https://velostra.xyz/testnet` is the canonical public testnet
 > surface sourced from `velostralabs/velostra` `main` and connected to the US-only

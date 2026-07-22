@@ -1,7 +1,7 @@
 # Security posture
 
-> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Security posture refreshed 2026-07-22 against current code, public-testnet controls,
+> managed evidence, dependency disposition, and the fail-closed mainnet boundary.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.

@@ -1,7 +1,7 @@
 # Builder guide
 
-> Last verified against builder routes, SDKs, egress, HMAC, webhooks, and managed
-> staging status: 2026-07-20.
+> Last verified against builder routes, SDKs, egress, HMAC, webhooks, demo agents,
+> and managed public-testnet status: 2026-07-22.
 > Phase state: Phase 0-4 repository implementation is complete; no mainnet deployment
 > or closed-beta activation is claimed.
 > The canonical `velostra.xyz/testnet` surface is connected to the managed US testnet API/escrow with bounded synthetic paid writes enabled. Builders can exercise the public testnet path; no mainnet or real-value activation is claimed. See [MANAGED_EVIDENCE.md](./MANAGED_EVIDENCE.md).

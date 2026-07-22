@@ -1,9 +1,9 @@
 # Server test quick reference
 
-> Last verified: 2026-07-20. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
-> Evidence state: Phase 0-4 repository automation is complete; controlled mainnet
-> execution and managed external evidence remain gated. The public Netlify preview
-> is static and provides no server test target.
+> Last verified: 2026-07-22. Full matrix: [docs/TESTING.md](../../docs/TESTING.md).
+> Phase 0-4 automation and the bounded public testnet are complete. Safe live probes
+> may target the managed testnet API; destructive database suites remain restricted
+> to disposable local/CI Postgres. Mainnet and real value remain gated.
 
 Run from repository root:
 

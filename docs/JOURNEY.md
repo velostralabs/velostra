@@ -1,7 +1,7 @@
 # Velostra journey
 
-> Reconstructed from Git history through the 2026-07-21 workspace release candidate
-> and verified managed deployment evidence through 2026-07-21.
+> Reconstructed from Git history and verified managed deployment evidence through
+> 2026-07-22, including public demos and isolated mainnet-readiness preparation.
 > This is the chronological handoff. [STATUS.md](./STATUS.md) remains the authority
 > for current truth; [ROADMAP.md](./ROADMAP.md) remains the authority for phase gates.
 

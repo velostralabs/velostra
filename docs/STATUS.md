@@ -1,7 +1,7 @@
 # Velostra status
 
-> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Status truth refreshed 2026-07-22. Managed evidence and current CI references are
+> indexed below; public testnet remains the proof surface while mainnet stays fail-closed.
 > Repository decision: Phase 0-4 repository preparation is complete and internally
 > verified. The public Robinhood Chain testnet checkpoint is **PASS**.
 > No mainnet deployment or real-value authorization is recorded.
@@ -97,7 +97,7 @@ pool, eliminating a post-worker readiness flap caused by observability query fan
 | Signer/secrets | raw production key rejected; restricted remote signer plus HSM-backed secp256k1 implementation, scoped identities, and hidden-prompt Secret Manager helper tested | private signer runtime, all twelve scoped values, and the operational gas floor are healthy; mainnet custody drills remain pending |
 | Observability | metrics, deep readiness, reconciliation/webhook heartbeats, durable alerts, delivery-age health, evidence collectors | readiness, heartbeats, and a real private backup-stale create/deliver/ack/heal/resolve lifecycle pass; remaining injected-alert coverage pending |
 | Resilience | multi-RPC failover, bounded/adaptive catch-up, cursor checkpoint, reorg/restore tooling | primary-RPC fallback, timed reconciliation outage, and provider-native PITR pass; destructive API/DB/Redis/restart faults and formal SLO calibration pending |
-| CI | dedicated immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates; 2026-07-21 local release candidate passed the complete matrix including 22 browser checks plus one guarded external-wallet skip and disposable Postgres/Redis money loop | latest published evidence remains [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222) and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312) on `6e83a04` until this commit set is published |
+| CI | dedicated docs/privacy, immutable-release, runtime-canary, Postgres race, contract, browser, server, and money-loop gates; the current baseline includes 22 browser checks plus one guarded external-wallet skip | [Product verification run 29920252583](https://github.com/velostralabs/velostra/actions/runs/29920252583) and [staging artifact run 29920252566](https://github.com/velostralabs/velostra/actions/runs/29920252566) passed on the public-testnet/mainnet-isolation baseline |
 
 ## Managed skipped-report reconciliation evidence
 

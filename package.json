@@ -28,6 +28,7 @@
   ],
   "type": "module",
   "scripts": {
+    "test:docs": "node scripts/check-docs.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",

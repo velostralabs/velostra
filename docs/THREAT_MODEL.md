@@ -1,7 +1,7 @@
 # Velostra threat model
 
-> Workspace threat review refreshed 2026-07-21; latest managed public-testnet evidence
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Threat review refreshed 2026-07-22 against current public-testnet trust boundaries,
+> recovery paths, platform controls, and isolated mainnet-preparation inputs.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.

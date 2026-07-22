@@ -1,7 +1,7 @@
 # Operations and incident runbook
 
-> Workspace operations contract refreshed 2026-07-21; latest managed public-testnet
-> evidence remains the 2026-07-20 checkpoint until this local commit set is published.
+> Operations contract refreshed 2026-07-22 against the live public testnet, managed
+> workers/Scheduler, private alerts, recovery evidence, and mainnet isolation rules.
 > Phase 0-4 repository preparation and the public testnet checkpoint are complete.
 > The canonical `https://velostra.xyz/testnet` frontend is connected to the US-only
 > chain-46630 managed runtime. Deep readiness is 8/8 and bounded public synthetic paid

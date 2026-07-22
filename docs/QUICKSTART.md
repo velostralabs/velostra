@@ -1,7 +1,7 @@
 # Local quickstart
 
-> Workspace instructions refreshed 2026-07-21; latest managed public-testnet evidence
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Local instructions refreshed 2026-07-22. Public-testnet status and managed evidence
+> are reference-only here; destructive tests must stay on disposable local/CI services.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.

@@ -1,7 +1,7 @@
 # Testing and release evidence
 
-> Workspace verification refreshed 2026-07-21; latest managed public-testnet evidence
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Verification contract refreshed 2026-07-22. The latest published product and
+> staging-artifact runs are linked below and bind the current public-testnet baseline.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.
@@ -11,6 +11,7 @@
 | Suite | Command | Dependency | Proves |
 |---|---|---|---|
 | Web lint | `npm run lint` | none | source/static checks |
+| Documentation integrity | `npm run test:docs` | none | every relative Markdown link resolves, current deployment docs reject known stale claims, and required GitHub presentation/status elements remain present |
 | Web build | `npm run build` | none | TypeScript + Vite production bundle |
 | Netlify production build | `netlify build --context production` | linked Netlify project | tracked Node 22 build command and `dist/` publish contract |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
@@ -57,7 +58,7 @@
 
 .github/workflows/ci.yml has seven jobs:
 
-- web: lockfile install, production audit, MetaMask reachability, evidence-validator, lint, build;
+- web: lockfile install, production audit, documentation/privacy/social/demo/hosting gates, MetaMask reachability, evidence validator, lint, and build;
 - phase4-contracts: JavaScript/Python SDK fixtures plus platform/admin policy contracts;
 - phase3-release: immutable manifest, deployment plan, readiness, mainnet preparation packet, catch-up, and canary gates;
 - browser: Chromium install, wallet/accessibility/visual/routing/performance suite, artifact upload;
@@ -76,13 +77,13 @@ and [staging artifact run 29455761330](https://github.com/velostralabs/velostra/
 both passed on `47747e4a1c85825975361e903f6ab0b2069b6cb2`. CI uses Node.js 22 with
 `actions/checkout@v6` and `actions/setup-node@v6`.
 
-The latest public-deployment truth checkpoint `6e83a04fca4c2eca7c82f59fe770955186366dfc`
-passed [Product verification run 29612763222](https://github.com/velostralabs/velostra/actions/runs/29612763222)
-and [staging artifact run 29612763312](https://github.com/velostralabs/velostra/actions/runs/29612763312).
+The latest published public-testnet and isolated-mainnet-preparation baseline passed
+[Product verification run 29920252583](https://github.com/velostralabs/velostra/actions/runs/29920252583)
+and [staging artifact run 29920252566](https://github.com/velostralabs/velostra/actions/runs/29920252566).
 
 ## Public frontend deployment smoke
 
-The canonical testnet at `https://velostra.xyz/testnet` was verified on 2026-07-20:
+The canonical testnet at `https://velostra.xyz/testnet` was reverified on 2026-07-22:
 
 1. Netlify served the Git-linked `main` build with hashed JavaScript/CSS assets.
 2. Apex TLS and the `www` redirect reached the canonical site.
@@ -99,8 +100,8 @@ identity, wallet addresses, provider IDs, or real value.
 
 ## Final testnet product-completion regression
 
-The 2026-07-21 local release candidate adds and verifies the final browser/API safety
-contract before publication:
+The current published testnet baseline verifies the browser/API safety contract,
+owner-scoped recovery, deep-runtime truth, bounded transaction inputs, and explorer proof:
 
 1. one ambiguous paid request yields one POST, one idempotency key, one correlated
    call, automatic owner-scoped polling, and one final debit/builder credit;

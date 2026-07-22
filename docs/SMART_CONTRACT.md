@@ -1,6 +1,6 @@
 # Smart contract - VelostraEscrow
 
-> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-20.
+> Last verified against contracts/VelostraEscrow.sol and deployment status: 2026-07-22.
 > Phase state: Phase 0-4 repository preparation is complete and has passed internal
 > engineering/CI audit; continued development is clear. Managed-staging evidence
 > remains a mainnet release prerequisite.

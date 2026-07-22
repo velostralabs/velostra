@@ -1,9 +1,10 @@
 # Velostra observability deployment contract
 
-> Deployment status (2026-07-19): the US testnet API, reconciliation/webhook/monitor
+> Deployment status (2026-07-22): the US testnet API, reconciliation/webhook/monitor
 > jobs, deep readiness, metrics surface, and private Telegram transport are live.
-> Manual worker/monitor executions pass; paid writes remain disabled. The public
-> `velostra.xyz` Netlify preview stays separate and has no worker/backend authority.
+> Manual and scheduled worker/monitor execution passes; bounded synthetic paid writes
+> are enabled. The public `velostra.xyz/testnet` browser is connected to the API but
+> remains a separate delivery domain with no worker, database, or signer authority.
 
 The API exposes shallow liveness at /health, dependency-aware readiness at /ready,
 and Prometheus exposition at /metrics. Metrics require the managed scrape bearer

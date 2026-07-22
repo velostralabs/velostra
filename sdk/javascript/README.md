@@ -1,7 +1,8 @@
 # Velostra JavaScript SDK
 
-> Contract verified: 2026-07-18. Repository package; not published to a public registry.
-> Public API status: not deployed; `velostra.xyz` is a static protocol preview.
+> Contract reverified: 2026-07-22. Repository package; not published to a public registry.
+> The public testnet API is live behind `https://velostra.xyz/testnet`; SDK consumers
+> must still supply an approved API origin and must use synthetic testnet value only.
 
 Typed browser/Node client for /api/v1 with stable errors, opaque cursor pagination,
 wallet authentication helpers, idempotent agent calls, reports, gateway HMAC, and
@@ -17,7 +18,7 @@ const client = new VelostraClient({
 
 const page = await client.listAgents({ limit: 25 })
 const result = await client.runAgent(
-  'flowscope',
+  'wallet-sentinel',
   'Inspect this wallet',
   crypto.randomUUID()
 )

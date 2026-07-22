@@ -1,7 +1,7 @@
 # Velostra roadmap
 
-> Workspace updated after final public-testnet product hardening: 2026-07-21.
-> Latest managed public evidence remains the 2026-07-20 checkpoint until publication.
+> Roadmap reconciled 2026-07-22 after public-testnet completion, demo-agent promotion,
+> mainnet environment isolation, and repository documentation hardening.
 > Baseline: Phase 0-4 repository preparation is complete and internally cleared;
 > controlled mainnet execution has not started.
 > Independent review and managed evidence are tracked as mainnet release prerequisites,

@@ -1,7 +1,7 @@
 # Deployment and operations
 
-> Workspace deployment contract refreshed 2026-07-21; latest managed public-testnet
-> evidence remains the 2026-07-20 checkpoint until this commit set is published.
+> Deployment contract refreshed 2026-07-22 against the live bounded public testnet,
+> immutable US staging runtime, and separately hash-bound mainnet environment plan.
 > Phase 0-4 repository preparation and the public testnet checkpoint are complete.
 > `https://velostra.xyz/testnet` is connected to the US-only Robinhood Chain testnet
 > API, private signer, verified synthetic token/escrow, workers, and Scheduler. Deep

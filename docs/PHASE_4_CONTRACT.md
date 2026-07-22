@@ -1,6 +1,6 @@
 # Phase 4 platform contract
 
-> Last verified against repository and managed staging status: 2026-07-20.
+> Last verified against repository and managed public-testnet status: 2026-07-22.
 > Repository status: implemented and locally audited; activation remains gated.
 > This contract is now the compatibility baseline for Phase 5 changes.
 > The 2026-07-20 managed recovery evidence validates the existing money/recovery

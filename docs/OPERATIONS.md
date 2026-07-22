@@ -340,11 +340,13 @@ redacted evidence was retained.
 All commands below fail closed unless the explicit isolated-staging approval and
 attestation variables are present. Never point them at production/mainnet value.
 
-Before the wallet evidence run, provision the one approved synthetic agent from the
+Before the wallet evidence run, provision the release agent and public demo catalog from the
 deployed immutable runtime. Use only a dedicated encrypted testnet wallet. The
 script requires a clean worktree, binds to the ignored runtime artifact, validates
-US chain 46630 and paid writes disabled, health-checks the secretless service, then
-runs an idempotent Cloud Run seed job:
+US chain 46630 and an explicit staging write mode (`disabled`, `canary`, or
+`public`), health-checks the secretless service, then runs an idempotent Cloud Run
+seed job. It derives isolated routes for all four demo profiles and aborts if an
+existing agent or immutable revision differs:
 
     powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
 

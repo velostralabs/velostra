@@ -385,6 +385,22 @@ These are mainnet migration prerequisites, not unfinished public-testnet work:
 The 72-hour checkpoint was accepted as `PASS_BY_OWNER_WAIVER` with execution
 `NOT_RUN`; this records the owner's decision and does not claim duration telemetry.
 
+### 2026-07-22 - Optional public demo catalog implemented locally
+
+- added four deterministic profiles behind the existing secretless synthetic service:
+  Flowbook Trader, Wallet Sentinel, TokenScope, and Contract Lens;
+- added release-bound, idempotent database provisioning while preserving the original
+  phase2 synthetic canary identity and immutable revision evidence;
+- added marketplace scenario cards and agent playbooks with clean query-state
+  prefill, explicit testnet limitations, and no automatic execution;
+- expanded discovery search to agent descriptions and long descriptions;
+- added cross-layer catalog drift, per-profile HTTP/privacy, browser interaction,
+  accessibility, collision, routing, CSP, visual, lint, and production-build gates.
+
+Checkpoint: source implementation is **PASS locally**. Publication, immutable runtime
+deployment, catalog seed, and managed smoke remain deliberately unclaimed.
+
+
 ## Next ordered work
 
 ### Lane A - Keep the public testnet healthy

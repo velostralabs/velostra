@@ -140,6 +140,21 @@ The guarded operator command is:
 
     powershell -NoProfile -File deploy/gcp/provision-synthetic-agent.ps1 -Release <deployed-release> -ServerImage <immutable-server-digest> -SyntheticAgentUrl https://<synthetic-service>/execute -BuilderWallet <dedicated-test-wallet> -Apply
 
+### Next-RC public demo catalog
+
+The 2026-07-22 local source now extends the same secretless service with four
+deterministic public-testnet profiles: Flowbook Trader, Wallet Sentinel, TokenScope,
+and Contract Lens. Each profile has an isolated route, fixed scenario, explicit
+synthetic-data boundary, correlated call proof, and a matching marketplace playbook.
+Selecting a playbook prefills its prompt but never executes or charges automatically.
+
+Provisioning remains release/image/runtime-bound and idempotent. The seed preserves
+the original phase2-synthetic-agent used by release evidence, then creates or strictly
+verifies the four public profiles and their immutable revisions. A cross-layer gate
+fails if slug, price, scenario ID, endpoint, non-retention declaration, or safety copy
+drifts. This catalog is **implemented locally and pending the next RC deployment**;
+it is not counted as managed-live evidence in this document yet.
+
 ## Public frontend deployment evidence
 
 - Canonical origin: [https://velostra.xyz/](https://velostra.xyz/).
@@ -369,9 +384,10 @@ ENABLED. A destructive API/Postgres/Redis outage remains a separate test.
 ## Next action
 
 The public testnet checkpoint is complete and remains available to users at
-`https://velostra.xyz/testnet`. The final hardening release candidate has no open
-implementation task; owner-approved publication plus post-deploy smoke are its only
-handoff. Ongoing health checks are operational maintenance, not unfinished scope.
+`https://velostra.xyz/testnet`. The optional four-agent demo catalog is complete in
+local source and must pass owner-approved publication, immutable runtime deployment,
+idempotent catalog provisioning, and post-deploy browser/paid-call smoke before it is
+recorded as live. Ongoing health checks are operational maintenance, not unfinished scope.
 Keep Phase 0-4 regression, privacy, financial, worker, and readiness gates green
 while preserving bounded testnet limits.
 

@@ -48,6 +48,14 @@ The low-cost managed translation preserves those failure domains in Virginia:
 - the staging-only synthetic-agent service scales from zero to one instance under
   the unprivileged web identity; it has no secret, database, or Redis access and
   persists or echoes no request input;
+- the next-RC catalog routes one retained release-evidence profile plus four public
+  demo profiles through explicit path-to-profile lookup; unknown paths fail with 404,
+  and every response declares deterministic public-testnet proof and non-retention;
+- database discovery remains authoritative: a release-bound one-shot seed creates or
+  strictly verifies the builder, agent, tags, and immutable published revision before
+  a profile may be exposed as runnable;
+- the browser scenario query prefills a documented prompt but never invokes the run
+  endpoint automatically, so navigation alone cannot debit a user or credit a builder;
 - private velostra-signer scales from zero to one instance and runs a dedicated
   signer entrypoint under its own identity;
 - reconciliation, webhook delivery, monitoring, and migration are separate one-task

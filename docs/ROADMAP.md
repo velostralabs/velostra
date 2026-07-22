@@ -435,6 +435,17 @@ below are recurring operations only; none is an unimplemented testnet deliverabl
 4. keep all evidence redacted and never publish provider IDs, wallet addresses,
    credentials, or operator identity.
 
+### Optional public demo RC
+
+- [x] Implement four deterministic scenario profiles and isolated execution routes.
+- [x] Add release-bound idempotent seed logic without changing the retained canary.
+- [x] Add marketplace playbooks, clean scenario URLs, safety boundaries, and no-auto-run behavior.
+- [x] Add catalog-drift, HTTP/privacy, browser, accessibility, routing, visual, lint, and build gates.
+- [ ] After owner approval, publish the micro-commits, deploy an immutable US testnet
+  runtime, run the catalog seed, and capture managed browser plus paid-call smoke.
+- [ ] Only after that evidence, mark the four profiles managed-live in status and journey docs.
+
+
 ### Mainnet migration lane (only remaining release work)
 
 1. use the deterministic readiness packet as the blocker source of truth; its current

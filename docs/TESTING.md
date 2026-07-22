@@ -15,6 +15,7 @@
 | Netlify production build | `netlify build --context production` | linked Netlify project | tracked Node 22 build command and `dist/` publish contract |
 | Public privacy | `npm run test:privacy` | Git | tracked content excludes private paths/keys/non-public email domains; HEAD uses Velostra public attribution |
 | Social assets | `npm run test:social-assets` | none | X/OG dimensions, metadata hygiene, and link-preview tags |
+| Demo catalog | `npm run test:demo-agents` | none | four public slugs/prices/scenario IDs match UI and backend; isolated routes, non-retention, and explicit safety boundaries remain present |
 | Browser gate | `npm run test:browser` | Playwright Chromium | wallet/account/chain binding, synchronized auth gates, no-resubmit paid-call recovery, deep-runtime truth, bounded deposit/claim proof, axe, keyboard, layout, visual, URL, and performance budgets |
 | Evidence validator | `npm run test:phase2-evidence` | none | complete packet passes; tampering fails closed |
 | Phase 3 release | npm run test:phase3-release | contract dependencies | exact manifest sets, policy/authority binding, deployment provenance, checkpoint/canary tamper gates |
@@ -24,6 +25,7 @@
 | Phase 4 unit | npm run test:phase4-unit | root/server/Python installs | SDKs, cursors, idempotency policy, permissions, privacy/telemetry policy |
 | Phase 4 DB E2E | npm run test:phase4-db | migrated disposable Postgres | v1/idempotency/revision/webhook/moderation/privacy races, owner-scoped call recovery isolation, and zero drift |
 | API build | `npm --prefix server run build` | none | strict server compile |
+| Synthetic demo contract | `npm --prefix server run test:synthetic-agent` | local HTTP | all catalog routes, deterministic scenario identity, call proof, unknown-path rejection, malformed bodies, and input non-echo |
 | Migration check | `npm --prefix server run db:check` | none | Drizzle migration consistency |
 | Production config | `npm --prefix server run test:config` | none | unsafe production settings fail closed |
 | Resilience policy | `npm --prefix server run test:resilience` | local HTTP | RPC 429 failover and confirmation/range policy |
@@ -122,6 +124,18 @@ Ganache remains an isolated dev-only toolchain with its documented advisories.
 This is workspace evidence for the unpushed commit set, not a claim that the public
 CDN already serves that revision. Publication and post-deploy smoke remain the
 handoff after owner approval.
+
+### Next-RC demo-agent verification
+
+The 2026-07-22 optional demo work adds three blocking layers before deployment:
+
+1. `test:demo-agents` compares all four public catalog identities across frontend
+   and backend and asserts isolated routes, non-retention, and safety limitations;
+2. `test:synthetic-agent` calls every profile, rejects unknown/malformed requests,
+   and proves submitted markers are neither echoed nor retained;
+3. the browser suite opens the marketplace lab, follows a clean scenario URL,
+   verifies the preset is loaded without automatic execution, and retains the
+   existing accessibility, collision, visual, CSP, and history gates.
 
 ## Money-loop coverage
 

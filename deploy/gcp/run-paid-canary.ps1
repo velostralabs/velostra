@@ -5,6 +5,7 @@ param(
   [string]$ProfileName = 'metamask-dedicated-profile-v6',
   [switch]$PreflightOnly,
   [switch]$ClaimOnly,
+  [switch]$PublicPaidCallOnly,
   [switch]$Apply
 )
 
@@ -15,7 +16,7 @@ $RepositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $ArtifactsRoot = Join-Path $RepositoryRoot 'artifacts\staging'
 $RuntimePath = Join-Path $ArtifactsRoot 'runtime.json'
 $ReadinessPath = Join-Path $ArtifactsRoot 'evidence\canary-wallet-readiness.json'
-$EvidencePath = Join-Path $ArtifactsRoot ('evidence\' + $(if ($ClaimOnly) { 'claim-canary.json' } else { 'paid-canary.json' }))
+$EvidencePath = Join-Path $ArtifactsRoot ('evidence\' + $(if ($PublicPaidCallOnly) { 'public-demo-paid-call.json' } elseif ($ClaimOnly) { 'claim-canary.json' } else { 'paid-canary.json' }))
 $PrivateRoot = Join-Path $ArtifactsRoot 'evidence\private'
 $WalletPath = Join-Path $PrivateRoot 'reconciliation-wallet.dpapi.json'
 $VaultPath = Join-Path $PrivateRoot 'metamask-vault.dpapi.json'
@@ -61,10 +62,15 @@ function Invoke-NativeChecked {
   if ($code -ne 0) { throw $FailureMessage }
 }
 
-if ($PreflightOnly -and $ClaimOnly) { throw 'PreflightOnly and ClaimOnly are mutually exclusive' }
+if (@($PreflightOnly, $ClaimOnly, $PublicPaidCallOnly).Where({ $_ }).Count -gt 1) {
+  throw 'PreflightOnly, ClaimOnly, and PublicPaidCallOnly are mutually exclusive'
+}
 
 if (-not $Apply) {
-  if ($ClaimOnly) {
+  if ($PublicPaidCallOnly) {
+    Write-Output 'PLAN run one Wallet Sentinel paid call against the already-open bounded public testnet'
+    Write-Output 'PLAN perform no top-up, claim, or paid-write mode transition'
+  } elseif ($ClaimOnly) {
     Write-Output 'PLAN keep paid writes disabled and run one isolated MetaMask USDG 1.00 builder claim'
     Write-Output 'PLAN persist only a redacted pass/fail claim artifact'
   } else {
@@ -81,11 +87,12 @@ foreach ($path in @($RuntimePath, $ReadinessPath, $WalletPath, $VaultPath, $Exte
 }
 $Runtime = Get-Content -Raw -LiteralPath $RuntimePath | ConvertFrom-Json
 $Readiness = Get-Content -Raw -LiteralPath $ReadinessPath | ConvertFrom-Json
+$ExpectedPaidMode = $(if ($PublicPaidCallOnly) { 'public' } else { 'disabled' })
 if (
   [string]$Runtime.kind -ne 'velostra-us-staging-runtime' -or
   [string]$Runtime.region -ne 'us-east4' -or
   [int64]$Runtime.chainId -ne 46630 -or
-  [string]$Runtime.paidWritesMode -ne 'disabled' -or
+  [string]$Runtime.paidWritesMode -ne $ExpectedPaidMode -or
   [string]$Readiness.kind -ne 'velostra-staging-canary-wallet-readiness' -or
   $Readiness.nativeGasReady -ne $true -or
   $Readiness.settlementTokenReady -ne $true -or
@@ -138,7 +145,16 @@ try {
   } finally { Pop-Location }
   Remove-Item Env:PHASE2_WALLET_PREFLIGHT -ErrorAction SilentlyContinue
 
-  if ($ClaimOnly) {
+  if ($PublicPaidCallOnly) {
+    $env:PHASE2_WALLET_PUBLIC_PAID_CALL = 'owner-approved-public-testnet-smoke'
+    $env:PHASE2_WALLET_AGENT_SLUG = 'wallet-sentinel'
+    Push-Location $RepositoryRoot
+    try {
+      Invoke-NativeChecked -FailureMessage 'Public testnet paid-call smoke failed' -Command {
+        & npm run test:wallet:metamask
+      }
+    } finally { Pop-Location }
+  } elseif ($ClaimOnly) {
     $env:PHASE2_WALLET_CLAIM_ONLY = 'isolated-staging-claim-only'
     Push-Location $RepositoryRoot
     try {
@@ -194,7 +210,8 @@ try {
   foreach ($name in @(
     'EVIDENCE_WALLET_PRIVATE_KEY','PHASE2_WALLET_E2E_APPROVED',
     'PHASE2_WALLET_PREFLIGHT','PHASE2_WALLET_CLAIM_ONLY',
-    'PHASE2_WALLET_PAID_WRITES_APPROVED','PHASE2_WALLET_EXPECTED_ADDRESS',
+    'PHASE2_WALLET_PAID_WRITES_APPROVED','PHASE2_WALLET_PUBLIC_PAID_CALL',
+    'PHASE2_WALLET_EXPECTED_ADDRESS',
     'PHASE2_WALLET_TOPUP_AMOUNT','PHASE2_WALLET_CLAIM_AMOUNT',
     'PHASE2_WALLET_AGENT_SLUG','METAMASK_VAULT_PASSWORD',
     'METAMASK_EXTENSION_PATH','METAMASK_USER_DATA_DIR','PLAYWRIGHT_BASE_URL',
@@ -215,15 +232,16 @@ try {
   }
   $evidence = [ordered]@{
     schemaVersion = 1
-    kind = $(if ($ClaimOnly) { 'velostra-staging-claim-canary' } else { 'velostra-staging-paid-canary' })
+    kind = $(if ($PublicPaidCallOnly) { 'velostra-staging-public-demo-paid-call' } elseif ($ClaimOnly) { 'velostra-staging-claim-canary' } else { 'velostra-staging-paid-canary' })
     environment = 'staging'
     region = 'us-east4'
     chainId = 46630
-    topupGross = $(if ($ClaimOnly) { '0.00' } else { '2.00' })
-    paidCallGross = $(if ($ClaimOnly) { '0.00' } else { '1.20' })
-    claimGross = '1.00'
+    topupGross = $(if ($ClaimOnly -or $PublicPaidCallOnly) { '0.00' } else { '2.00' })
+    paidCallGross = $(if ($PublicPaidCallOnly) { '0.20' } elseif ($ClaimOnly) { '0.00' } else { '1.20' })
+    claimGross = $(if ($PublicPaidCallOnly) { '0.00' } else { '1.00' })
     preflightOnly = [bool]$PreflightOnly
     claimOnly = [bool]$ClaimOnly
+    publicPaidCallOnly = [bool]$PublicPaidCallOnly
     claimVerified = [bool]$ClaimVerified
     paidWritesClosed = [bool]$Closed
     passed = [bool]$Passed
@@ -237,7 +255,9 @@ try {
 }
 
 if (-not $Passed) { throw $Failure }
-if ($PreflightOnly) {
+if ($PublicPaidCallOnly) {
+  Write-Output 'PASS one public Wallet Sentinel paid call completed without a top-up, claim, or mode transition'
+} elseif ($PreflightOnly) {
   Write-Output 'PASS isolated MetaMask staging preflight completed with paid writes disabled'
 } elseif ($ClaimOnly) {
   Write-Output 'PASS one isolated MetaMask builder claim completed with paid writes disabled'

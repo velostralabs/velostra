@@ -5,14 +5,21 @@ const approved = process.env.PHASE2_WALLET_E2E_APPROVED === 'isolated-staging-on
 const preflightOnly = process.env.PHASE2_WALLET_PREFLIGHT === 'isolated-staging-preflight'
 const claimOnly = process.env.PHASE2_WALLET_CLAIM_ONLY === 'isolated-staging-claim-only'
 const paidCanaryApproved = process.env.PHASE2_WALLET_PAID_WRITES_APPROVED === 'isolated-staging-canary'
+const publicPaidCallOnly =
+  process.env.PHASE2_WALLET_PUBLIC_PAID_CALL === 'owner-approved-public-testnet-smoke'
 const extensionPath = process.env.METAMASK_EXTENSION_PATH
 const profilePath = process.env.METAMASK_USER_DATA_DIR
 const baseURL = process.env.PLAYWRIGHT_BASE_URL
 const apiURL = process.env.PHASE2_WALLET_API_URL
 
 test.skip(
-  !approved || (!paidCanaryApproved && !preflightOnly && !claimOnly) || !extensionPath || !profilePath || !baseURL || !apiURL,
-  'Real MetaMask evidence requires isolated staging approval, explicit web/API origins, a preflight, claim-only, or paid-canary sentinel, an unpacked extension, and a dedicated test profile.'
+  !approved ||
+    (!paidCanaryApproved && !preflightOnly && !claimOnly && !publicPaidCallOnly) ||
+    !extensionPath ||
+    !profilePath ||
+    !baseURL ||
+    !apiURL,
+  'Real MetaMask evidence requires isolated staging approval, explicit web/API origins, a preflight, claim-only, paid-canary, or public paid-call sentinel, an unpacked extension, and a dedicated test profile.'
 )
 test.use({ trace: 'off', screenshot: 'off', video: 'off' })
 
@@ -191,7 +198,7 @@ test('real MetaMask isolated-staging money journey', async () => {
   }
   const topup = Number(process.env.PHASE2_WALLET_TOPUP_AMOUNT ?? '2.00')
   const claim = Number(process.env.PHASE2_WALLET_CLAIM_AMOUNT ?? '1.00')
-  if (!(topup > 1.2 && topup <= 2) || claim !== 1) {
+  if (!publicPaidCallOnly && (!(topup > 1.2 && topup <= 2) || claim !== 1)) {
     throw new Error('Real-wallet values must cover the 1.20 synthetic call, use the 1-token claim minimum, and stay within the low-value cap')
   }
 
@@ -321,6 +328,19 @@ test('real MetaMask isolated-staging money journey', async () => {
     }, api.toString())
     expect(freeTierRemaining).toBe(0)
     if (preflightOnly) {
+      await context.clearCookies()
+      await page.reload()
+      await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()
+      return
+    }
+
+    if (publicPaidCallOnly) {
+      const slug = process.env.PHASE2_WALLET_AGENT_SLUG
+      if (!slug) throw new Error('PHASE2_WALLET_AGENT_SLUG is required')
+      await page.goto(new URL('/agents/' + slug, staging).toString())
+      await page.getByLabel('Input').fill('Public testnet paid-call smoke; synthetic input only')
+      await page.getByRole('button', { name: /Run/ }).click()
+      await expect(page.locator('pre.output-block')).toBeVisible({ timeout: 120_000 })
       await context.clearCookies()
       await page.reload()
       await expect(page.getByRole('heading', { name: 'Verify your wallet' })).toBeVisible()

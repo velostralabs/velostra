@@ -372,6 +372,11 @@ inputs are complete. Even a passing gate is only `READY_FOR_SIGNING`; the packet
 cannot authorize broadcast, canary execution, expansion, or real value. See
 [MAINNET_READINESS.md](./MAINNET_READINESS.md).
 
+The preparation packet also hash-binds an explicit `us-east4` environment-isolation
+contract. Mainnet must use separate runtime, data, Redis, signer, scheduler, secrets,
+service identities, and evidence storage; testnet remains public and only read-only
+health checks are permitted against it during preparation.
+
 ## One-hour outage answer
 
 The worker is designed to catch up safely from a long outage: it persists a cursor,

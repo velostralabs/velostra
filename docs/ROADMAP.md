@@ -296,6 +296,8 @@ external evidence and accountable operator authorization.
   production drills, deployment/rollback, and disabled low-value canary policy.
 - [x] Reject credential fields, policy tampering, dirty preparation, and every
   attempt to authorize broadcast/canary/expansion from the readiness packet.
+- [x] Hash-bind US-only environment isolation so mainnet preparation cannot reuse or
+  mutate public-testnet runtime, data, Redis, signer, scheduler, secrets, or DNS.
 
 ### 3.2 Guarded deployment and readiness (DONE)
 

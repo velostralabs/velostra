@@ -7,7 +7,14 @@ Velostra's public testnet is complete and remains the operational proof surface.
 mainnet readiness packet is the deterministic handoff between that checkpoint and a
 future, separately governed production release. It hash-binds the reviewed Git commit,
 contract source and bytecode, dependency lockfiles, authority/custody plan, deployment
-and rollback plan, audit evidence, operational drills, and bounded canary policy.
+and rollback plan, environment-isolation contract, audit evidence, operational drills,
+and bounded canary policy.
+
+Mainnet preparation is not allowed to repurpose the public-testnet stack. The packet
+now hash-binds a US-only isolation plan requiring separate cloud project, API runtime,
+database, Redis, signer, scheduler, secret namespace, service accounts, and evidence
+store. Testnet must remain available at `https://velostra.xyz/testnet`; preparation may
+only perform its three declared read-only health checks.
 
 ## Decisions and authority boundary
 
@@ -50,6 +57,7 @@ or real-value authority is recorded in the tracked templates.
 | File | Role |
 |---|---|
 | `config/mainnet-readiness-input.example.json` | Audit, operations, approval, network, and plan inputs. |
+| `config/mainnet-environment-isolation.example.json` | US runtime boundary, separate-resource requirements, and immutable testnet-continuity rules. |
 | `config/mainnet-authority-plan.example.json` | Three 2-of-3 Safe groups, disjoint ownership policy, restricted settler, custody, and recovery. |
 | `config/mainnet-deployment-plan.example.json` | Plan-only deploy/readiness ordering and forward-repair rollback. |
 | `config/mainnet-canary-policy.example.json` | Disabled, empty-allowlist, low-exposure canary definition with zero-drift stop rules. |

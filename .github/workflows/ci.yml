@@ -19,6 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -27,6 +29,7 @@ jobs:
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run test:privacy
+      - run: npm run test:privacy:history
       - run: npm run test:social-assets
       - run: npm run test:demo-agents
       - run: npm run test:hosting

@@ -45,6 +45,7 @@
     "test:performance": "npm run build:browser-fixture && npm run performance:build && playwright test tests/browser/performance.spec.ts",
     "performance:build": "node scripts/check-performance-budget.mjs",
     "test:privacy": "node scripts/check-public-privacy.mjs",
+    "test:privacy:history": "node scripts/check-public-history-privacy.mjs",
     "test:social-assets": "node scripts/check-social-assets.mjs",
     "test:hosting": "node scripts/check-hosting-config.mjs",
     "test:demo-agents": "node scripts/check-demo-agents.mjs",

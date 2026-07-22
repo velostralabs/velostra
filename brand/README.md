@@ -1,6 +1,6 @@
 # Velostra Crystal V logo kit
 
-> Last verified against product, README, and deployed public surfaces: 2026-07-18.
+> Last verified against product, README, and deployed public surfaces: 2026-07-22.
 > Product baseline: Phase 0-4 repository implementation complete; activation gated.
 
 Editable source assets for the Crystal V identity used by the Velostra product.
@@ -25,6 +25,8 @@ settlement point represents one correlated financial outcome.
 - `src/components/BrandMark.tsx` is the code-native product mark.
 - `public/velostra-crystal-v*`, `favicon.svg`, and `site.webmanifest` serve browser and launcher surfaces.
 - `docs/assets/velostra-hero.svg` uses the same centered Crystal V in the GitHub README hero.
+- `docs/assets/velostra-proof-grid.svg` presents the correlated proof/recovery layers.
+- `docs/assets/velostra-system-map.svg` presents the product authority and failure domains.
 - The README card and connector geometry remain fixed; motion is limited to internal scan, pulse, and facet layers so every captured frame stays aligned.
 
 ## Construction

@@ -1,7 +1,7 @@
 # Design system
 
-> Workspace interaction system refreshed 2026-07-21; latest managed public rendering
-> remains the 2026-07-20 checkpoint until this local commit set is published.
+> Interaction system refreshed 2026-07-22 against the canonical public testnet,
+> current browser gate, Crystal V assets, and premium GitHub presentation system.
 > Phase state: Phase 0-4 repository preparation has passed internal engineering/CI
 > audit. The visual system remains current while mainnet execution stays gated.
 > The current browser gate passes 22 checks with one intentionally guarded external
@@ -28,7 +28,8 @@ Canonical public visual surface: [https://velostra.xyz/testnet](https://velostra
 | `src/components/BrandMark.*` | Code-native Crystal V untuk navigation, footer, dan product motion. |
 | `src/lib/chain.ts`, `src/components/WalletButton.*` | Chain definition, provider order, dan wallet-picker interaction. |
 | `public/velostra-crystal-v*`, `favicon.svg`, `site.webmanifest` | Browser tab, launcher, dan installable identity assets. |
-| `brand/*`, `docs/assets/velostra-hero.svg` | Editable public logo kit dan animated GitHub presentation asset. |
+| `brand/*`, `docs/assets/velostra-hero.svg` | Editable public logo kit dan animated GitHub hero. |
+| `docs/assets/velostra-proof-grid.svg`, `velostra-system-map.svg`, `settlement-flow.svg` | GitHub-native proof, architecture, dan execution visuals. |
 | `brand/social/*`, `public/velostra-social-card-1200x630.png` | X profile/header exports dan Open Graph/X link preview. |
 
 Karena CSS cascade tersebar di global dan component files, perubahan token sebaiknya
@@ -68,6 +69,20 @@ Primary root tokens:
 
 ```css
 --bg-0: #050609;
+### GitHub presentation system
+
+README memakai empat SVG code-native dengan satu grammar visual: hero sebagai brand
+entry, proof grid sebagai value summary, system map sebagai authority/failure-domain
+map, dan settlement flow sebagai urutan eksekusi. Semua aset:
+
+- memakai kanvas 1200 px, dark graphite, signal lime, ice, dan champagne;
+- tetap terbaca pada frame animasi mana pun dan tidak bergantung pada font eksternal;
+- membawa `title`, `desc`, serta alt text kontekstual di Markdown;
+- membatasi motion ke signal flow, pulse, scan, dan glow;
+- menghormati `prefers-reduced-motion`;
+- tidak memuat alamat, transaction hash, provider ID, operator identity, atau klaim
+  mainnet yang belum benar.
+
 --bg-1: #090c11;
 --bg-2: #0e131a;
 --bg-3: #151b24;

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">Velostra execution proof system</title>
+  <desc id="desc">Four connected proof layers: correlated calls, exact-once settlement, automatic reconciliation, and a fail-closed mainnet boundary.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#050609"/>
+      <stop offset=".52" stop-color="#0a0e13"/>
+      <stop offset="1" stop-color="#07090d"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#c9ff5f" stop-opacity=".04"/>
+      <stop offset=".52" stop-color="#c9ff5f" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#8fe9dc" stop-opacity=".08"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d8ff84"/>
+      <stop offset=".48" stop-color="#c9ff5f"/>
+      <stop offset="1" stop-color="#8fe9dc"/>
+    </linearGradient>
+    <radialGradient id="halo">
+      <stop stop-color="#c9ff5f" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#c9ff5f" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#f1f3ed" stroke-opacity=".035"/>
+    </pattern>
+    <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>
+      .flow { animation: flow 5s linear infinite; }
+      .pulse { animation: pulse 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+      .scan { animation: scan 5.6s ease-in-out infinite; }
+      @keyframes flow { to { stroke-dashoffset: -84; } }
+      @keyframes pulse { 0%,100% { opacity:.55; transform:scale(.88) } 50% { opacity:1; transform:scale(1.15) } }
+      @keyframes scan { 0%,12% { transform:translateX(-90px); opacity:0 } 30%,72% { opacity:.7 } 90%,100% { transform:translateX(1180px); opacity:0 } }
+      @media (prefers-reduced-motion: reduce) { .flow,.pulse,.scan { animation:none } }
+    </style>
+  </defs>
+  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="28" fill="url(#grid)"/>
+  <ellipse cx="604" cy="174" rx="420" ry="184" fill="url(#halo)" filter="url(#blur)"/>
+  <rect x="1" y="1" width="1198" height="358" rx="27" fill="none" stroke="#f1f3ed" stroke-opacity=".13"/>
+  <path d="M60 76H1140" stroke="#f1f3ed" stroke-opacity=".1"/>
+  <text x="60" y="47" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="11" letter-spacing="3">THE PROOF LAYER</text>
+  <text x="1140" y="47" text-anchor="end" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="2">CHAIN 46630 / SYNTHETIC VALUE</text>
+  <path d="M172 168H1028" fill="none" stroke="#31402f" stroke-width="2" stroke-dasharray="8 14"/>
+  <path class="flow" d="M172 168H1028" fill="none" stroke="url(#edge)" stroke-width="2" stroke-dasharray="28 56"/>
+  <rect class="scan" x="0" y="80" width="2" height="208" fill="#c9ff5f" opacity=".6"/>
+
+  <g transform="translate(60 96)">
+    <rect width="250" height="194" rx="18" fill="#090d12" stroke="#f1f3ed" stroke-opacity=".12"/>
+    <text x="20" y="27" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">01 / CORRELATE</text>
+    <circle cx="112" cy="72" r="28" fill="#c9ff5f" fill-opacity=".06" stroke="#c9ff5f" stroke-opacity=".42"/>
+    <path d="M99 71l9 9 19-21" fill="none" stroke="url(#signal)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle class="pulse" cx="112" cy="72" r="3.5" fill="#c9ff5f" filter="url(#glow)"/>
+    <text x="20" y="125" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="22" font-weight="600">One call. One identity.</text>
+    <text x="20" y="151" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">Database call ID and bytes32 chain proof</text>
+    <text x="20" y="170" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">remain linked across every failure boundary.</text>
+  </g>
+
+  <g transform="translate(337 96)">
+    <rect width="250" height="194" rx="18" fill="#090d12" stroke="#f1f3ed" stroke-opacity=".12"/>
+    <text x="20" y="27" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">02 / SETTLE</text>
+    <circle cx="112" cy="72" r="28" fill="#8fe9dc" fill-opacity=".05" stroke="#8fe9dc" stroke-opacity=".38"/>
+    <path d="M95 65h34M95 73h24M95 81h30" stroke="#8fe9dc" stroke-width="2" stroke-linecap="round"/>
+    <circle class="pulse" cx="130" cy="81" r="3.5" fill="#8fe9dc" filter="url(#glow)" style="animation-delay:.6s"/>
+    <text x="20" y="125" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="22" font-weight="600">Exactly-once effects.</text>
+    <text x="20" y="151" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">Reservations, debits, and builder credits</text>
+    <text x="20" y="170" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">advance through conditional ownership.</text>
+  </g>
+
+  <g transform="translate(614 96)">
+    <rect width="250" height="194" rx="18" fill="#090d12" stroke="#f1f3ed" stroke-opacity=".12"/>
+    <text x="20" y="27" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">03 / RECOVER</text>
+    <circle cx="112" cy="72" r="28" fill="#d6b684" fill-opacity=".05" stroke="#d6b684" stroke-opacity=".36"/>
+    <path d="M126 66a16 16 0 1 0-1 15M127 56v12h-12" fill="none" stroke="#d6b684" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle class="pulse" cx="98" cy="82" r="3.5" fill="#d6b684" filter="url(#glow)" style="animation-delay:1.2s"/>
+    <text x="20" y="125" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="22" font-weight="600">Chain state self-heals.</text>
+    <text x="20" y="151" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">Logs backfill missed database records and</text>
+    <text x="20" y="170" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">repair calls without asking users to retry.</text>
+  </g>
+
+  <g transform="translate(891 96)">
+    <rect width="249" height="194" rx="18" fill="#090d12" stroke="#f1f3ed" stroke-opacity=".12"/>
+    <text x="20" y="27" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">04 / CONTAIN</text>
+    <circle cx="112" cy="72" r="28" fill="#ef7168" fill-opacity=".04" stroke="#ef7168" stroke-opacity=".3"/>
+    <path d="M112 53l19 8v12c0 12-8 20-19 24-11-4-19-12-19-24V61l19-8Z" fill="none" stroke="#c9ff5f" stroke-width="2"/>
+    <path d="M103 74l6 6 12-14" fill="none" stroke="#c9ff5f" stroke-width="2.4" stroke-linecap="round"/>
+    <circle class="pulse" cx="112" cy="72" r="3.5" fill="#c9ff5f" filter="url(#glow)" style="animation-delay:1.8s"/>
+    <text x="20" y="125" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="22" font-weight="600">Mainnet stays closed.</text>
+    <text x="20" y="151" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">Audit, custody, operations, and dual</text>
+    <text x="20" y="170" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">approval gates remain independently bound.</text>
+  </g>
+  <g fill="#c9ff5f">
+    <circle cx="172" cy="168" r="5" filter="url(#glow)"/>
+    <circle cx="449" cy="168" r="5" filter="url(#glow)"/>
+    <circle cx="726" cy="168" r="5" filter="url(#glow)"/>
+    <circle cx="1003" cy="168" r="5" filter="url(#glow)"/>
+  </g>
+  <text x="60" y="329" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="1.8">REQUEST -> RECEIPT -> LEDGER -> RECONCILIATION</text>
+  <text x="1140" y="329" text-anchor="end" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="1.8">RECOVERABLE BY DESIGN</text>
+</svg>

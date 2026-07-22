@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="490" viewBox="0 0 1200 490" role="img" aria-labelledby="title desc">
+  <title id="title">Velostra system architecture</title>
+  <desc id="desc">Public browser, API, data plane, builder endpoints, restricted signer, escrow, and recovery workers connected across distinct trust boundaries.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#050609"/><stop offset=".55" stop-color="#090d12"/><stop offset="1" stop-color="#06090b"/></linearGradient>
+    <linearGradient id="signal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8ff84"/><stop offset=".52" stop-color="#c9ff5f"/><stop offset="1" stop-color="#8fe9dc"/></linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" fill="none" stroke="#f1f3ed" stroke-opacity=".032"/></pattern>
+    <radialGradient id="halo"><stop stop-color="#c9ff5f" stop-opacity=".15"/><stop offset="1" stop-color="#c9ff5f" stop-opacity="0"/></radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0l10 5-10 5Z" fill="#c9ff5f" fill-opacity=".72"/></marker>
+    <style>
+      .route { stroke-dasharray:10 12; animation:route 4.8s linear infinite; }
+      .pulse { animation:pulse 3.2s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+      @keyframes route { to { stroke-dashoffset:-66 } }
+      @keyframes pulse { 0%,100% { opacity:.48; transform:scale(.9) } 50% { opacity:1; transform:scale(1.16) } }
+      @media (prefers-reduced-motion: reduce) { .route,.pulse { animation:none } }
+    </style>
+  </defs>
+  <rect width="1200" height="490" rx="28" fill="url(#bg)"/>
+  <rect width="1200" height="490" rx="28" fill="url(#grid)"/>
+  <ellipse cx="602" cy="238" rx="390" ry="215" fill="url(#halo)" filter="url(#blur)"/>
+  <rect x="1" y="1" width="1198" height="488" rx="27" fill="none" stroke="#f1f3ed" stroke-opacity=".13"/>
+  <text x="54" y="46" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="11" letter-spacing="3">SYSTEM / AUTHORITY MAP</text>
+  <text x="1146" y="46" text-anchor="end" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="2">SEPARATE FAILURE DOMAINS</text>
+  <path d="M54 68H1146" stroke="#f1f3ed" stroke-opacity=".1"/>
+
+  <g fill="none" stroke="#c9ff5f" stroke-opacity=".48" stroke-width="1.6" marker-end="url(#arrow)">
+    <path class="route" d="M210 167H377"/>
+    <path class="route" d="M508 167H669"/>
+    <path class="route" d="M508 167C594 167 594 325 669 325"/>
+    <path class="route" d="M800 167H968"/>
+    <path class="route" d="M800 325C876 325 884 190 968 190"/>
+    <path class="route" d="M970 325H818"/>
+    <path class="route" d="M670 325H520"/>
+    <path class="route" d="M378 325H226"/>
+  </g>
+
+  <g transform="translate(54 112)">
+    <rect width="156" height="110" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">PUBLIC EDGE</text>
+    <path d="M20 46h26v18H20zM25 69h16" fill="none" stroke="#8fe9dc" stroke-width="2" stroke-linejoin="round"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Web + wallet</text>
+    <circle class="pulse" cx="138" cy="20" r="3.5" fill="#8fe9dc" filter="url(#glow)"/>
+  </g>
+  <g transform="translate(377 112)">
+    <rect width="131" height="110" rx="17" fill="#0a0f15" stroke="#c9ff5f" stroke-opacity=".32"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">CONTROL</text>
+    <path d="M20 46h30M20 55h24M20 64h28" stroke="#c9ff5f" stroke-width="2" stroke-linecap="round"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Express API</text>
+    <circle class="pulse" cx="113" cy="20" r="3.5" fill="#c9ff5f" filter="url(#glow)" style="animation-delay:.4s"/>
+  </g>
+  <g transform="translate(669 112)">
+    <rect width="131" height="110" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">EXECUTION</text>
+    <path d="M20 47l15-9 15 9v18l-15 9-15-9V47Z" fill="none" stroke="#d6b684" stroke-width="2"/>
+    <path d="M27 52h16M31 59h8" stroke="#d6b684" stroke-width="1.5" stroke-linecap="round"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Agent runtime</text>
+    <circle class="pulse" cx="113" cy="20" r="3.5" fill="#d6b684" filter="url(#glow)" style="animation-delay:.8s"/>
+  </g>
+  <g transform="translate(968 112)">
+    <rect width="178" height="134" rx="17" fill="#0a0f15" stroke="#c9ff5f" stroke-opacity=".36"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">CHAIN AUTHORITY</text>
+    <path d="M22 48l18-10 18 10v20L40 78 22 68V48Z" fill="none" stroke="url(#signal)" stroke-width="2"/>
+    <path d="M31 58l6 6 12-14" fill="none" stroke="#c9ff5f" stroke-width="2" stroke-linecap="round"/>
+    <text x="18" y="101" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Escrow</text>
+    <text x="18" y="119" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="11">restricted signer + Safes</text>
+    <circle class="pulse" cx="160" cy="20" r="3.5" fill="#c9ff5f" filter="url(#glow)" style="animation-delay:1.2s"/>
+  </g>
+
+  <g transform="translate(54 292)">
+    <rect width="172" height="108" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">DELIVERY</text>
+    <path d="M21 46h32v23H21zM22 48l15 12 15-12" fill="none" stroke="#8fe9dc" stroke-width="1.8" stroke-linejoin="round"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Webhooks</text>
+    <circle class="pulse" cx="154" cy="20" r="3.5" fill="#8fe9dc" filter="url(#glow)" style="animation-delay:1.6s"/>
+  </g>
+  <g transform="translate(378 292)">
+    <rect width="142" height="108" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">DURABLE</text>
+    <ellipse cx="37" cy="47" rx="17" ry="7" fill="none" stroke="#d6b684" stroke-width="1.8"/>
+    <path d="M20 47v20c0 4 8 7 17 7s17-3 17-7V47M20 57c0 4 8 7 17 7s17-3 17-7" fill="none" stroke="#d6b684" stroke-width="1.8"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Postgres</text>
+    <circle class="pulse" cx="124" cy="20" r="3.5" fill="#d6b684" filter="url(#glow)" style="animation-delay:2s"/>
+  </g>
+  <g transform="translate(670 292)">
+    <rect width="148" height="108" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">RECOVERY</text>
+    <path d="M52 49a17 17 0 1 0-2 17M53 38v13H40" fill="none" stroke="#c9ff5f" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="18" font-weight="600">Workers</text>
+    <circle class="pulse" cx="130" cy="20" r="3.5" fill="#c9ff5f" filter="url(#glow)" style="animation-delay:2.4s"/>
+  </g>
+  <g transform="translate(970 292)">
+    <rect width="176" height="108" rx="17" fill="#0a0f15" stroke="#f1f3ed" stroke-opacity=".14"/>
+    <text x="18" y="25" fill="#6f7774" font-family="ui-monospace,Consolas,monospace" font-size="9" letter-spacing="2">CHAIN OBSERVER</text>
+    <path d="M20 55c8-11 17-16 27-16s19 5 27 16c-8 11-17 16-27 16s-19-5-27-16Z" fill="none" stroke="#8fe9dc" stroke-width="1.8"/>
+    <circle cx="47" cy="55" r="6" fill="none" stroke="#8fe9dc" stroke-width="1.8"/>
+    <text x="18" y="91" fill="#f1f3ed" font-family="Space Grotesk,Arial,sans-serif" font-size="17" font-weight="600">Primary + fallback RPC</text>
+    <circle class="pulse" cx="158" cy="20" r="3.5" fill="#8fe9dc" filter="url(#glow)" style="animation-delay:2.8s"/>
+  </g>
+
+  <path d="M54 435H1146" stroke="#f1f3ed" stroke-opacity=".1"/>
+  <text x="54" y="462" fill="#aab1ab" font-family="Manrope,Arial,sans-serif" font-size="12">Browser transports intent. Server policy owns execution. Chain events remain independently recoverable.</text>
+  <text x="1146" y="462" text-anchor="end" fill="#c9ff5f" font-family="ui-monospace,Consolas,monospace" font-size="10" letter-spacing="1.8">FAILURE IS A DESIGNED STATE</text>
+</svg>

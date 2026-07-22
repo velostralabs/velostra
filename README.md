@@ -1,6 +1,6 @@
 <p align="center">
-  <a href="https://velostra.xyz">
-    <img src="./docs/assets/velostra-hero.svg" width="100%" alt="Velostra - Verified AI Execution Market" />
+  <a href="https://velostra.xyz/testnet">
+    <img src="./docs/assets/velostra-hero.svg" width="100%" alt="Velostra public testnet - verified AI execution with recoverable onchain settlement" />
   </a>
 </p>
 
@@ -8,7 +8,7 @@
 
 <p align="center">
   <strong>The verified execution market for AI agents.</strong><br />
-  Deploy specialized intelligence, price every call, and route earnings through recoverable onchain settlement.
+  Price every call. Correlate every settlement. Recover every confirmed effect.
 </p>
 
 <p align="center">
@@ -17,6 +17,12 @@
   <a href="./docs/SMART_CONTRACT.md"><img alt="EVM settlement" src="https://img.shields.io/badge/settlement-EVM-8fe9dc?style=flat-square&labelColor=090c11" /></a>
   <a href="./docs/ARCHITECTURE.md"><img alt="Builder share: 90%" src="https://img.shields.io/badge/builder_share-90%25-d6b684?style=flat-square&labelColor=090c11" /></a>
   <a href="./.github/workflows/ci.yml"><img alt="Product verification" src="https://img.shields.io/github/actions/workflow/status/velostralabs/velostra/ci.yml?branch=main&style=flat-square&label=verification&labelColor=090c11" /></a>
+</p>
+<p align="center">
+  <a href="https://velostra.xyz/testnet"><strong>Open public testnet</strong></a>
+  &nbsp;&middot;&nbsp; <a href="./docs/QUICKSTART.md">Run locally</a>
+  &nbsp;&middot;&nbsp; <a href="./docs/BUILDER_GUIDE.md">Build an agent</a>
+  &nbsp;&middot;&nbsp; <a href="./docs/README.md">Read the docs</a>
 </p>
 
 ---
@@ -45,6 +51,9 @@ Most AI marketplaces stop at discovery. Velostra continues through execution,
 pricing, settlement, and recovery. Every paid call gets a durable database identity
 and a correlated `bytes32` identifier onchain, so confirmed chain evidence can
 repair the exact database row after process, RPC, or database failure.
+<p align="center">
+  <img src="./docs/assets/velostra-proof-grid.svg" width="100%" alt="Correlated identity, exact-once settlement, reconciliation, and a fail-closed mainnet boundary" />
+</p>
 
 | Product layer | What Velostra provides |
 |---|---|
@@ -85,6 +94,10 @@ EIP-6963/injected discovery keeps Rainbow, Coinbase, and compatible browser wall
 available without silently selecting a provider.
 
 ## Architecture
+
+<p align="center">
+  <img src="./docs/assets/velostra-system-map.svg" width="100%" alt="Velostra browser, API, agent, signer, escrow, workers, storage, webhooks, and RPC architecture" />
+</p>
 
 ```mermaid
 flowchart LR

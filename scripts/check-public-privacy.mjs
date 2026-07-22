@@ -30,7 +30,7 @@ const rules = [
   },
 ]
 
-const trackedFiles = git(['ls-files', '-z'])
+const trackedFiles = git(['ls-files', '-z', '--cached', '--others', '--exclude-standard'])
   .split('\0')
   .filter(Boolean)
 const failures = []
@@ -88,5 +88,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `PUBLIC PRIVACY GATE PASSED (${trackedFiles.length} tracked files; Velostra public identity)`
+  `PUBLIC PRIVACY GATE PASSED (${trackedFiles.length} public files; Velostra public identity)`
 )

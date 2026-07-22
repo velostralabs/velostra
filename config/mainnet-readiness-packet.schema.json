@@ -27,9 +27,40 @@
     "release": { "type": "string", "pattern": "^[a-fA-F0-9]{40}$" },
     "network": { "type": "object" },
     "repository": { "type": "object" },
-    "plans": { "type": "object" },
+    "plans": {
+      "type": "object",
+      "required": ["environmentIsolation", "authority", "deployment", "canary"],
+      "properties": {
+        "environmentIsolation": { "type": "object" },
+        "authority": { "type": "object" },
+        "deployment": { "type": "object" },
+        "canary": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
     "controls": { "type": "object" },
-    "gates": { "type": "object" },
+    "gates": {
+      "type": "object",
+      "required": [
+        "environmentIsolation",
+        "independentAudit",
+        "authorityAndCustody",
+        "deploymentPlanSafe",
+        "canaryPolicySafe",
+        "productionOperations",
+        "twoPersonApprovalRoles"
+      ],
+      "properties": {
+        "environmentIsolation": { "type": "boolean" },
+        "independentAudit": { "type": "boolean" },
+        "authorityAndCustody": { "type": "boolean" },
+        "deploymentPlanSafe": { "type": "boolean" },
+        "canaryPolicySafe": { "type": "boolean" },
+        "productionOperations": { "type": "boolean" },
+        "twoPersonApprovalRoles": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
     "decision": { "enum": ["NO_GO", "READY_FOR_SIGNING"] },
     "blockers": { "type": "array", "items": { "type": "string" } },
     "authorization": {

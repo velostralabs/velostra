@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "kind": "velostra-mainnet-environment-isolation-plan",
+  "mainnet": {
+    "environment": "robinhood-mainnet",
+    "chainId": 4663,
+    "region": "us-east4",
+    "paidWritesAtProvision": "disabled"
+  },
+  "publicTestnet": {
+    "environment": "robinhood-testnet",
+    "chainId": 46630,
+    "publicPath": "https://velostra.xyz/testnet",
+    "mustRemainAvailable": true,
+    "mutationDuringPreparation": "forbidden",
+    "allowedChecks": [
+      "https-readiness",
+      "catalog-read",
+      "chain-read"
+    ]
+  },
+  "separateResourcesRequired": {
+    "cloudProject": true,
+    "apiRuntime": true,
+    "database": true,
+    "redis": true,
+    "signer": true,
+    "scheduler": true,
+    "secretNamespace": true,
+    "serviceAccounts": true,
+    "evidenceStore": true
+  },
+  "forbiddenPreparationActions": [
+    "change-testnet-runtime",
+    "change-testnet-write-mode",
+    "change-testnet-dns",
+    "reuse-testnet-database",
+    "reuse-testnet-redis",
+    "reuse-testnet-signer",
+    "broadcast-mainnet-transaction"
+  ]
+}

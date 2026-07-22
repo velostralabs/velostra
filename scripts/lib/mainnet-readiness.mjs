@@ -35,6 +35,28 @@ const CONTRACT_PATHS = [
 ]
 
 const SAFE_PURPOSES = ['governance-admin', 'pause-guardian', 'treasury-fee']
+const ISOLATED_RESOURCE_KEYS = [
+  'cloudProject',
+  'apiRuntime',
+  'database',
+  'redis',
+  'signer',
+  'scheduler',
+  'secretNamespace',
+  'serviceAccounts',
+  'evidenceStore',
+]
+const TESTNET_READ_ONLY_CHECKS = ['https-readiness', 'catalog-read', 'chain-read']
+const FORBIDDEN_PREPARATION_ACTIONS = [
+  'change-testnet-runtime',
+  'change-testnet-write-mode',
+  'change-testnet-dns',
+  'reuse-testnet-database',
+  'reuse-testnet-redis',
+  'reuse-testnet-signer',
+  'broadcast-mainnet-transaction',
+]
+
 const REQUIRED_ROLES = {
   DEFAULT_ADMIN: 'governance-admin',
   FEE_MANAGER: 'treasury-fee',
@@ -107,6 +129,27 @@ function forbiddenKeys(value, location = '$', failures = []) {
 function validateFileEntry(entry, failures, label) {
   check(typeof entry?.path === 'string' && entry.path.length > 0, failures, `${label} path is invalid`)
   check(SHA256.test(entry?.sha256), failures, `${label} sha256 is invalid`)
+}
+
+export function validateEnvironmentIsolationPlan(plan) {
+  const failures = []
+  check(plan?.schemaVersion === 1, failures, 'environment isolation plan schemaVersion must be 1')
+  check(plan?.kind === 'velostra-mainnet-environment-isolation-plan', failures, 'environment isolation plan kind is invalid')
+  check(plan?.mainnet?.environment === 'robinhood-mainnet', failures, 'isolated mainnet environment is invalid')
+  check(plan?.mainnet?.chainId === MAINNET_CHAIN_ID, failures, 'isolated mainnet chainId must be 4663')
+  check(plan?.mainnet?.region === 'us-east4', failures, 'mainnet runtime region must remain us-east4')
+  check(plan?.mainnet?.paidWritesAtProvision === 'disabled', failures, 'mainnet paid writes must be disabled at provision')
+  check(plan?.publicTestnet?.environment === 'robinhood-testnet', failures, 'public testnet environment is invalid')
+  check(plan?.publicTestnet?.chainId === 46630, failures, 'public testnet chainId must remain 46630')
+  check(plan?.publicTestnet?.publicPath === 'https://velostra.xyz/testnet', failures, 'public testnet path is invalid')
+  check(plan?.publicTestnet?.mustRemainAvailable === true, failures, 'public testnet continuity must be required')
+  check(plan?.publicTestnet?.mutationDuringPreparation === 'forbidden', failures, 'mainnet preparation must not mutate public testnet')
+  check(sameJson(plan?.publicTestnet?.allowedChecks, TESTNET_READ_ONLY_CHECKS), failures, 'public testnet checks must remain read-only')
+  for (const key of ISOLATED_RESOURCE_KEYS) {
+    check(plan?.separateResourcesRequired?.[key] === true, failures, `mainnet ${key} must be isolated from testnet`)
+  }
+  check(sameJson(plan?.forbiddenPreparationActions, FORBIDDEN_PREPARATION_ACTIONS), failures, 'forbidden mainnet preparation actions are invalid')
+  return { passed: failures.length === 0, failures }
 }
 
 export function validateAuthorityPlan(plan) {
@@ -306,9 +349,11 @@ export async function createMainnetReadinessPacket({
 
   const release = input.release === 'git-head' ? gitHead(repositoryRoot) : input.release
   if (!FULL_COMMIT.test(release)) throw new Error('Mainnet readiness release must be a full Git commit')
+  const environmentIsolationPlan = await readJson(repositoryPath(repositoryRoot, input.paths.environmentIsolation))
   const authorityPlan = await readJson(repositoryPath(repositoryRoot, input.paths.authorityPlan))
   const deploymentPlan = await readJson(repositoryPath(repositoryRoot, input.paths.deploymentPlan))
   const canaryPolicy = await readJson(repositoryPath(repositoryRoot, input.paths.canaryPolicy))
+  const environmentIsolation = validateEnvironmentIsolationPlan(environmentIsolationPlan)
   const authority = validateAuthorityPlan(authorityPlan)
   const deployment = validateDeploymentPlan(deploymentPlan)
   const canary = validateMainnetCanaryPolicy(canaryPolicy)
@@ -317,6 +362,7 @@ export async function createMainnetReadinessPacket({
   const operations = validateOperations(input.operations)
   const approvals = validateApprovalPolicy(input.approvalPolicy)
   const structuralFailures = [
+    ...environmentIsolation.failures,
     ...authority.failures,
     ...deployment.failures,
     ...canary.failures,
@@ -341,6 +387,7 @@ export async function createMainnetReadinessPacket({
       releaseTools: await entries(repositoryRoot, RELEASE_TOOL_PATHS),
     },
     plans: {
+      environmentIsolation: await fileEntry(repositoryRoot, input.paths.environmentIsolation),
       authority: await fileEntry(repositoryRoot, input.paths.authorityPlan),
       deployment: await fileEntry(repositoryRoot, input.paths.deploymentPlan),
       canary: await fileEntry(repositoryRoot, input.paths.canaryPolicy),
@@ -351,6 +398,7 @@ export async function createMainnetReadinessPacket({
       approvalPolicy: input.approvalPolicy,
     },
     gates: {
+      environmentIsolation: environmentIsolation.passed,
       independentAudit: audit.ready,
       authorityAndCustody: authority.ready,
       deploymentPlanSafe: deployment.passed,
@@ -414,7 +462,7 @@ export async function validateMainnetReadinessPacket({
   await validateEntries(repositoryRoot, packet?.repository?.contract, CONTRACT_PATHS, failures, 'contract')
   await validateEntries(repositoryRoot, packet?.repository?.lockfiles, LOCKFILE_PATHS, failures, 'lockfile')
   await validateEntries(repositoryRoot, packet?.repository?.releaseTools, RELEASE_TOOL_PATHS, failures, 'release tool')
-  for (const [key, label] of [['authority', 'authority plan'], ['deployment', 'deployment plan'], ['canary', 'canary policy']]) {
+  for (const [key, label] of [['environmentIsolation', 'environment isolation plan'], ['authority', 'authority plan'], ['deployment', 'deployment plan'], ['canary', 'canary policy']]) {
     const entry = packet?.plans?.[key]
     validateFileEntry(entry, failures, label)
     if (typeof entry?.path === 'string') {
@@ -428,12 +476,14 @@ export async function validateMainnetReadinessPacket({
   }
 
   let authority = { passed: false, ready: false, failures: ['authority plan unavailable'] }
+  let environmentIsolation = { passed: false, failures: ['environment isolation plan unavailable'] }
   let deployment = { passed: false, failures: ['deployment plan unavailable'] }
   let canary = { passed: false, failures: ['canary policy unavailable'] }
   try { authority = validateAuthorityPlan(await readJson(repositoryPath(repositoryRoot, packet.plans.authority.path))) } catch {}
+  try { environmentIsolation = validateEnvironmentIsolationPlan(await readJson(repositoryPath(repositoryRoot, packet.plans.environmentIsolation.path))) } catch {}
   try { deployment = validateDeploymentPlan(await readJson(repositoryPath(repositoryRoot, packet.plans.deployment.path))) } catch {}
   try { canary = validateMainnetCanaryPolicy(await readJson(repositoryPath(repositoryRoot, packet.plans.canary.path))) } catch {}
-  failures.push(...authority.failures, ...deployment.failures, ...canary.failures)
+  failures.push(...environmentIsolation.failures, ...authority.failures, ...deployment.failures, ...canary.failures)
 
   const audit = validateAudit(packet?.controls?.audit)
   const operations = validateOperations(packet?.controls?.operations)
@@ -452,6 +502,7 @@ export async function validateMainnetReadinessPacket({
   const gates = {
     independentAudit: audit.ready,
     authorityAndCustody: authority.ready,
+    environmentIsolation: environmentIsolation.passed,
     deploymentPlanSafe: deployment.passed,
     canaryPolicySafe: canary.passed,
     productionOperations: operations.ready,

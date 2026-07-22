@@ -23,6 +23,7 @@ assert.deepEqual(pendingPacket.authorization, {
   canaryExecution: false,
   expansion: false,
 })
+assert.equal(pendingPacket.gates.environmentIsolation, true)
 assert.deepEqual(pendingPacket.blockers, [
   'independent audit is incomplete',
   'mainnet authority and custody plan is incomplete',
@@ -86,14 +87,17 @@ try {
   }
   const deployment = await readJson(path.join(repositoryRoot, input.paths.deploymentPlan))
   const canary = await readJson(path.join(repositoryRoot, input.paths.canaryPolicy))
+  const environmentIsolation = await readJson(path.join(repositoryRoot, input.paths.environmentIsolation))
   const relative = (name) => `artifacts/mainnet/readiness-test/${name}`
   await fs.writeFile(path.join(testRoot, 'authority.json'), canonicalJson(authority))
   await fs.writeFile(path.join(testRoot, 'deployment.json'), canonicalJson(deployment))
   await fs.writeFile(path.join(testRoot, 'canary.json'), canonicalJson(canary))
+  await fs.writeFile(path.join(testRoot, 'environment-isolation.json'), canonicalJson(environmentIsolation))
   await fs.writeFile(path.join(testRoot, 'audit-report.txt'), 'independent test fixture\n')
 
   const readyInput = structuredClone(input)
   readyInput.paths = {
+    environmentIsolation: relative('environment-isolation.json'),
     authorityPlan: relative('authority.json'),
     deploymentPlan: relative('deployment.json'),
     canaryPolicy: relative('canary.json'),
@@ -117,6 +121,7 @@ try {
     allowDirty: true,
   })
   assert.equal(readyPacket.decision, 'READY_FOR_SIGNING')
+  assert.equal(readyPacket.gates.environmentIsolation, true)
   assert.deepEqual(readyPacket.blockers, [])
   assert.equal(readyPacket.authorization.mainnetBroadcast, false)
   assert.deepEqual(
@@ -128,6 +133,16 @@ try {
     }),
     { passed: true, ready: true, failures: [] }
   )
+
+
+  environmentIsolation.separateResourcesRequired.database = false
+  await fs.writeFile(path.join(testRoot, 'environment-isolation.json'), canonicalJson(environmentIsolation))
+  const sharedDatabase = await validateMainnetReadinessPacket({ repositoryRoot, packet: readyPacket, requireClean: false })
+  assert.equal(sharedDatabase.passed, false)
+  assert(sharedDatabase.failures.includes('environment isolation plan hash mismatch'))
+  assert(sharedDatabase.failures.includes('mainnet database must be isolated from testnet'))
+  environmentIsolation.separateResourcesRequired.database = true
+  await fs.writeFile(path.join(testRoot, 'environment-isolation.json'), canonicalJson(environmentIsolation))
 
   deployment.paidWritesAtDeploy = 'enabled'
   await fs.writeFile(path.join(testRoot, 'deployment.json'), canonicalJson(deployment))

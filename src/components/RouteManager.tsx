@@ -1,18 +1,55 @@
 import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
+import { applyPageMetadata, type PageMetadata } from '../lib/metadata'
 
-const routeTitles: Record<string, string> = {
-  '/': 'Velostra — Verified AI Execution Market',
-  '/index': 'Live Execution Index — Velostra',
-  '/system': 'Execution System — Velostra',
-  '/proof': 'Settlement Proof — Velostra',
-  '/economics': 'Protocol Economics — Velostra',
-  '/marketplace': 'Agent Marketplace — Velostra',
-  '/testnet': 'Public Testnet — Velostra',
-  '/dashboard': 'Execution Console — Velostra',
-  '/builder': 'Builder Studio — Velostra',
-  '/admin': 'Governance — Velostra',
-  '/docs': 'Protocol Documentation — Velostra',
+const routeMetadata: Record<string, Omit<PageMetadata, 'path'>> = {
+  '/': {
+    title: 'Velostra — Verified AI Execution Market',
+    description: 'Deploy specialized AI agents, price verified calls, and settle value through a recoverable onchain execution market.',
+  },
+  '/index': {
+    title: 'Live Execution Index — Velostra',
+    description: 'Inspect the live execution ledger connecting AI agent requests, verified receipts, and settlement outcomes.',
+  },
+  '/system': {
+    title: 'Execution System — Velostra',
+    description: 'See how Velostra turns agent intent into priced execution, correlated receipts, and recoverable settlement.',
+  },
+  '/proof': {
+    title: 'Settlement Proof — Velostra',
+    description: 'Trace how every verified AI execution is correlated, settled onchain, and reconciled against durable records.',
+  },
+  '/economics': {
+    title: 'Protocol Economics — Velostra',
+    description: 'Explore transparent per-call pricing and Velostra’s deterministic 90/10 builder and protocol settlement split.',
+  },
+  '/marketplace': {
+    title: 'Agent Marketplace — Velostra',
+    description: 'Discover specialized AI agents with transparent pricing, verified execution, and onchain settlement receipts.',
+  },
+  '/testnet': {
+    title: 'Public Testnet — Velostra',
+    description: 'Use the public Velostra testnet to verify live agent execution, settlement, claims, and recovery flows.',
+  },
+  '/dashboard': {
+    title: 'Execution Console — Velostra',
+    description: 'Private wallet console for Velostra balances, calls, settlement receipts, and recovery state.',
+    robots: 'noindex, nofollow',
+  },
+  '/builder': {
+    title: 'Builder Studio — Velostra',
+    description: 'Private builder workspace for publishing agents, reviewing earnings, and managing settlement claims.',
+    robots: 'noindex, nofollow',
+  },
+  '/admin': {
+    title: 'Governance — Velostra',
+    description: 'Restricted Velostra governance and operational control surface.',
+    robots: 'noindex, nofollow',
+  },
+  '/docs': {
+    title: 'Protocol Documentation — Velostra',
+    description: 'Read the Velostra protocol model, public testnet guide, API lifecycle, and onchain settlement architecture.',
+  },
 }
 
 const semanticSections: Record<string, string> = {
@@ -45,7 +82,18 @@ export default function RouteManager() {
 
   useLayoutEffect(() => {
     const isAgent = location.pathname.startsWith('/agents/')
-    document.title = isAgent ? 'Agent Execution — Velostra' : (routeTitles[location.pathname] ?? 'Page Not Found — Velostra')
+    const metadata = isAgent
+      ? {
+          title: 'Agent Execution — Velostra',
+          description: 'Run a specialized AI agent with transparent pricing and a correlated Velostra settlement receipt.',
+          robots: 'index, follow' as const,
+        }
+      : routeMetadata[location.pathname] ?? {
+          title: 'Page Not Found — Velostra',
+          description: 'The requested Velostra route does not exist.',
+          robots: 'noindex, nofollow' as const,
+        }
+    applyPageMetadata({ ...metadata, path: location.pathname })
 
     const pathAndHash = location.pathname + location.hash
     const samePage = previousPathAndHash.current === pathAndHash
@@ -60,31 +108,27 @@ export default function RouteManager() {
     let settleTimers: number[] = []
     if (targetId || !samePage) {
       if (targetId) {
-        const alignTarget = () => {
-          const target = document.getElementById(targetId)
-          if (!target) return
-          const navOffset = window.innerWidth <= 760 ? 88 : 112
-          const top = window.scrollY + target.getBoundingClientRect().top - navOffset
-          const distance = Math.abs(top - window.scrollY)
-          const behavior = navigationType === 'POP' || distance > window.innerHeight * 1.5 ? 'auto' : 'smooth'
-          window.scrollTo({ top: Math.max(0, top), left: 0, behavior })
+        const alignTarget = (behavior: ScrollBehavior) => {
+          document.getElementById(targetId)?.scrollIntoView({ behavior, block: 'start' })
         }
 
-        frame = window.requestAnimationFrame(alignTarget)
-        settleTimers = [
-          window.setTimeout(alignTarget, 220),
-          window.setTimeout(alignTarget, 720),
-          window.setTimeout(alignTarget, 1500),
-        ]
+        const initialBehavior = navigationType === 'PUSH' ? 'smooth' : 'auto'
+        const correctAlignment = () => {
+          const target = document.getElementById(targetId)
+          if (!target) return
+          const expectedTop = window.innerWidth <= 760 ? 88 : 112
+          if (Math.abs(target.getBoundingClientRect().top - expectedTop) > 3) alignTarget('auto')
+        }
+
+        frame = window.requestAnimationFrame(() => alignTarget(initialBehavior))
+        settleTimers = [600, 1300, 2400].map((delay) =>
+          window.setTimeout(correctAlignment, delay)
+        )
       } else {
         const restoredPosition = navigationType === 'POP' ? scrollPositions.get(activeRouteKey) : undefined
-        const alignPage = () => window.scrollTo({ top: restoredPosition ?? 0, left: 0, behavior: 'auto' })
-        frame = window.requestAnimationFrame(alignPage)
-        settleTimers = [
-          window.setTimeout(alignPage, 220),
-          window.setTimeout(alignPage, 720),
-          window.setTimeout(alignPage, 1500),
-        ]
+        frame = window.requestAnimationFrame(() => {
+          window.scrollTo({ top: restoredPosition ?? 0, left: 0, behavior: 'auto' })
+        })
       }
     }
 

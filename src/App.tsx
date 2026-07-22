@@ -1,4 +1,4 @@
-import { lazy, Suspense, useLayoutEffect } from 'react'
+import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
 import ScrollReveal from './components/ScrollReveal'
@@ -28,45 +28,7 @@ const Docs = lazy(() => import('./pages/Docs'))
 const Testnet = lazy(() => import('./pages/Testnet'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
-const homeSectionTargets: Record<string, string> = {
-  '/index': 'live-index',
-  '/system': 'system',
-  '/proof': 'proof',
-  '/economics': 'economics',
-}
-
 function Home() {
-  const { pathname } = useLocation()
-
-  useLayoutEffect(() => {
-    const targetId = homeSectionTargets[pathname]
-    if (!targetId) {
-      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-      return
-    }
-
-    const alignRoute = () => {
-      const target = document.getElementById(targetId)
-      if (!target) return
-      const navOffset = window.innerWidth <= 760 ? 88 : 112
-      const top = window.scrollY + target.getBoundingClientRect().top - navOffset
-      window.scrollTo({ top: Math.max(0, top), left: 0, behavior: 'auto' })
-    }
-
-    alignRoute()
-    window.addEventListener('load', alignRoute)
-    const timers = [
-      window.setTimeout(alignRoute, 220),
-      window.setTimeout(alignRoute, 760),
-      window.setTimeout(alignRoute, 1600),
-    ]
-
-    return () => {
-      window.removeEventListener('load', alignRoute)
-      timers.forEach((timer) => window.clearTimeout(timer))
-    }
-  }, [pathname])
-
   return (
     <div className="app app--home">
       <TickerTape />

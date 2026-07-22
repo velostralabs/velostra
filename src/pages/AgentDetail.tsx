@@ -5,6 +5,7 @@ import PageShell from '../components/PageShell'
 import SignInGate from '../components/SignInGate'
 import { ApiError, api, createIdempotencyKey, v1 } from '../lib/api'
 import { ROBINHOOD_EXPLORER_URL } from '../lib/chain'
+import { applyPageMetadata } from '../lib/metadata'
 
 interface AgentDetailData {
   id: string
@@ -56,7 +57,11 @@ export default function AgentDetail() {
       .get<{ agent: AgentDetailData }>('/api/agents/' + slug, { signal: controller.signal })
       .then((response) => {
         setAgent(response.agent)
-        document.title = response.agent.name + ' — Velostra'
+        applyPageMetadata({
+          title: response.agent.name + ' — Velostra',
+          description: response.agent.description,
+          path: '/agents/' + encodeURIComponent(slug),
+        })
       })
       .catch((error: Error) => {
         if (error.name !== 'AbortError') setLoadError(error.message)

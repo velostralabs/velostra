@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test } from '@playwright/test'
 import {
@@ -7,6 +8,10 @@ import {
   installProductApi,
 } from './fixtures'
 
+const productionCsp = readFileSync(new URL('../../public/_headers', import.meta.url), 'utf8')
+  .match(/^  Content-Security-Policy: (.+)$/m)?.[1]
+
+if (!productionCsp) throw new Error('Production Content-Security-Policy is missing from public/_headers')
 const criticalRoutes = [
   '/',
   '/marketplace',
@@ -237,4 +242,85 @@ test('rapid marketplace filter changes preserve the complete URL state', async (
 
   await page.getByRole('button', { name: 'Reset filters' }).click()
   await expect(page).toHaveURL('/marketplace')
+})
+test('semantic section routes align the requested content below the fixed navigation', async ({ page }) => {
+  await page.goto('/economics')
+  await expect(page.locator('#economics')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(1000)
+  await expect.poll(() =>
+    page.locator('#economics').evaluate((element) =>
+      Math.abs(Math.round(element.getBoundingClientRect().top) - 112)
+    )
+  ).toBeLessThanOrEqual(4)
+
+  await page.goto('/')
+  const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' })
+  await primaryNavigation.getByRole('link', { name: 'Proof', exact: true }).click()
+  await expect(page).toHaveURL('/proof')
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(1000)
+  await expect.poll(() =>
+    page.locator('#proof').evaluate((element) =>
+      Math.abs(Math.round(element.getBoundingClientRect().top) - 112)
+    )
+  ).toBeLessThanOrEqual(4)
+})
+
+test('canonical, social, and crawler metadata follow each clean route', async ({ page }) => {
+  await page.goto('/marketplace')
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', 'https://velostra.xyz/marketplace')
+  await expect(page.locator('meta[property="og:url"]')).toHaveAttribute('content', 'https://velostra.xyz/marketplace')
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'index, follow')
+  await expect(page).toHaveTitle('Agent Marketplace — Velostra')
+
+  await page.goto('/agents/flowbook-trader')
+  await expect(page).toHaveTitle('Flowbook Trader — Velostra')
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    'href',
+    'https://velostra.xyz/agents/flowbook-trader',
+  )
+  await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /correlated/i)
+
+  for (const route of ['/dashboard', '/builder', '/admin', '/route-that-does-not-exist']) {
+    await page.goto(route)
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow')
+  }
+})
+test('production CSP allows the critical UI and wallet surface', async ({ page }) => {
+  const violations: string[] = []
+  const testCsp = productionCsp
+    .replace("connect-src 'self'", "connect-src 'self' http://api.velostra.test http://localhost:8787")
+    .replace('; upgrade-insecure-requests', '')
+
+  await page.route('**/*', async (route) => {
+    if (route.request().resourceType() !== 'document') {
+      await route.fallback()
+      return
+    }
+    const response = await route.fetch()
+    await route.fulfill({
+      response,
+      headers: {
+        ...response.headers(),
+        'content-security-policy': testCsp,
+      },
+    })
+  })
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /content security policy|refused to/i.test(message.text())) {
+      violations.push(message.text())
+    }
+  })
+
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await expect(page.locator('.scene3d canvas')).toBeVisible()
+  await page.getByRole('navigation', { name: 'Primary navigation' })
+    .getByRole('button', { name: 'Connect Wallet' })
+    .click()
+  await expect(page.getByRole('dialog', { name: 'Choose a wallet' })).toBeVisible()
+
+  await page.goto('/marketplace')
+  await page.waitForTimeout(500)
+  expect(violations).toEqual([])
+  await expect(page.getByRole('heading', { name: 'Flowbook Trader' })).toBeVisible()
 })
